@@ -42,16 +42,15 @@ reload_sudoers()
 
 def stylize_text(text):
     font_map = {
-        'A': 'ᴧ', 'B': 'ʙ', 'C': 'ᴄ', 'D': 'ᴅ', 'E': 'Є', 'F': 'Ғ', 'G': 'ɢ',
-        'H': 'ʜ', 'I': 'ɪ', 'J': 'ᴊ', 'K': 'ᴋ', 'L': 'ʟ', 'M': 'ϻ', 'N': 'η',
-        'O': 'σ', 'P': 'ᴘ', 'Q': 'ǫ', 'R': 'Ꝛ', 'S': 's', 'T': 'ᴛ', 'U': 'υ',
-        'V': 'ᴠ', 'W': 'ᴡ', 'X': 'x', 'Y': 'ʏ', 'Z': 'ᴢ',
-        'a': 'ᴧ', 'b': 'ʙ', 'c': 'ᴄ', 'd': 'ᴅ', 'e': 'є', 'f': 'ғ', 'g': 'ɢ',
-        'h': 'ʜ', 'i': 'ɪ', 'j': 'ᴊ', 'k': 'ᴋ', 'l': 'ʟ', 'm': 'ϻ', 'n': 'η',
-        'o': 'σ', 'p': 'ᴘ', 'q': 'ǫ', 'r': 'ꝛ', 's': 's', 't': 'ᴛ', 'u': 'υ',
-        'v': 'ᴠ', 'w': 'ᴡ', 'x': 'x', 'y': 'ʏ', 'z': 'ᴢ',
-        '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒',
-        '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
+        'A': 'ᴧ','B': 'ʙ','C': 'ᴄ','D': 'ᴅ','E': 'Є','F': 'Ғ','G': 'ɢ',
+        'H': 'ʜ','I': 'ɪ','J': 'ᴊ','K': 'ᴋ','L': 'ʟ','M': 'ϻ','N': 'η',
+        'O': 'σ','P': 'ᴘ','Q': 'ǫ','R': 'Ꝛ','S': 's','T': 'ᴛ','U': 'υ',
+        'V': 'ᴠ','W': 'ᴡ','X': 'x','Y': 'ʏ','Z': 'ᴢ',
+        'a': 'ᴧ','b': 'ʙ','c': 'ᴄ','d': 'ᴅ','e': 'є','f': 'ғ','g': 'ɢ',
+        'h': 'ʜ','i': 'ɪ','j': 'ᴊ','k': 'ᴋ','l': 'ʟ','m': 'ϻ','n': 'η',
+        'o': 'σ','p': 'ᴘ','q': 'ǫ','r': 'ꝛ','s': 's','t': 'ᴛ','u': 'υ',
+        'v': 'ᴠ','w': 'ᴡ','x': 'x','y': 'ʏ','z': 'ᴢ',
+        '0':'𝟎','1':'𝟏','2':'𝟐','3':'𝟑','4':'𝟒','5':'𝟓','6':'𝟔','7':'𝟕','8':'𝟖','9':'𝟗'
     }
 
     def apply_style(t):
@@ -59,7 +58,6 @@ def stylize_text(text):
 
     pattern = r"(@\w+|https?://\S+|`[^`]+`|/[a-zA-Z0-9_]+)"
     parts = re.split(pattern, str(text))
-
     return "".join(
         part if re.match(pattern, part) else apply_style(part)
         for part in parts
@@ -114,7 +112,7 @@ async def log_to_channel(bot: Bot, event_type: str, details: dict):
 
 
 # ---------------------------------------------------------
-#         USER BASIC + AUTO REVIVE HANDLERS
+#         AUTO REVIVE HANDLER
 # ---------------------------------------------------------
 
 def check_auto_revive(user_doc):
@@ -135,14 +133,12 @@ def check_auto_revive(user_doc):
                 }
             )
             return True
-
     except:
-        pass
-    return False
+        return False
 
 
 # ---------------------------------------------------------
-#        ENSURE USER DATA EXISTS (NOW WITH XP SYSTEM)
+#      ENSURE USER EXISTS (NOW WITH XP + LEVEL SYSTEM)
 # ---------------------------------------------------------
 
 def ensure_user_fields(user):
@@ -161,9 +157,7 @@ def ensure_user_fields(user):
         users_collection.update_one(
             {"user_id": user["user_id"]}, {"$set": set_data}
         )
-
-        for k, v in set_data.items():
-            user[k] = v
+        user.update(set_data)
 
     return user
 
@@ -196,11 +190,10 @@ def ensure_user_exists(tg_user):
             users_collection.insert_one(new_user)
             return new_user
 
-        else:
-            ensure_user_fields(user_doc)
+        ensure_user_fields(user_doc)
 
-            if check_auto_revive(user_doc):
-                user_doc["status"] = "alive"
+        if check_auto_revive(user_doc):
+            user_doc["status"] = "alive"
 
         return user_doc
 
@@ -209,14 +202,14 @@ def ensure_user_exists(tg_user):
 
 
 # ---------------------------------------------------------
-#                GROUP TRACKER
+#                GROUP TRACKER (FIXED)
 # ---------------------------------------------------------
 
 def track_group(chat, user=None):
     try:
         if chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
 
-            if not groups_collection.find_one({"chat_id": chat.id]):
+            if not groups_collection.find_one({"chat_id": chat.id}):
                 groups_collection.insert_one(
                     {"chat_id": chat.id, "title": chat.title, "claimed": False}
                 )
@@ -247,7 +240,6 @@ LEVEL_XP = {
     9: 4000,
 }
 
-
 LEVEL_BADGES = {
     1: "🟢 Rookie",
     2: "🔵 Explorer",
@@ -263,10 +255,6 @@ LEVEL_BADGES = {
 
 
 def add_xp(user_id, amount: int):
-    """
-    Adds XP and handles level-ups.
-    Returns: (leveled_up, new_level, new_xp)
-    """
     user = users_collection.find_one({"user_id": user_id})
     if not user:
         return False, 1, 0
@@ -301,7 +289,26 @@ def add_xp(user_id, amount: int):
 
 
 def get_user_badge(level):
-    return LEVEL_BADGES.get(level, "❓ Unknown")
+    return LEVEL_BADGES.get(level, "❓ Unknown Badge")
+
+
+# ---------------------------------------------------------
+#                XP LEADERBOARD
+# ---------------------------------------------------------
+
+def get_global_xp_leaderboard(limit=20):
+    return list(
+        users_collection.find({}, {"_id": 0})
+        .sort("xp", -1)
+        .limit(limit)
+    )
+
+def get_group_xp_leaderboard(group_id, limit=20):
+    return list(
+        users_collection.find({"seen_groups": group_id}, {"_id": 0})
+        .sort("xp", -1)
+        .limit(limit)
+    )
 
 
 # ---------------------------------------------------------
@@ -324,7 +331,6 @@ def get_mention(user_data, custom_name=None):
 
 def format_money(v):
     return f"${v:,}"
-
 
 def format_time(t):
     s = int(t.total_seconds())
