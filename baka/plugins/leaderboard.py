@@ -10,7 +10,11 @@ from baka.utils import get_user_badge
 # /global — Show Global XP Leaderboard
 async def global_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    top = list(users_collection.find().sort("level", -1).sort("xp", -1).limit(10))
+    top = list(
+        users_collection.find()
+        .sort([("level", -1), ("xp", -1)])   # Correct multi-sort
+        .limit(10)
+    )
 
     if not top:
         await update.message.reply_text("No users found in database.")
