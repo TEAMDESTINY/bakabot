@@ -1,5 +1,6 @@
-# Copyright...
-# (तुम्हारा same header रखा है)
+# ---------------------------------------------------------
+#                   RYAN BAKA | UTILS ENGINE
+# ---------------------------------------------------------
 
 import html
 import re
@@ -8,8 +9,10 @@ from datetime import datetime, timedelta
 from telegram import Bot, User, Chat
 from telegram.constants import ParseMode, ChatType
 from telegram.error import TelegramError
+
 from baka.database import users_collection, sudoers_collection, groups_collection
-from baka.config import OWNER_ID, SUDO_IDS_STR, LOGGER_ID, BOT_NAME, AUTO_REVIVE_HOURS, AUTO_REVIVE_BONUS
+from baka.config import OWNER_ID, SUDO_IDS_STR, LOGGER_ID, BOT_NAME
+from baka.config import AUTO_REVIVE_HOURS, AUTO_REVIVE_BONUS
 
 # ---------------------------------------------------------
 #                  SUDO LOADER
@@ -42,14 +45,14 @@ reload_sudoers()
 
 def stylize_text(text):
     font_map = {
-        'A': 'ᴧ','B': 'ʙ','C': 'ᴄ','D': 'ᴅ','E': 'Є','F': 'Ғ','G': 'ɢ',
-        'H': 'ʜ','I': 'ɪ','J': 'ᴊ','K': 'ᴋ','L': 'ʟ','M': 'ϻ','N': 'η',
-        'O': 'σ','P': 'ᴘ','Q': 'ǫ','R': 'Ꝛ','S': 's','T': 'ᴛ','U': 'υ',
-        'V': 'ᴠ','W': 'ᴡ','X': 'x','Y': 'ʏ','Z': 'ᴢ',
-        'a': 'ᴧ','b': 'ʙ','c': 'ᴄ','d': 'ᴅ','e': 'є','f': 'ғ','g': 'ɢ',
-        'h': 'ʜ','i': 'ɪ','j': 'ᴊ','k': 'ᴋ','l': 'ʟ','m': 'ϻ','n': 'η',
-        'o': 'σ','p': 'ᴘ','q': 'ǫ','r': 'ꝛ','s': 's','t': 'ᴛ','u': 'υ',
-        'v': 'ᴠ','w': 'ᴡ','x': 'x','y': 'ʏ','z': 'ᴢ',
+        'A':'ᴧ','B':'ʙ','C':'ᴄ','D':'ᴅ','E':'Є','F':'Ғ','G':'ɢ',
+        'H':'ʜ','I':'ɪ','J':'ᴊ','K':'ᴋ','L':'ʟ','M':'ϻ','N':'η',
+        'O':'σ','P':'ᴘ','Q':'ǫ','R':'Ꝛ','S':'s','T':'ᴛ','U':'υ',
+        'V':'ᴠ','W':'ᴡ','X':'x','Y':'ʏ','Z':'ᴢ',
+        'a':'ᴧ','b':'ʙ','c':'ᴄ','d':'ᴅ','e':'є','f':'ғ','g':'ɢ',
+        'h':'ʜ','i':'ɪ','j':'ᴊ','k':'ᴋ','l':'ʟ','m':'ϻ','n':'η',
+        'o':'σ','p':'ᴘ','q':'ǫ','r':'ꝛ','s':'s','t':'ᴛ','u':'υ',
+        'v':'ᴠ','w':'ᴡ','x':'x','y':'ʏ','z':'ᴢ',
         '0':'𝟎','1':'𝟏','2':'𝟐','3':'𝟑','4':'𝟒','5':'𝟓','6':'𝟔','7':'𝟕','8':'𝟖','9':'𝟗'
     }
 
@@ -88,13 +91,10 @@ async def log_to_channel(bot: Bot, event_type: str, details: dict):
 
     if 'user' in details:
         text += f"👤 <b>User:</b> {details['user']}\n"
-
     if 'chat' in details:
         text += f"🏰 <b>Chat:</b> {html.escape(details['chat'])}\n"
-
     if 'action' in details:
         text += f"🎬 <b>Action:</b> {details['action']}\n"
-
     if 'link' in details:
         text += f"🔗 <b>Invite:</b> {details['link']}\n"
 
@@ -138,7 +138,7 @@ def check_auto_revive(user_doc):
 
 
 # ---------------------------------------------------------
-#      ENSURE USER EXISTS (NOW WITH XP + LEVEL SYSTEM)
+#      ENSURE USER EXISTS (XP SYSTEM INCLUDED)
 # ---------------------------------------------------------
 
 def ensure_user_fields(user):
@@ -202,7 +202,7 @@ def ensure_user_exists(tg_user):
 
 
 # ---------------------------------------------------------
-#                GROUP TRACKER (FIXED)
+#                GROUP TRACKER
 # ---------------------------------------------------------
 
 def track_group(chat, user=None):
@@ -225,7 +225,7 @@ def track_group(chat, user=None):
 
 
 # ---------------------------------------------------------
-#           LEVEL SYSTEM (1–10 + CUSTOM XP)
+#                LEVEL SYSTEM (1–10 XP)
 # ---------------------------------------------------------
 
 LEVEL_XP = {
@@ -293,26 +293,26 @@ def get_user_badge(level):
 
 
 # ---------------------------------------------------------
-#                XP LEADERBOARD
+#                XP LEADERBOARDS
 # ---------------------------------------------------------
 
 def get_global_xp_leaderboard(limit=20):
     return list(
         users_collection.find({}, {"_id": 0})
-        .sort("xp", -1)
+        .sort([("level", -1), ("xp", -1)])
         .limit(limit)
     )
 
 def get_group_xp_leaderboard(group_id, limit=20):
     return list(
         users_collection.find({"seen_groups": group_id}, {"_id": 0})
-        .sort("xp", -1)
+        .sort([("level", -1), ("xp", -1)])
         .limit(limit)
     )
 
 
 # ---------------------------------------------------------
-#          SAFE MENTION + FORMATTING
+#             SAFE MENTION + FORMATTING
 # ---------------------------------------------------------
 
 def get_mention(user_data, custom_name=None):
@@ -340,10 +340,39 @@ def format_time(t):
 
 
 # ---------------------------------------------------------
-#               PROGRESS BAR (NEW)
+#               PROGRESS BAR
 # ---------------------------------------------------------
 
 def get_progress_bar(xp, next_xp):
+    if next_xp == 0:
+        return "[██████████]"
+
     filled = int((xp / next_xp) * 10)
     bar = "█" * filled + "░" * (10 - filled)
     return f"[{bar}]"
+
+
+# ---------------------------------------------------------
+#               MESSAGE XP HANDLER
+# ---------------------------------------------------------
+
+async def message_xp_handler(update, context):
+    msg = update.message
+    if not msg or not msg.from_user:
+        return
+
+    if msg.chat.type not in [ChatType.GROUP, ChatType.SUPERGROUP]:
+        return
+
+    user = ensure_user_exists(msg.from_user)
+
+    leveled, level, xp = add_xp(msg.from_user.id, 5)
+
+    if leveled:
+        badge = get_user_badge(level)
+
+        await msg.reply_text(
+            f"🎉 <b>Level Up!</b>\n"
+            f"{get_mention(user)} is now <b>Level {level}</b> {badge}",
+            parse_mode=ParseMode.HTML
+        )
