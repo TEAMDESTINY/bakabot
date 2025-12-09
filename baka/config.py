@@ -44,7 +44,7 @@ GIT_TOKEN = os.getenv("GIT_TOKEN", "")
 # Images & Links
 START_IMG_URL = os.getenv("START_IMG_URL", "https://telegra.ph/file/5e5480760e412bd402e88.jpg") 
 HELP_IMG_URL = os.getenv("HELP_IMG_URL", "https://files.catbox.moe/5g37fy.jpg") 
-WELCOME_IMG_URL = os.getenv("WELCOME_IMG_URL", "https://files.catbox.moe/gyi5iu.jpg") 
+WELCOME_IMG_URL = os.getenv("WELCOME_IMG_URL", "https://files.catbox.moe/xn13np.jpg") 
 
 SUPPORT_GROUP = os.getenv("SUPPORT_GROUP", "https://t.me/YourSupportGroup")
 SUPPORT_CHANNEL = os.getenv("SUPPORT_CHANNEL", "https://t.me/YourUpdateChannel")
@@ -58,7 +58,7 @@ except: OWNER_ID = 0
 SUDO_IDS_STR = os.getenv("SUDO_IDS", "")
 
 # Game Constants
-BOT_NAME = "🫧 вαкα ×͜࿐"
+BOT_NAME = "🫧 ѕнιzυкα ×͜࿐"
 REVIVE_COST = 500
 PROTECT_1D_COST = 1000
 PROTECT_2D_COST = 1800
