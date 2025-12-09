@@ -337,3 +337,13 @@ def format_time(t):
     h, r = divmod(s, 3600)
     m, _ = divmod(r, 60)
     return f"{h}h {m}m"
+
+
+# ---------------------------------------------------------
+#               PROGRESS BAR (NEW)
+# ---------------------------------------------------------
+
+def get_progress_bar(xp, next_xp):
+    filled = int((xp / next_xp) * 10)
+    bar = "█" * filled + "░" * (10 - filled)
+    return f"[{bar}]"
