@@ -1,5 +1,3 @@
-# baka/plugins/leaderboard.py
-
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
@@ -7,18 +5,23 @@ from baka.database import users_collection
 from baka.utils import format_money, get_mention, stylize_text
 
 async def global_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Top 10 users ko balance ke hisab se dhoondo
+    # Top 10 users dhoondo (Synchronous cursor)
     top_users = users_collection.find().sort("balance", -1).limit(10)
     
     msg = f"🌍 <b>{stylize_text('GLOBAL TOP 10')}</b> 🌍\n\n"
     
     count = 1
-    async for user in top_users:
-        # User ka naam ya mention ready karo
+    # Yahan se 'async' hata diya gaya hai 👇
+    for user in top_users:
+        # User ka naam aur balance
         name = user.get("first_name", "Unknown")
+        # Agar naam nahi hai to User ID use karein (Safety)
+        if name == "Unknown":
+            name = f"User {user.get('user_id', '???')}"
+            
         balance = format_money(user.get("balance", 0))
         
-        # Emoji logic
+        # Ranking Badges
         if count == 1: badge = "🥇"
         elif count == 2: badge = "🥈"
         elif count == 3: badge = "🥉"
