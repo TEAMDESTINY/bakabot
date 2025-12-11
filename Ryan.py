@@ -58,13 +58,14 @@ async def post_init(application):
         ("start", "🌸 ϻᴧɪη ϻєηυ"), 
         ("help", "📖 ᴄσϻϻᴧηᴅ ᴅɪᴧꝛʏ"),
         ("bal", "👛 ᴡᴧʟʟєᴛ"), 
+        ("sellxp", "🔄 Exᴄʜᴀɴɢᴇ XP"), # <== ADDED IN MENU
         ("shop", "🛒 sʜσᴘ"),
         ("kill", "🔪 ᴋɪʟʟ"), 
         ("rob", "💰 sᴛєᴧʟ"), 
         ("give", "💸 ᴛꝛᴧηsғєꝛ"), 
         ("claim", "💎 ʙσηυs"),
         ("daily", "📅 ᴅᴧɪʟʏ"),
-        ("global", "🌍 ᴛσᴘ 10 ɢʟσʙᴧʟ"),   # <== ADDED
+        ("global", "🌍 ᴛσᴘ 10 ɢʟσʙᴧʟ"),
         ("ranking", "🏆 ᴛσᴘs"),
         ("propose", "💍 ϻᴧꝛꝛʏ"), 
         ("divorce", "💔 ʙꝛєᴧᴋυᴘ"),
@@ -111,10 +112,11 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_"))
         app_bot.add_handler(CommandHandler("ranking", economy.ranking))
-        app_bot.add_handler(CommandHandler("global", leaderboard.global_leaderboard))   # <== ADDED
+        app_bot.add_handler(CommandHandler("global", leaderboard.global_leaderboard))
         app_bot.add_handler(CommandHandler("give", economy.give))
         app_bot.add_handler(CommandHandler("claim", economy.claim))
         app_bot.add_handler(CommandHandler("daily", daily.daily))
+        app_bot.add_handler(CommandHandler("sellxp", economy.sell_xp)) # <== ADDED SELL COMMAND
 
         # --- SHOP ---
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
@@ -170,11 +172,15 @@ if __name__ == '__main__':
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
 
         # GROUP EVENT ORDER
+        # Note: Handlers are executed in order of Groups.
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, collection.collect_waifu), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, collection.check_drops), group=2)
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, riddle.check_riddle_answer), group=3)
         app_bot.add_handler(MessageHandler((filters.TEXT | filters.Sticker.ALL) & ~filters.COMMAND, chatbot.ai_message_handler), group=4)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=5)
+        
+        # ADDED EXP SYSTEM LISTENER (Group 6 to run separately)
+        app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=6)
 
         print("ꝛʏᴧηʙᴧᴋᴧ ʙσᴛ ꜱᴛᴀʀᴛɪɴɢ ᴩᴏʟʟɪɴɢ...")
         app_bot.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
