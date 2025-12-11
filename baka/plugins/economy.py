@@ -19,6 +19,8 @@
 # Contact for permissions:
 # Email: king25258069@gmail.com
 
+import random
+import time
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
@@ -26,6 +28,12 @@ from baka.config import REGISTER_BONUS, OWNER_ID, TAX_RATE, CLAIM_BONUS, MARRIED
 from baka.utils import ensure_user_exists, get_mention, format_money, resolve_target, log_to_channel, stylize_text, track_group
 from baka.database import users_collection, groups_collection
 from baka.plugins.chatbot import ask_mistral_raw
+
+# --- EXP CONFIGURATION ---
+EXP_COOLDOWN = 60  # Seconds between earning EXP
+EXP_RANGE = (1, 5) # Min/Max EXP per message
+EXCHANGE_RATE = 10 # 10 EXP = 1 Coin
+user_cooldowns = {} # Memory for cooldowns
 
 # --- INVENTORY CALLBACK ---
 async def inventory_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -59,7 +67,10 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif not target: return await update.message.reply_text(error, parse_mode=ParseMode.HTML)
 
     rank = users_collection.count_documents({"balance": {"$gt": target["balance"]}}) + 1
-    status = "💖 Alive" if target['status'] == 'alive' else "💀 Dead"
+    status = "💖 Alive" if target.get('status', 'alive') == 'alive' else "💀 Dead"
+    
+    # Getting EXP safely
+    current_exp = target.get('exp', 0)
     
     inventory = target.get('inventory', [])
     weapons = [i for i in inventory if i['type'] == 'weapon']
@@ -81,7 +92,8 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         f"👤 <b>{get_mention(target)}</b>\n"
         f"👛 <b>{format_money(target['balance'])}</b> | 🏆 <b>#{rank}</b>\n"
-        f"❤️ <b>{status}</b> | ⚔️ <b>{target['kills']} Kills</b>\n\n"
+        f"✨ <b>EXP:</b> <code>{current_exp}</code>\n"
+        f"❤️ <b>{status}</b> | ⚔️ <b>{target.get('kills', 0)} Kills</b>\n\n"
         f"🎒 <b>{stylize_text('Active Gear')}</b>:\n"
         f"🗡️ {best_w}\n🛡️ {best_a}\n\n"
         f"💎 <b>{stylize_text('Flex Collection')}</b>:"
@@ -100,9 +112,6 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg += f"\n🩸 <b>{stylize_text('Top Killers')}</b>:\n"
     for i, d in enumerate(kills, 1): msg += f"{get_badge(i)} {get_mention(d)} » <b>{d.get('kills',0)} Kills</b>\n"
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
-
-# ... (Keep claim and give functions from previous version, they are fine) ...
-# I am re-pasting them below for completeness.
 
 async def claim(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
@@ -150,3 +159,62 @@ async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = f"💸 <b>{stylize_text('Transfer Complete')}!</b>\n👤 From: {get_mention(sender)}\n👤 To: {get_mention(target)}\n💰 Sent: <code>{format_money(final)}</code>\n🏦 Tax: <code>{format_money(tax)}</code>"
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
     await log_to_channel(context.bot, "transfer", {"user": sender['name'], "action": f"Sent {amount} to {target['name']}", "chat": "Economy"})
+
+# --- NEW EXP FUNCTIONS (Added by Gemini) ---
+
+async def sell_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if not context.args:
+        return await update.message.reply_text("⚠️ <b>Usage:</b> <code>/sellxp [amount]</code>\n<i>Rate: 10 EXP = 1 Coin</i>", parse_mode=ParseMode.HTML)
+    
+    try:
+        amount_to_sell = int(context.args[0])
+    except ValueError:
+        return await update.message.reply_text("❌ Please enter a valid number.", parse_mode=ParseMode.HTML)
+
+    if amount_to_sell <= 0: return await update.message.reply_text("❌ Amount must be positive.", parse_mode=ParseMode.HTML)
+
+    # Check Database
+    user_doc = users_collection.find_one({"user_id": user.id})
+    if not user_doc:
+        ensure_user_exists(user)
+        user_doc = {"exp": 0, "balance": 0}
+
+    current_exp = user_doc.get("exp", 0)
+
+    if current_exp < amount_to_sell:
+        return await update.message.reply_text(f"⚠️ <b>Not enough EXP!</b>\nYou have: <code>{current_exp}</code> EXP", parse_mode=ParseMode.HTML)
+
+    coins_to_get = amount_to_sell // EXCHANGE_RATE
+    if coins_to_get < 1:
+        return await update.message.reply_text(f"⚠️ Minimum <b>{EXCHANGE_RATE} EXP</b> required for 1 Coin.", parse_mode=ParseMode.HTML)
+
+    # Execute Transaction
+    users_collection.update_one({"user_id": user.id}, {"$inc": {"exp": -amount_to_sell, "balance": coins_to_get}})
+
+    await update.message.reply_text(
+        f"🔄 <b>Exchange Successful!</b>\n"
+        f"➖ Sold: <code>{amount_to_sell} EXP</code>\n"
+        f"➕ Received: <code>{format_money(coins_to_get)}</code>",
+        parse_mode=ParseMode.HTML
+    )
+
+async def check_chat_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Ignore commands, private chats, or bots
+    if update.effective_chat.type == "private" or not update.message or not update.effective_user:
+        return
+    
+    user_id = update.effective_user.id
+    current_time = time.time()
+
+    # Cooldown Check
+    if user_id in user_cooldowns:
+        if current_time - user_cooldowns[user_id] < EXP_COOLDOWN:
+            return 
+
+    # Add Random EXP
+    xp_amount = random.randint(*EXP_RANGE)
+    users_collection.update_one({"user_id": user_id}, {"$inc": {"exp": xp_amount}}, upsert=True)
+    
+    # Update Cooldown
+    user_cooldowns[user_id] = current_time
