@@ -32,27 +32,27 @@ SUDO_IMG = "https://files.catbox.moe/xn13np.jpg"
 def get_start_keyboard(bot_username):
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton(f"🎐 {stylize_text('Updates')}", url=SUPPORT_CHANNEL),
-            InlineKeyboardButton(f"☁️ {stylize_text('Support')}", url=SUPPORT_GROUP)
+            InlineKeyboardButton(f"🎐 {stylize_text('𝖢𝖧𝖠𝖭𝖭𝖤𝖫')}", url=SUPPORT_CHANNEL),
+            InlineKeyboardButton(f"☁️ {stylize_text('𝖲𝖴𝖯𝖯𝖮𝖱𝖳')}", url=SUPPORT_GROUP)
         ],
         [
             InlineKeyboardButton(f"➕ {stylize_text('Add Me Baby')} ➕", url=f"https://t.me/{bot_username}?startgroup=true")
         ],
         [
-            InlineKeyboardButton(f"📖 {stylize_text('Diary')}", callback_data="help_main"),
-            InlineKeyboardButton(f"👑 {stylize_text('Owner')}", url=OWNER_LINK)
+            InlineKeyboardButton(f"📖 {stylize_text('𝖧𝖤𝖫𝖯')}", callback_data="help_main"),
+            InlineKeyboardButton(f"👑 {stylize_text('𝖣𝖤𝖵𝖤𝖫𝖮𝖯𝖤𝖱')}", url=OWNER_LINK)
         ]
     ])
 
 def get_help_keyboard():
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton(f"💞 {stylize_text('Social')}", callback_data="help_social"),
-            InlineKeyboardButton(f"👛 {stylize_text('Economy')}", callback_data="help_economy")
+            InlineKeyboardButton(f"💞 {stylize_text('𝖲𝖮𝖢𝖨𝖠𝖫')}", callback_data="help_social"),
+            InlineKeyboardButton(f"👛 {stylize_text('𝖤𝖢𝖮𝖭𝖮𝖬𝖸')}", callback_data="help_economy")
         ],
         [
-            InlineKeyboardButton(f"⚔️ {stylize_text('RPG & War')}", callback_data="help_rpg"),
-            InlineKeyboardButton(f"🍥 {stylize_text('AI & Fun')}", callback_data="help_fun")
+            InlineKeyboardButton(f"⚔️ {stylize_text('𝖱𝖯𝖦 & 𝖶𝖠𝖱')}", callback_data="help_rpg"),
+            InlineKeyboardButton(f"🍥 {stylize_text('𝖠𝖨 & Fun')}", callback_data="help_fun")
         ],
         [
             InlineKeyboardButton(f"⛩️ {stylize_text('Group')}", callback_data="help_group"),
