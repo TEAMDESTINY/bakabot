@@ -79,7 +79,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # --- THE ULTRA AESTHETIC CAPTION ---
         caption = (
-            f"👋 {stylize_text('Konichiwa')} {user_link}! (⁠≧⁠▽⁠≦⁠)\n"
+            f"👋 {stylize_text('SHIZUKA')} {user_link}! (⁠≧⁠▽⁠≦⁠)\n"
             f"The {stylize_text('Aesthetic AI-Powered RPG Bot')}! 💞\n\n"
             f"⊚  {stylize_text('Features')}:\n"
             f"⊚  {stylize_text('RPG')}: {stylize_text('Kill, Rob (100%), Protect')}\n"
