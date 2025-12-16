@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Economy Plugin - Destiny Bot
+# Final Economy Plugin - Destiny Bot (Fixed Group Names & Activity)
 
 import random
 import time
@@ -49,22 +49,16 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not target and error == "No target": target = ensure_user_exists(update.effective_user)
     elif not target: return await update.message.reply_text(error, parse_mode=ParseMode.HTML)
 
-    # Tracking group activity for the leaderboard
+    # Tracking last group for database consistency
     users_collection.update_one({"user_id": target['user_id']}, {"$set": {"last_chat_id": update.effective_chat.id}})
 
-    # SECURITY FIX: KeyError 'balance' handled via .get()
     bal = target.get('balance', 0)
     rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
     status = "💖 Alive" if target.get('status', 'alive') == 'alive' else "💀 Dead"
     current_exp = target.get('exp', 0)
     
     inventory = target.get('inventory', [])
-    weapons = [i for i in inventory if i.get('type') == 'weapon']
-    armors = [i for i in inventory if i.get('type') == 'armor']
     flex = [i for i in inventory if i.get('type') == 'flex']
-    
-    best_w = max(weapons, key=lambda x: x.get('buff', 0))['name'] if weapons else "None"
-    best_a = max(armors, key=lambda x: x.get('buff', 0))['name'] if armors else "None"
     
     kb = []
     row = []
@@ -80,8 +74,6 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👛 <b>{format_money(bal)}</b> | 🏆 <b>#{rank}</b>\n"
         f"✨ <b>EXP:</b> <code>{current_exp}</code>\n"
         f"❤️ <b>{status}</b> | ⚔️ <b>{target.get('kills', 0)} Kills</b>\n\n"
-        f"🎒 <b>{stylize_text('Active Gear')}</b>:\n"
-        f"🗡️ {best_w}\n🛡️ {best_a}\n\n"
         f"💎 <b>{stylize_text('Flex Collection')}</b>:"
     )
     if not flex: msg += "\n<i>Empty...</i>"
@@ -89,14 +81,10 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rich = users_collection.find().sort("balance", -1).limit(10)
-    kills = users_collection.find().sort("kills", -1).limit(10)
     def get_badge(i): return ["🥇","🥈","🥉"][i-1] if i<=3 else f"<code>{i}.</code>"
 
-    msg = f"🏆 <b>{stylize_text('GLOBAL LEADERBOARD')}</b> 🏆\n\n💰 <b>{stylize_text('Top Richest')}</b>:\n"
+    msg = f"🏆 <b>{stylize_text('GLOBAL RICHEST')}</b> 🏆\n\n"
     for i, d in enumerate(rich, 1): msg += f"{get_badge(i)} {get_mention(d)} » <b>{format_money(d.get('balance',0))}</b>\n"
-    
-    msg += f"\n🩸 <b>{stylize_text('Top Killers')}</b>:\n"
-    for i, d in enumerate(kills, 1): msg += f"{get_badge(i)} {get_mention(d)} » <b>{d.get('kills',0)} Kills</b>\n"
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -127,12 +115,13 @@ async def claim(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     ensure_user_exists(user)
     
+    # Initialize group and ensure title is saved correctly
     group_doc = get_group_data(chat.id, chat.title)
     if group_doc.get("claimed"): return await update.message.reply_text("❌ Already claimed by this group.")
     
     count = await context.bot.get_chat_member_count(chat.id)
     if count < MIN_CLAIM_MEMBERS:
-        return await update.message.reply_text(f"❌ Need {MIN_CLAIM_MEMBERS} members in group to claim.")
+        return await update.message.reply_text(f"❌ Need {MIN_CLAIM_MEMBERS} members in group.")
     
     users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": CLAIM_BONUS}})
     groups_collection.update_one({"chat_id": chat.id}, {"$set": {"claimed": True}})
@@ -159,9 +148,10 @@ async def check_chat_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user_id = update.effective_user.id
     current_time = time.time()
+    chat_title = update.effective_chat.title
 
-    # Automatic Multi-Leaderboard Activity Tracker
-    update_group_activity(update.effective_chat.id)
+    # IMPORTANT: Update both activity points AND the group title for the leaderboard
+    update_group_activity(update.effective_chat.id, chat_title)
 
     if user_id in user_cooldowns and (current_time - user_cooldowns[user_id] < EXP_COOLDOWN): 
         return 
