@@ -1,76 +1,101 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Group Economy Plugin
+# Final Group Economy Plugin with Multi-Leaderboard Support
 
 import random
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from baka.utils import get_mention, format_money, stylize_text
 from baka.database import users_collection, groups_collection
 from baka.plugins.chatbot import ask_mistral_raw
 
-# 1. STOCK MARKET (Group Activity Value)
+# --- 1. STOCK MARKET ---
 async def stock_market(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat.type == "private": return await update.message.reply_text("❌ Groups mein use karein!")
-    
     active_users = users_collection.count_documents({"last_chat_id": chat.id})
     price = 10.0 + (active_users * 1.5)
-    
     msg = (
         f"📈 <b>{stylize_text('STOCK MARKET')}</b>\n\n"
         f"🏢 <b>Group:</b> <code>{chat.title}</code>\n"
         f"💎 <b>Share Price:</b> <code>{format_money(price)}</code>\n"
         f"📊 <b>Status:</b> {'🔥 Bullish' if active_users > 10 else '💤 Stable'}\n\n"
-        f"<i>Tip: Group mein chatting badhao, price apne aap badhega!</i>"
+        f"<i>Tip: Group mein chatting badhao, price badhega!</i>"
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
-# 2. TERRITORY RAID (Group vs Group War)
+# --- 2. TERRITORY RAID ---
 async def territory_raid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    chat = update.effective_chat
-    if chat.type == "private": return
-    
-    if not context.args:
-        return await update.message.reply_text("⚠️ <b>Usage:</b> <code>/raid @GroupUsername</code>")
-
+    if not context.args: return await update.message.reply_text("⚠️ <b>Usage:</b> <code>/raid @GroupUsername</code>")
     target_handle = context.args[0].replace("@", "")
-    
-    if random.randint(1, 100) > 70: # 30% Chance
+    if random.randint(1, 100) > 70:
         loot = random.randint(5000, 15000)
         users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": loot}})
-        await update.message.reply_text(f"⚔️ <b>RAID SUCCESS!</b>\n\n{get_mention(user)} ne <b>{target_handle}</b> ki treasury se <code>{format_money(loot)}</code> loot liye!")
+        await update.message.reply_text(f"⚔️ <b>RAID SUCCESS!</b>\n\n{get_mention(user)} ne <b>{target_handle}</b> se <code>{format_money(loot)}</code> loot liye!")
     else:
-        await update.message.reply_text("💀 <b>RAID FAILED!</b>\nAapki army haar gayi aur lootera pakda gaya.")
+        await update.message.reply_text("💀 <b>RAID FAILED!</b> Aapki army haar gayi.")
 
-# 3. AI GOVERNOR (Smart Feedback)
+# --- 3. AI GOVERNOR ---
 async def ai_governor(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    if chat.type == "private": return
-    
-    prompt = f"Act as a strict but funny Economic Governor of group '{chat.title}'. Give a 2-line witty report on their wealth."
+    if update.effective_chat.type == "private": return
+    prompt = f"Act as a strict but funny Economic Governor of group '{update.effective_chat.title}'. Give a 2-line report."
     report = await ask_mistral_raw("Governor", prompt)
-    
     await update.message.reply_text(f"🏛️ <b>{stylize_text('GOVERNOR REPORT')}</b>\n\n<i>{report}</i>", parse_mode=ParseMode.HTML)
 
-# 4. BOUNTY HUNTER (Global Hitman)
-async def bounty_hunter(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        return await update.message.reply_text("🎯 <b>Usage:</b> <code>/bounty 10000 @user</code>")
-    
-    await update.message.reply_text("🎯 <b>Bounty System Active!</b>\nTarget par inaam lag gaya hai. RPG battle mein harane wale ko inaam milega!")
+# --- 4. TOP GROUPS (TODAY/WEEKLY/OVERALL) ---
+async def top_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    mode = "overall"
+    if query:
+        await query.answer()
+        mode = query.data.split("_")[1]
 
-# 5. PASSIVE MINING (Group Multiplier)
+    # Logic for different modes
+    if mode == "today":
+        title_text = "TODAY'S HOTTEST"
+        # Using activity count as a proxy for 'Today'
+        top_g = groups_collection.find().sort("daily_activity", -1).limit(10)
+    elif mode == "weekly":
+        title_text = "WEEKLY KINGS"
+        top_g = groups_collection.find().sort("weekly_activity", -1).limit(10)
+    else:
+        title_text = "ALL-TIME EMPIRES"
+        top_g = groups_collection.find().sort("treasury", -1).limit(10)
+
+    msg = f"🏆 <b>{stylize_text(title_text)}</b> 🏆\n\n"
+    
+    count = 0
+    for i, g in enumerate(top_g, 1):
+        count += 1
+        badge = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"<code>{i}.</code>"
+        msg += f"{badge} <b>{g.get('title', 'Unknown')}</b>\n╰ 💰 Treasury: <code>{format_money(g.get('treasury', 0))}</code>\n"
+
+    if count == 0: msg += "<i>No data available yet...</i>"
+
+    keyboard = [[
+        InlineKeyboardButton("📅 Today", callback_data="topg_today"),
+        InlineKeyboardButton("🗓️ Weekly", callback_data="topg_weekly"),
+        InlineKeyboardButton("🌍 Overall", callback_data="topg_overall")
+    ]]
+    
+    if query:
+        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML)
+    else:
+        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML)
+
+# --- 5. PASSIVE MINING ---
 async def passive_mining(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     active_users = users_collection.count_documents({"last_chat_id": chat.id})
     multiplier = 1.0 + (active_users * 0.1)
-    
     msg = (
         f"⛏️ <b>{stylize_text('PASSIVE MINING')}</b>\n\n"
-        f"⚡ <b>Mining Speed:</b> <code>{multiplier:.1f}x</code>\n"
-        f"👥 <b>Active Miners:</b> <code>{active_users}</code>\n\n"
-        f"<i>Tip: Jitne zyada log active honge, sabki kamayi utni tezi se badhegi!</i>"
+        f"⚡ <b>Speed:</b> <code>{multiplier:.1f}x</code>\n"
+        f"👥 <b>Miners:</b> <code>{active_users}</code>\n\n"
+        f"<i>Tip: Zyada active log = tezi se kamayi!</i>"
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+async def bounty_hunter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🎯 <b>Bounty System Active!</b>\nTarget ko RPG battle mein harao aur inaam lo!")
