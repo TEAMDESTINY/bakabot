@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Database Logic for Destiny Bot - Integrated with Reset Logic
+# Final Database Logic - Fixed "Unknown" Group Names & Multi-Leaderboard
 
 from pymongo import MongoClient
 import certifi
@@ -11,8 +11,8 @@ RyanBaka = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = RyanBaka["bakabot_db"]
 
 # --- DEFINING COLLECTIONS ---
-users_collection = db["users"]       # Balance, EXP, Inventory, last_chat_id
-groups_collection = db["groups"]     # Treasury, Stock Price, Daily/Weekly Activity
+users_collection = db["users"]       
+groups_collection = db["groups"]     
 sudoers_collection = db["sudoers"]   
 chatbot_collection = db["chatbot"]   
 riddles_collection = db["riddles"]
@@ -20,7 +20,7 @@ riddles_collection = db["riddles"]
 def get_group_data(chat_id, title=None):
     """
     Group ki economy details fetch ya create karne ke liye.
-    Multi-Leaderboard (Today/Weekly) ke liye fields ensure karta hai.
+    Multi-Leaderboard ke liye fields ensure karta hai.
     """
     group = groups_collection.find_one({"chat_id": chat_id})
     
@@ -28,17 +28,20 @@ def get_group_data(chat_id, title=None):
         group = {
             "chat_id": chat_id,
             "title": title or "Unknown Group",
-            "treasury": 10000,          # New groups starting bonus
+            "treasury": 10000,          
             "claimed": False,
-            "shares": 10.0,             # Initial stock price
-            "daily_activity": 0,        # Today's leaderboard ke liye
-            "weekly_activity": 0,       # Weekly leaderboard ke liye
+            "shares": 10.0,             
+            "daily_activity": 0,        
+            "weekly_activity": 0,       
             "last_active": int(time.time())
         }
         groups_collection.insert_one(group)
     
     else:
+        # Title update agar "Unknown" hai ya purana hai
         updates = {}
+        if title and group.get("title") != title:
+            updates["title"] = title
         if "daily_activity" not in group: updates["daily_activity"] = 0
         if "weekly_activity" not in group: updates["weekly_activity"] = 0
         if "shares" not in group: updates["shares"] = 10.0
@@ -49,27 +52,33 @@ def get_group_data(chat_id, title=None):
 
     return group
 
-def update_group_activity(chat_id):
+def update_group_activity(chat_id, title=None):
     """
-    Har message par group ki activity points badhane ke liye.
-    Isse 'Today' aur 'Weekly' ranks decide hongi.
+    Har message par group ka naam BOLD karne aur activity points badhane ke liye.
     """
+    update_query = {
+        "$inc": {"daily_activity": 1, "weekly_activity": 1},
+        "$set": {"last_active": int(time.time())}
+    }
+    
+    # "Unknown" hatane ke liye title update logic
+    if title:
+        update_query["$set"]["title"] = title
+
     groups_collection.update_one(
         {"chat_id": chat_id},
-        {
-            "$inc": {"daily_activity": 1, "weekly_activity": 1},
-            "$set": {"last_active": int(time.time())}
-        }
+        update_query,
+        upsert=True # Agar group db mein nahi hai toh bana dega
     )
 
 # --- RESET LOGIC FUNCTIONS ---
 
 def reset_daily_activity():
-    """Daily leaderboard ko har raat 0 karne ke liye"""
+    """Daily leaderboard reset logic"""
     result = groups_collection.update_many({}, {"$set": {"daily_activity": 0}})
     print(f"✨ Daily Activity Reset: {result.modified_count} groups updated.")
 
 def reset_weekly_activity():
-    """Weekly leaderboard ko har Sunday 0 karne ke liye"""
+    """Weekly leaderboard reset logic"""
     result = groups_collection.update_many({}, {"$set": {"weekly_activity": 0}})
     print(f"👑 Weekly Activity Reset: {result.modified_count} groups updated.")
