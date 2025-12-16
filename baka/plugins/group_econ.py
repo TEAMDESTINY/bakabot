@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Group Economy Plugin with Multi-Leaderboard Support
+# Final Group Economy Plugin - BOLD Names & Fixed Logic
 
 import random
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
@@ -14,13 +14,12 @@ async def stock_market(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat.type == "private": return await update.message.reply_text("❌ Groups mein use karein!")
     
-    # Activity based dynamic price calculation
     active_users = users_collection.count_documents({"last_chat_id": chat.id})
     price = 10.0 + (active_users * 1.5)
     
     msg = (
         f"📈 <b>{stylize_text('STOCK MARKET')}</b>\n\n"
-        f"🏢 <b>Group:</b> <code>{chat.title}</code>\n"
+        f"🏢 <b>Group:</b> <b>{chat.title}</b>\n" # Name BOLD
         f"💎 <b>Share Price:</b> <code>{format_money(price)}</code>\n"
         f"📊 <b>Status:</b> {'🔥 Bullish' if active_users > 10 else '💤 Stable'}\n\n"
         f"<i>Tip: Group mein chatting badhao, price badhega!</i>"
@@ -30,29 +29,22 @@ async def stock_market(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- 2. TERRITORY RAID ---
 async def territory_raid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    chat = update.effective_chat
-    if chat.type == "private": return
-
     if not context.args: 
         return await update.message.reply_text("⚠️ <b>Usage:</b> <code>/raid @GroupUsername</code>")
     
     target_handle = context.args[0].replace("@", "")
-    
-    # 30% Success Rate
     if random.randint(1, 100) > 70:
         loot = random.randint(5000, 15000)
         users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": loot}})
         await update.message.reply_text(f"⚔️ <b>RAID SUCCESS!</b>\n\n{get_mention(user)} ne <b>{target_handle}</b> se <code>{format_money(loot)}</code> loot liye!")
     else:
-        await update.message.reply_text("💀 <b>RAID FAILED!</b> Aapki army haar gayi aur lootera pakda gaya.")
+        await update.message.reply_text("💀 <b>RAID FAILED!</b> Aapki army haar gayi.")
 
 # --- 3. AI GOVERNOR ---
 async def ai_governor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == "private": return
-    
     prompt = f"Act as a strict but funny Economic Governor of group '{update.effective_chat.title}'. Give a 2-line report."
     report = await ask_mistral_raw("Governor", prompt)
-    
     await update.message.reply_text(f"🏛️ <b>{stylize_text('GOVERNOR REPORT')}</b>\n\n<i>{report}</i>", parse_mode=ParseMode.HTML)
 
 # --- 4. TOP GROUPS (TODAY/WEEKLY/OVERALL) ---
@@ -64,7 +56,6 @@ async def top_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer()
         mode = query.data.split("_")[1]
 
-    # Logic for different sorting modes
     if mode == "today":
         title_text = "TODAY'S HOTTEST"
         top_g = groups_collection.find().sort("daily_activity", -1).limit(10)
@@ -85,13 +76,15 @@ async def top_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
         count += 1
         badge = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"<code>{i}.</code>"
         
-        # Display treasury for overall, activity points for others
+        # FIX: Agar title nahi hai toh chat_id dikhao, aur name BOLD karo
+        group_name = g.get('title') or f"Group {g.get('chat_id')}"
+        
         if mode == "overall":
             val_display = f"💰 Treasury: <code>{format_money(g.get('treasury', 0))}</code>"
         else:
             val_display = f"⚡ Activity: <code>{g.get(sort_field, 0)} pts</code>"
             
-        msg += f"{badge} <b>{g.get('title', 'Unknown')}</b>\n╰ {val_display}\n"
+        msg += f"{badge} <b>{group_name}</b>\n╰ {val_display}\n"
 
     if count == 0: 
         msg += "<i>No data available yet...</i>"
@@ -111,10 +104,8 @@ async def top_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def passive_mining(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat.type == "private": return
-    
     active_users = users_collection.count_documents({"last_chat_id": chat.id})
     multiplier = 1.0 + (active_users * 0.1)
-    
     msg = (
         f"⛏️ <b>{stylize_text('PASSIVE MINING')}</b>\n\n"
         f"⚡ <b>Speed:</b> <code>{multiplier:.1f}x</code>\n"
