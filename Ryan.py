@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Stable & Error Free
+# Final Ryan.py - Multi-Leaderboard & Group Economy Integrated
 
 import os
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -21,7 +21,7 @@ from baka.utils import log_to_channel, BOT_NAME
 from baka.plugins import (
     start, economy, game, admin, broadcast, fun, events, welcome, 
     ping, chatbot, riddle, social, ai_media, waifu, collection, 
-    shop, daily, leaderboard, group_econ  # <== Ensure group_econ.py exists in plugins
+    shop, daily, leaderboard, group_econ  # <== Group Economy Plugin
 )
 
 # --- FLASK SERVER ---
@@ -42,6 +42,7 @@ async def post_init(application):
         ("bal", "👛 ᴡᴧʟʟєᴛ"), 
         ("stock", "📈 ɢꝛσυᴘ sᴛσᴄᴋs"),
         ("raid", "⚔️ ᴛєꝛꝛɪᴛσꝛʏ ꝛᴧɪᴅ"),
+        ("topgroups", "🏆 ɢꝛσυᴘ ʟєᴧᴅєꝛʙσᴧꝛᴅ"),
         ("mining", "⛏️ ᴘᴧssɪνє ϻɪηɪηɢ"),
         ("governor", "🏛️ ᴧɪ ɢσνєꝛησꝛ"),
         ("shop", "🛒 sʜσᴘ"),
@@ -50,7 +51,6 @@ async def post_init(application):
         ("give", "💸 ᴛꝛᴧηsғєꝛ"), 
         ("claim", "💎 ʙσηυs"),
         ("daily", "📅 ᴅᴧɪʟʏ"),
-        ("ranking", "🏆 ᴛσᴘs"),
         ("chatbot", "🧠 ᴧɪ"),
         ("ping", "📶 sᴛᴧᴛυs")
     ])
@@ -86,39 +86,39 @@ if __name__ == '__main__':
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_"))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^return_start$"))
 
-        # --- ECONOMY PLUGIN HANDLERS ---
+        # --- ECONOMY & INVENTORY ---
         app_bot.add_handler(CommandHandler("register", economy.register))
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("ranking", economy.ranking))
         app_bot.add_handler(CommandHandler("give", economy.give))
         app_bot.add_handler(CommandHandler("claim", economy.claim))
         app_bot.add_handler(CommandHandler("sellxp", economy.sell_xp))
-        # Inventory Callback (Fixed)
         app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_"))
 
-        # --- GROUP ECONOMY PLUGIN HANDLERS (New Viral Commands) ---
+        # --- GROUP ECONOMY & MULTI-LEADERBOARD ---
         app_bot.add_handler(CommandHandler("stock", group_econ.stock_market))
         app_bot.add_handler(CommandHandler("raid", group_econ.territory_raid))
         app_bot.add_handler(CommandHandler("governor", group_econ.ai_governor))
-        app_bot.add_handler(CommandHandler("bounty", group_econ.bounty_hunter))
         app_bot.add_handler(CommandHandler("mining", group_econ.passive_mining))
+        app_bot.add_handler(CommandHandler("bounty", group_econ.bounty_hunter))
+        app_bot.add_handler(CommandHandler("topgroups", group_econ.top_groups))
+        # Button Callback for Today/Weekly/Overall
+        app_bot.add_handler(CallbackQueryHandler(group_econ.top_groups, pattern="^topg_"))
 
-        # --- OTHER PLUGINS ---
+        # --- SHOP & DAILY ---
         app_bot.add_handler(CommandHandler("global", leaderboard.global_leaderboard))
         app_bot.add_handler(CommandHandler("daily", daily.daily))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
         app_bot.add_handler(CommandHandler("buy", shop.buy))
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
 
-        # --- RPG & SOCIAL ---
+        # --- GAME / RPG ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
         app_bot.add_handler(CommandHandler("propose", social.propose))
-        app_bot.add_handler(CommandHandler("marry", social.marry_status))
         app_bot.add_handler(CommandHandler("divorce", social.divorce))
-        app_bot.add_handler(CallbackQueryHandler(social.proposal_callback, pattern="^marry_"))
 
-        # --- FUN & AI ---
+        # --- FUN / AI ---
         app_bot.add_handler(CommandHandler("chatbot", chatbot.chatbot_menu))
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
         app_bot.add_handler(CallbackQueryHandler(chatbot.chatbot_callback, pattern="^ai_"))
@@ -128,14 +128,14 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
         app_bot.add_handler(CommandHandler("update", admin.update_bot))
 
-        # --- MESSAGE LISTENERS (Ordered Groups) ---
+        # --- MESSAGE LISTENERS ---
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
 
-        # Group Listeners for XP and tracking
+        # Handlers order management
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=2)
         app_bot.add_handler(MessageHandler((filters.TEXT | filters.Sticker.ALL) & ~filters.COMMAND, chatbot.ai_message_handler), group=3)
 
-        print("ꝛʏᴧηʙᴧᴋᴧ ʙσᴛ ꜱᴛᴀʀᴛɪɴɢ ᴩᴏʟʟɪɴɢ...")
+        print("ᴅєsᴛɪηʏ ʙσᴛ sᴛᴧꝛᴛɪηɢ ᴘσʟʟɪηɢ...")
         app_bot.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
