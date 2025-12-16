@@ -1,15 +1,14 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Integrated with Advanced Group Economy Features - FINAL FIXED VERSION
+# Final Economy Plugin - Destiny Bot
 
 import random
 import time
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.config import REGISTER_BONUS, OWNER_ID, TAX_RATE, CLAIM_BONUS, MARRIED_TAX_RATE, SHOP_ITEMS, MIN_CLAIM_MEMBERS
-from baka.utils import ensure_user_exists, get_mention, format_money, resolve_target, log_to_channel, stylize_text
-from baka.database import users_collection, groups_collection
-from baka.plugins.chatbot import ask_mistral_raw
+from baka.config import REGISTER_BONUS, OWNER_ID, TAX_RATE, CLAIM_BONUS, SHOP_ITEMS, MIN_CLAIM_MEMBERS
+from baka.utils import ensure_user_exists, get_mention, format_money, resolve_target, stylize_text
+from baka.database import users_collection, groups_collection, get_group_data, update_group_activity
 
 # --- CONFIGURATION ---
 EXP_COOLDOWN = 60  
@@ -17,7 +16,7 @@ EXP_RANGE = (1, 5)
 EXCHANGE_RATE = 10 
 user_cooldowns = {} 
 
-# --- INVENTORY CALLBACK (FIXED AttributeError) ---
+# --- INVENTORY CALLBACK ---
 async def inventory_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data.split("|")
@@ -34,21 +33,7 @@ async def inventory_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     text = f"💎 {stylize_text(item['name'])}\n💰 {format_money(item['price'])}\n🌟 {rarity}\n🛡️ Safe (Until Death)"
     await query.answer(text, show_alert=True)
 
-# --- HELPER FOR GROUP DATA ---
-def get_group_econ(chat_id, title="Unknown"):
-    group = groups_collection.find_one({"chat_id": chat_id})
-    if not group:
-        group = {
-            "chat_id": chat_id,
-            "title": title,
-            "treasury": 10000,
-            "shares": 10.0,
-            "claimed": False
-        }
-        groups_collection.insert_one(group)
-    return group
-
-# --- COMMANDS ---
+# --- ECONOMY COMMANDS ---
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -64,10 +49,10 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not target and error == "No target": target = ensure_user_exists(update.effective_user)
     elif not target: return await update.message.reply_text(error, parse_mode=ParseMode.HTML)
 
-    # Tracking group activity
+    # Tracking group activity for the leaderboard
     users_collection.update_one({"user_id": target['user_id']}, {"$set": {"last_chat_id": update.effective_chat.id}})
 
-    # FIXED KeyError: 'balance' by using .get()
+    # SECURITY FIX: KeyError 'balance' handled via .get()
     bal = target.get('balance', 0)
     rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
     status = "💖 Alive" if target.get('status', 'alive') == 'alive' else "💀 Dead"
@@ -117,16 +102,16 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sender = ensure_user_exists(update.effective_user)
     args = context.args
-    if not args: return await update.message.reply_text("⚠️ <b>Usage:</b> <code>/give 100 @user</code>", parse_mode=ParseMode.HTML)
+    if not args: return await update.message.reply_text("⚠️ <b>Usage:</b> <code>/give 100 @user</code>")
     
     try: amount = int(next(arg for arg in args if arg.isdigit()))
-    except: return await update.message.reply_text("⚠️ Invalid Amount", parse_mode=ParseMode.HTML)
+    except: return await update.message.reply_text("⚠️ Invalid Amount")
 
     target, error = await resolve_target(update, context)
-    if not target: return await update.message.reply_text(error or "⚠️ Tag someone.", parse_mode=ParseMode.HTML)
+    if not target: return await update.message.reply_text(error or "⚠️ Tag someone.")
 
     if amount <= 0 or sender.get('balance', 0) < amount or sender['user_id'] == target['user_id']: 
-        return await update.message.reply_text("⚠️ Invalid Transaction.", parse_mode=ParseMode.HTML)
+        return await update.message.reply_text("⚠️ Invalid Transaction.")
 
     tax = int(amount * TAX_RATE)
     final = amount - tax
@@ -141,14 +126,13 @@ async def claim(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user = update.effective_user
     ensure_user_exists(user)
-    group_doc = groups_collection.find_one({"chat_id": chat.id})
-    if not group_doc: group_doc = get_group_econ(chat.id, chat.title)
     
-    if group_doc.get("claimed"): return await update.message.reply_text("❌ Already claimed.", parse_mode=ParseMode.HTML)
+    group_doc = get_group_data(chat.id, chat.title)
+    if group_doc.get("claimed"): return await update.message.reply_text("❌ Already claimed by this group.")
     
     count = await context.bot.get_chat_member_count(chat.id)
     if count < MIN_CLAIM_MEMBERS:
-        return await update.message.reply_text(f"❌ Need {MIN_CLAIM_MEMBERS} members.", parse_mode=ParseMode.HTML)
+        return await update.message.reply_text(f"❌ Need {MIN_CLAIM_MEMBERS} members in group to claim.")
     
     users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": CLAIM_BONUS}})
     groups_collection.update_one({"chat_id": chat.id}, {"$set": {"claimed": True}})
@@ -167,11 +151,25 @@ async def sell_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users_collection.update_one({"user_id": user.id}, {"$inc": {"exp": -amount_to_sell, "balance": coins}})
     await update.message.reply_text(f"🔄 Exchanged for <code>{format_money(coins)}</code>", parse_mode=ParseMode.HTML)
 
+# --- AUTO HANDLERS ---
+
 async def check_chat_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type == "private" or not update.message or not update.effective_user: return
+    if update.effective_chat.type == "private" or not update.message or not update.effective_user: 
+        return
+    
     user_id = update.effective_user.id
-    if user_id in user_cooldowns and (time.time() - user_cooldowns[user_id] < EXP_COOLDOWN): return 
+    current_time = time.time()
+
+    # Automatic Multi-Leaderboard Activity Tracker
+    update_group_activity(update.effective_chat.id)
+
+    if user_id in user_cooldowns and (current_time - user_cooldowns[user_id] < EXP_COOLDOWN): 
+        return 
 
     xp_amount = random.randint(*EXP_RANGE)
-    users_collection.update_one({"user_id": user_id}, {"$inc": {"exp": xp_amount}, "$set": {"last_chat_id": update.effective_chat.id}}, upsert=True)
-    user_cooldowns[user_id] = time.time()
+    users_collection.update_one(
+        {"user_id": user_id}, 
+        {"$inc": {"exp": xp_amount}, "$set": {"last_chat_id": update.effective_chat.id}}, 
+        upsert=True
+    )
+    user_cooldowns[user_id] = current_time
