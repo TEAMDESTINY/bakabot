@@ -13,8 +13,11 @@ from baka.plugins.chatbot import ask_mistral_raw
 async def stock_market(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat.type == "private": return await update.message.reply_text("❌ Groups mein use karein!")
+    
+    # Activity based dynamic price calculation
     active_users = users_collection.count_documents({"last_chat_id": chat.id})
     price = 10.0 + (active_users * 1.5)
+    
     msg = (
         f"📈 <b>{stylize_text('STOCK MARKET')}</b>\n\n"
         f"🏢 <b>Group:</b> <code>{chat.title}</code>\n"
@@ -27,41 +30,53 @@ async def stock_market(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- 2. TERRITORY RAID ---
 async def territory_raid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    if not context.args: return await update.message.reply_text("⚠️ <b>Usage:</b> <code>/raid @GroupUsername</code>")
+    chat = update.effective_chat
+    if chat.type == "private": return
+
+    if not context.args: 
+        return await update.message.reply_text("⚠️ <b>Usage:</b> <code>/raid @GroupUsername</code>")
+    
     target_handle = context.args[0].replace("@", "")
+    
+    # 30% Success Rate
     if random.randint(1, 100) > 70:
         loot = random.randint(5000, 15000)
         users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": loot}})
         await update.message.reply_text(f"⚔️ <b>RAID SUCCESS!</b>\n\n{get_mention(user)} ne <b>{target_handle}</b> se <code>{format_money(loot)}</code> loot liye!")
     else:
-        await update.message.reply_text("💀 <b>RAID FAILED!</b> Aapki army haar gayi.")
+        await update.message.reply_text("💀 <b>RAID FAILED!</b> Aapki army haar gayi aur lootera pakda gaya.")
 
 # --- 3. AI GOVERNOR ---
 async def ai_governor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type == "private": return
+    
     prompt = f"Act as a strict but funny Economic Governor of group '{update.effective_chat.title}'. Give a 2-line report."
     report = await ask_mistral_raw("Governor", prompt)
+    
     await update.message.reply_text(f"🏛️ <b>{stylize_text('GOVERNOR REPORT')}</b>\n\n<i>{report}</i>", parse_mode=ParseMode.HTML)
 
 # --- 4. TOP GROUPS (TODAY/WEEKLY/OVERALL) ---
 async def top_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     mode = "overall"
+    
     if query:
         await query.answer()
         mode = query.data.split("_")[1]
 
-    # Logic for different modes
+    # Logic for different sorting modes
     if mode == "today":
         title_text = "TODAY'S HOTTEST"
-        # Using activity count as a proxy for 'Today'
         top_g = groups_collection.find().sort("daily_activity", -1).limit(10)
+        sort_field = "daily_activity"
     elif mode == "weekly":
         title_text = "WEEKLY KINGS"
         top_g = groups_collection.find().sort("weekly_activity", -1).limit(10)
+        sort_field = "weekly_activity"
     else:
         title_text = "ALL-TIME EMPIRES"
         top_g = groups_collection.find().sort("treasury", -1).limit(10)
+        sort_field = "treasury"
 
     msg = f"🏆 <b>{stylize_text(title_text)}</b> 🏆\n\n"
     
@@ -69,9 +84,17 @@ async def top_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for i, g in enumerate(top_g, 1):
         count += 1
         badge = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"<code>{i}.</code>"
-        msg += f"{badge} <b>{g.get('title', 'Unknown')}</b>\n╰ 💰 Treasury: <code>{format_money(g.get('treasury', 0))}</code>\n"
+        
+        # Display treasury for overall, activity points for others
+        if mode == "overall":
+            val_display = f"💰 Treasury: <code>{format_money(g.get('treasury', 0))}</code>"
+        else:
+            val_display = f"⚡ Activity: <code>{g.get(sort_field, 0)} pts</code>"
+            
+        msg += f"{badge} <b>{g.get('title', 'Unknown')}</b>\n╰ {val_display}\n"
 
-    if count == 0: msg += "<i>No data available yet...</i>"
+    if count == 0: 
+        msg += "<i>No data available yet...</i>"
 
     keyboard = [[
         InlineKeyboardButton("📅 Today", callback_data="topg_today"),
@@ -87,8 +110,11 @@ async def top_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- 5. PASSIVE MINING ---
 async def passive_mining(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
+    if chat.type == "private": return
+    
     active_users = users_collection.count_documents({"last_chat_id": chat.id})
     multiplier = 1.0 + (active_users * 0.1)
+    
     msg = (
         f"⛏️ <b>{stylize_text('PASSIVE MINING')}</b>\n\n"
         f"⚡ <b>Speed:</b> <code>{multiplier:.1f}x</code>\n"
@@ -97,5 +123,6 @@ async def passive_mining(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
+# --- 6. BOUNTY HUNTER ---
 async def bounty_hunter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🎯 <b>Bounty System Active!</b>\nTarget ko RPG battle mein harao aur inaam lo!")
