@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Database Logic for Destiny Bot
+# Final Database Logic for Destiny Bot - Integrated with Reset Logic
 
 from pymongo import MongoClient
 import certifi
@@ -37,7 +37,6 @@ def get_group_data(chat_id, title=None):
         }
         groups_collection.insert_one(group)
     
-    # Agar group exist karta hai par purana hai, toh naye fields ensure karein (Security check)
     else:
         updates = {}
         if "daily_activity" not in group: updates["daily_activity"] = 0
@@ -62,3 +61,15 @@ def update_group_activity(chat_id):
             "$set": {"last_active": int(time.time())}
         }
     )
+
+# --- RESET LOGIC FUNCTIONS ---
+
+def reset_daily_activity():
+    """Daily leaderboard ko har raat 0 karne ke liye"""
+    result = groups_collection.update_many({}, {"$set": {"daily_activity": 0}})
+    print(f"✨ Daily Activity Reset: {result.modified_count} groups updated.")
+
+def reset_weekly_activity():
+    """Weekly leaderboard ko har Sunday 0 karne ke liye"""
+    result = groups_collection.update_many({}, {"$set": {"weekly_activity": 0}})
+    print(f"👑 Weekly Activity Reset: {result.modified_count} groups updated.")
