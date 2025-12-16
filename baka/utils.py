@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Utils - Serif Italic + Name Fix + Logger Fixed
+# Final Utils - Serif Italic + Name Fix + All Imports Fixed
 
 import html
 import re
@@ -13,7 +13,7 @@ from baka.config import OWNER_ID, SUDO_IDS_STR, LOGGER_ID, BOT_NAME, AUTO_REVIVE
 SUDO_USERS = set()
 
 def reload_sudoers():
-    """Sudo users ko environment aur database se load karta hai."""
+    """Loads Sudo users from Env and DB."""
     try:
         SUDO_USERS.clear()
         SUDO_USERS.add(OWNER_ID)
@@ -29,16 +29,16 @@ reload_sudoers()
 
 # --- 🌸 SERIF ITALIC FONT ENGINE ---
 def stylize_text(text):
-    """Normal text ko Aesthetic Math Serif Italic mein badalta hai."""
+    """Converts normal text to Aesthetic Math Serif Italic."""
     font_map = {
         'A': '𝐴', 'B': '𝐵', 'C': '𝐶', 'D': '𝐷', 'E': '𝐸', 'F': '𝐹', 'G': '𝐺',
         'H': '𝐻', 'I': '𝐼', 'J': '𝐽', 'K': '𝐾', 'L': '𝐿', 'M': '𝑀', 'N': '𝑁',
         'O': '𝑂', 'P': '𝑃', 'Q': '𝑄', 'R': '𝑅', 'S': '𝑆', 'T': '𝑇', 'U': '𝑈',
         'V': '𝑉', 'W': '𝑊', 'X': '𝑋', 'Y': '𝑌', 'Z': '𝑍',
-        'a': '𝑎', 'b': 'ʙ', 'c': 'ᴄ', 'd': 'ᴅ', 'e': 'є', 'f': 'ғ', 'g': 'ɢ',
-        'h': 'ʜ', 'i': 'ɪ', 'j': 'ᴊ', 'k': 'ᴋ', 'l': 'ʟ', 'm': 'ϻ', 'n': 'η',
-        'o': 'σ', 'p': 'ᴘ', 'q': 'ǫ', 'r': 'ꝛ', 's': 's', 't': 'ᴛ', 'u': 'υ',
-        'v': 'ᴠ', 'w': 'ᴡ', 'x': 'x', 'y': 'ʏ', 'z': 'ᴢ',
+        'a': '𝑎', 'b': '𝑏', 'c': '𝑐', 'd': '𝑑', 'e': '𝑒', 'f': '𝑓', 'g': '𝑔',
+        'h': 'ℎ', 'i': '𝑖', 'j': '𝑗', 'k': '𝑘', 'l': '𝑙', 'm': '𝑚', 'n': '𝑛',
+        'o': '𝑜', 'p': '𝑝', 'q': '𝑞', 'r': '𝑟', 's': '𝑠', 't': '𝑡', 'u': '𝑢',
+        'v': '𝑣', 'w': '𝑤', 'x': '𝑥', 'y': '𝑦', 'z': '𝑧',
         '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒', 
         '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }
@@ -51,16 +51,12 @@ def stylize_text(text):
 
 # --- 👤 NAME & MENTION ENGINE ---
 def get_mention(user_data, custom_name=None):
-    """
-    User names ko bold aur clickable banane ke liye.
-    Telegram Objects aur Database Dictionaries dono handle karta hai.
-    """
+    """Robust mention generator with Bold Serif names."""
     if not user_data: return "Unknown"
-    
-    if hasattr(user_data, 'id'): # Telegram Object
+    if hasattr(user_data, 'id'):
         uid = user_data.id
         first_name = user_data.first_name if hasattr(user_data, 'first_name') else getattr(user_data, 'title', "User")
-    elif isinstance(user_data, dict): # Database Record
+    elif isinstance(user_data, dict):
         uid = user_data.get("user_id")
         first_name = user_data.get("name") or user_data.get("first_name", "User")
     else: return "User"
@@ -70,7 +66,6 @@ def get_mention(user_data, custom_name=None):
 
 # --- 🌟 ULTIMATE DASHBOARD LOGGER ---
 async def log_to_channel(bot: Bot, event_type: str, details: dict):
-    """Logs events to the logger channel. Fixes Ryan.py ImportError."""
     if not LOGGER_ID or LOGGER_ID == 0: return
     now = datetime.now().strftime("%I:%M:%S %p")
     header = f"🌸 <b>{stylize_text(event_type.upper())}</b>"
@@ -78,9 +73,21 @@ async def log_to_channel(bot: Bot, event_type: str, details: dict):
     for key, value in details.items():
         text += f"🔹 <b>{stylize_text(key.title())}:</b> {html.escape(str(value))}\n"
     text += f"━━━━━━━━━━━━━━━━━━\n⌚ <code>{now}</code>"
-    try:
-        await bot.send_message(chat_id=LOGGER_ID, text=text, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+    try: await bot.send_message(chat_id=LOGGER_ID, text=text, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
     except: pass
+
+# --- 🏰 GROUP TRACKER ---
+def track_group(chat, user=None):
+    try:
+        if chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
+            if not groups_collection.find_one({"chat_id": chat.id}):
+                groups_collection.insert_one({
+                    "chat_id": chat.id, "title": chat.title, "claimed": False,
+                    "treasury": 10000, "daily_activity": 0, "weekly_activity": 0
+                })
+            if user:
+                users_collection.update_one({"user_id": user.id}, {"$addToSet": {"seen_groups": chat.id}})
+    except Exception as e: print(f"Track Group Error: {e}")
 
 # --- 🔄 DATABASE & PROTECTION ---
 def ensure_user_exists(tg_user):
@@ -118,12 +125,15 @@ async def resolve_target(update, context, specific_arg=None):
         return doc, None
     return None, f"❌ <b>{stylize_text('Baka')}!</b> User not found."
 
+# --- 🛠️ MISC ---
 def get_active_protection(user_data):
     try:
         now = datetime.utcnow()
         expiry = user_data.get("protection_expiry")
         return expiry if expiry and expiry > now else None
     except: return None
+
+def is_protected(user_data): return get_active_protection(user_data) is not None
 
 def format_money(amount): return f"${amount:,}"
 
