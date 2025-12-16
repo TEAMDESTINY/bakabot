@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Database Logic - Fixed "Unknown" Group Names & Multi-Leaderboard
+# Final Database Logic - Fixed "Unknown" Names & Multi-Leaderboard
 
 from pymongo import MongoClient
 import certifi
@@ -38,7 +38,7 @@ def get_group_data(chat_id, title=None):
         groups_collection.insert_one(group)
     
     else:
-        # Title update agar "Unknown" hai ya purana hai
+        # Title update logic agar name change hua ho
         updates = {}
         if title and group.get("title") != title:
             updates["title"] = title
@@ -54,31 +54,32 @@ def get_group_data(chat_id, title=None):
 
 def update_group_activity(chat_id, title=None):
     """
-    Har message par group ka naam BOLD karne aur activity points badhane ke liye.
+    Har message par group ka naam update karne aur activity badhane ke liye.
+    Isse Leaderboard par real names dikhenge.
     """
     update_query = {
         "$inc": {"daily_activity": 1, "weekly_activity": 1},
         "$set": {"last_active": int(time.time())}
     }
     
-    # "Unknown" hatane ke liye title update logic
+    # "Unknown" hatane ke liye group title update
     if title:
         update_query["$set"]["title"] = title
 
     groups_collection.update_one(
         {"chat_id": chat_id},
         update_query,
-        upsert=True # Agar group db mein nahi hai toh bana dega
+        upsert=True
     )
 
 # --- RESET LOGIC FUNCTIONS ---
 
 def reset_daily_activity():
-    """Daily leaderboard reset logic"""
+    """Daily leaderboard stats reset"""
     result = groups_collection.update_many({}, {"$set": {"daily_activity": 0}})
     print(f"✨ Daily Activity Reset: {result.modified_count} groups updated.")
 
 def reset_weekly_activity():
-    """Weekly leaderboard reset logic"""
+    """Weekly leaderboard stats reset"""
     result = groups_collection.update_many({}, {"$set": {"weekly_activity": 0}})
     print(f"👑 Weekly Activity Reset: {result.modified_count} groups updated.")
