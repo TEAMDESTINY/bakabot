@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Multi-Leaderboard & Group Economy Integrated
+# Final Ryan.py - Destiny Bot Multi-Leaderboard & Group Economy Integrated
 
 import os
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -34,7 +34,7 @@ def run_flask():
 
 # --- STARTUP LOGIC ---
 async def post_init(application):
-    print("✅ ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ! ꜱᴇᴛᴛɪɴɢ ᴍᴇɴᴜ ᴄᴏᴍᴍᴀɴᴅꜱ...")
+    print("✅ ᴅєsᴛɪηʏ ᴄσηηєᴄᴛєᴅ! sєᴛᴛɪηɢ ϻєηυ...")
 
     await application.bot.set_my_commands([
         ("start", "🌸 ϻᴧɪη ϻєηυ"), 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         t_request = HTTPXRequest(connection_pool_size=16, connect_timeout=60.0, read_timeout=60.0)
         app_bot = ApplicationBuilder().token(TOKEN).request(t_request).post_init(post_init).build()
 
-        # --- BASIC COMMANDS ---
+        # --- BASIC & SYSTEM ---
         app_bot.add_handler(CommandHandler("start", start.start))
         app_bot.add_handler(CommandHandler("help", start.help_command))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
@@ -102,23 +102,23 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("mining", group_econ.passive_mining))
         app_bot.add_handler(CommandHandler("bounty", group_econ.bounty_hunter))
         app_bot.add_handler(CommandHandler("topgroups", group_econ.top_groups))
-        # Button Callback for Today/Weekly/Overall
         app_bot.add_handler(CallbackQueryHandler(group_econ.top_groups, pattern="^topg_"))
 
-        # --- SHOP & DAILY ---
+        # --- SHOP & SOCIAL ---
         app_bot.add_handler(CommandHandler("global", leaderboard.global_leaderboard))
         app_bot.add_handler(CommandHandler("daily", daily.daily))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
         app_bot.add_handler(CommandHandler("buy", shop.buy))
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
+        app_bot.add_handler(CommandHandler("propose", social.propose))
+        app_bot.add_handler(CommandHandler("divorce", social.divorce))
+        app_bot.add_handler(CallbackQueryHandler(social.proposal_callback, pattern="^marry_"))
 
         # --- GAME / RPG ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
-        app_bot.add_handler(CommandHandler("propose", social.propose))
-        app_bot.add_handler(CommandHandler("divorce", social.divorce))
 
-        # --- FUN / AI ---
+        # --- FUN & AI ---
         app_bot.add_handler(CommandHandler("chatbot", chatbot.chatbot_menu))
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
         app_bot.add_handler(CallbackQueryHandler(chatbot.chatbot_callback, pattern="^ai_"))
@@ -128,13 +128,15 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
         app_bot.add_handler(CommandHandler("update", admin.update_bot))
 
-        # --- MESSAGE LISTENERS ---
+        # --- MESSAGE LISTENERS (Order is Key) ---
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
 
-        # Handlers order management
+        # group=1 for Economy XP and Group Activity Tracking
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=1)
+        # group=2 for Group Membership Tracking
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=2)
+        # group=3 for Chatbot interactions
         app_bot.add_handler(MessageHandler((filters.TEXT | filters.Sticker.ALL) & ~filters.COMMAND, chatbot.ai_message_handler), group=3)
 
         print("ᴅєsᴛɪηʏ ʙσᴛ sᴛᴧꝛᴛɪηɢ ᴘσʟʟɪηɢ...")
