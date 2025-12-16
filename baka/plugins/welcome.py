@@ -65,7 +65,7 @@ async def new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
             groups_collection.update_one({"chat_id": chat.id}, {"$set": {"welcome_enabled": True, "title": chat.title}}, upsert=True)
             
             txt = (
-                f"🌸 <b>𝐀𝐫𝐢𝐠𝐚𝐭𝐨 {get_mention(adder)}!</b>\n\n"
+                f"🌸 <b>🦋⃟𝘿𝙚𝙨𝙩𝙞𝙣𝙮 {get_mention(adder)}!</b>\n\n"
                 f"Thanks for adding <b>{chat.title}</b>! ✨\n\n"
                 f"🎁 <b>First Time Bonus:</b>\n"
                 f"Type <code>/claim</code> fast to get 2,000 Coins!\n"
