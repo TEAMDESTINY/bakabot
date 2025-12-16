@@ -1,14 +1,3 @@
-# Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Location: Supaul, Bihar 
-#
-# All rights reserved.
-#
-# This code is the intellectual property of @WTF_Phantom.
-# You are not allowed to copy, modify, redistribute, or use this
-# code for commercial or personal projects without explicit permission.
-# Contact for permissions:
-# Email: king25258069@gmail.com
-
 from pymongo import MongoClient
 import certifi
 from baka.config import MONGO_URI
@@ -18,8 +7,23 @@ RyanBaka = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = RyanBaka["bakabot_db"]
 
 # --- DEFINING COLLECTIONS ---
-users_collection = db["users"]       # Stores balance, inventory, waifus, stats
-groups_collection = db["groups"]     # Tracks group settings (welcome, claim status)
-sudoers_collection = db["sudoers"]   # Stores admin IDs
-chatbot_collection = db["chatbot"]   # Stores AI chat history per group/user
-riddles_collection = db["riddles"]   # Stores active riddles and answers
+users_collection = db["users"]       
+groups_collection = db["groups"]     # Isme ab treasury aur multiplier bhi save hoga
+sudoers_collection = db["sudoers"]   
+chatbot_collection = db["chatbot"]   
+riddles_collection = db["riddles"]
+
+def get_group_data(chat_id, title=None):
+    """Group ki economy details fetch ya create karne ke liye"""
+    group = groups_collection.find_one({"chat_id": chat_id})
+    if not group:
+        group = {
+            "chat_id": chat_id,
+            "title": title or "Unknown Group",
+            "treasury": 10000,  # New groups get starting bonus
+            "claimed": False,
+            "shares": 10.0,     # Initial stock price
+            "last_active": 0
+        }
+        groups_collection.insert_one(group)
+    return group
