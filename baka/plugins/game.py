@@ -1,23 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
 # Location: Supaul, Bihar 
-#
-# All rights reserved.
-#
-# This code is the intellectual property of @WTF_Phantom.
-# You are not allowed to copy, modify, redistribute, or use this
-# code for commercial or personal projects without explicit permission.
-#
-# Allowed:
-# - Forking for personal learning
-# - Submitting improvements via pull requests
-#
-# Not Allowed:
-# - Claiming this code as your own
-# - Re-uploading without credit or permission
-# - Selling or using commercially
-#
-# Contact for permissions:
-# Email: king25258069@gmail.com
 
 import random
 from datetime import datetime, timedelta
@@ -44,26 +26,38 @@ async def get_narrative(action_type, attacker_mention, target_mention):
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     attacker = ensure_user_exists(update.effective_user)
     target, error = await resolve_target(update, context)
-    if not target: return await update.message.reply_text(error if error else "⚠️ <b>Reply</b> or <b>Tag</b> to kill!", parse_mode=ParseMode.HTML)
+    
+    if not target: 
+        return await update.message.reply_text(error if error else "⚠️ <b>Reply</b> or <b>Tag</b> to kill!", parse_mode=ParseMode.HTML)
 
-    # Checks
-    if target.get('is_bot'): return await update.message.reply_text("🤖 <b>Bot Shield!</b> Can't kill robots.", parse_mode=ParseMode.HTML)
-    if target['user_id'] == OWNER_ID: return await update.message.reply_text("🙊 <b>Senpai Shield!</b> Can't kill the Owner.", parse_mode=ParseMode.HTML)
-    if attacker['status'] == 'dead': return await update.message.reply_text("💀 <b>You are dead!</b> Wait 6h or /revive.", parse_mode=ParseMode.HTML)
-    if target['user_id'] == attacker['user_id']: return await update.message.reply_text("🤔 Don't kill yourself.", parse_mode=ParseMode.HTML)
-    if target['status'] == 'dead': return await update.message.reply_text("⚰️ <b>Already dead!</b>", parse_mode=ParseMode.HTML)
+    # --- SAFETY CHECKS (FIXED) ---
+    if target.get('is_bot'): 
+        return await update.message.reply_text("🤖 <b>Bot Shield!</b> Can't kill robots.", parse_mode=ParseMode.HTML)
+    
+    if target.get('user_id') == OWNER_ID: 
+        return await update.message.reply_text("🙊 <b>Senpai Shield!</b> Can't kill the Owner.", parse_mode=ParseMode.HTML)
+    
+    # Check if attacker is dead (Using .get to avoid KeyError)
+    if attacker.get('status') == 'dead': 
+        return await update.message.reply_text("💀 <b>You are dead!</b> Wait 6h or /revive.", parse_mode=ParseMode.HTML)
+    
+    if target.get('user_id') == attacker.get('user_id'): 
+        return await update.message.reply_text("🤔 Don't kill yourself.", parse_mode=ParseMode.HTML)
+    
+    # Check if target is already dead (Fixed Line 54)
+    if target.get('status') == 'dead': 
+        return await update.message.reply_text("⚰️ <b>Already dead!</b>", parse_mode=ParseMode.HTML)
     
     expiry = get_active_protection(target)
     if expiry:
         rem = expiry - datetime.utcnow()
         return await update.message.reply_text(f"🛡️ <b>Blocked!</b> Target is protected for <code>{format_time(rem)}</code>.", parse_mode=ParseMode.HTML)
 
-    # Logic
+    # --- LOGIC ---
     base_reward = random.randint(100, 200)
     buff = sum(i['buff'] for i in attacker.get('inventory', []) if i['type'] == 'weapon')
     final_reward = int(base_reward * (1 + buff))
     
-    # Loot Item (50%)
     stolen_item_text = ""
     t_inv = target.get('inventory', [])
     if t_inv and random.random() < 0.50:
@@ -99,25 +93,30 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target, error = await resolve_target(update, context, specific_arg=target_arg)
     if not target: return await update.message.reply_text(error or "⚠️ Tag victim", parse_mode=ParseMode.HTML)
 
-    if target.get('is_bot') or target['user_id'] == OWNER_ID: return await update.message.reply_text("🛡️ Protected Entity.", parse_mode=ParseMode.HTML)
-    if attacker['status'] == 'dead': return await update.message.reply_text("💀 Dead men steal no coins.", parse_mode=ParseMode.HTML)
-    if target['user_id'] == attacker['user_id']: return await update.message.reply_text("🤦‍♂️ No.", parse_mode=ParseMode.HTML)
+    if target.get('is_bot') or target.get('user_id') == OWNER_ID: 
+        return await update.message.reply_text("🛡️ Protected Entity.", parse_mode=ParseMode.HTML)
+    
+    if attacker.get('status') == 'dead': 
+        return await update.message.reply_text("💀 Dead men steal no coins.", parse_mode=ParseMode.HTML)
+    
+    if target.get('user_id') == attacker.get('user_id'): 
+        return await update.message.reply_text("🤦‍♂️ No.", parse_mode=ParseMode.HTML)
     
     expiry = get_active_protection(target)
     if expiry:
         rem = expiry - datetime.utcnow()
         return await update.message.reply_text(f"🛡️ <b>Shielded!</b> Protected for <code>{format_time(rem)}</code>.", parse_mode=ParseMode.HTML)
 
-    if target['balance'] < amount: return await update.message.reply_text("📉 Too poor.", parse_mode=ParseMode.HTML)
+    if target.get('balance', 0) < amount: 
+        return await update.message.reply_text("📉 Too poor.", parse_mode=ParseMode.HTML)
 
-    # Block
     block_chance = sum(i['buff'] for i in target.get('inventory', []) if i['type'] == 'armor')
     if random.random() < block_chance:
         return await update.message.reply_text(f"🛡️ <b>BLOCKED!</b> {get_mention(target)}'s armor stopped you!", parse_mode=ParseMode.HTML)
 
-    # Loot Item (Dead Only)
     stolen_item_text = ""
-    if target['status'] == 'dead':
+    # Fixed status check for Robbery
+    if target.get('status') == 'dead':
         t_inv = target.get('inventory', [])
         if t_inv and random.random() < 0.20:
             item = random.choice(t_inv)
@@ -125,25 +124,21 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
             users_collection.update_one({"user_id": attacker["user_id"]}, {"$push": {"inventory": item}})
             stolen_item_text = f"\n🎒 <b>{stylize_text('Looted Corpse')}:</b> {item['name']}"
 
-    # Execute
     users_collection.update_one({"user_id": target["user_id"]}, {"$inc": {"balance": -amount}})
     users_collection.update_one({"user_id": attacker["user_id"]}, {"$inc": {"balance": amount}})
     
-    att_link = get_mention(attacker)
-    tar_link = get_mention(target)
-    narration = await get_narrative("rob", att_link, tar_link)
-    
-    header = f"🧟 <b>{stylize_text('GRAVE ROBBERY')}!</b>" if target['status'] == 'dead' else f"💰 <b>{stylize_text('ROBBERY')}!</b>"
+    narration = await get_narrative("rob", get_mention(attacker), get_mention(target))
+    header = f"🧟 <b>{stylize_text('GRAVE ROBBERY')}!</b>" if target.get('status') == 'dead' else f"💰 <b>{stylize_text('ROBBERY')}!</b>"
 
     await update.message.reply_text(
         f"{header}\n\n"
         f"📝 <i>{narration}</i>\n\n"
-        f"😈 <b>{stylize_text('Thief')}:</b> {att_link}\n"
+        f"😈 <b>{stylize_text('Thief')}:</b> {get_mention(attacker)}\n"
         f"💸 <b>{stylize_text('Stolen')}:</b> <code>{format_money(amount)}</code>{stolen_item_text}", 
         parse_mode=ParseMode.HTML
     )
 
-# --- PROTECT ---
+# --- PROTECT & REVIVE (FIXED) ---
 async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sender = ensure_user_exists(update.effective_user)
     if not context.args: return await update.message.reply_text(f"🛡️ <b>Usage:</b> <code>/protect 1d</code>", parse_mode=ParseMode.HTML)
@@ -156,9 +151,9 @@ async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target_arg = context.args[1] if len(context.args) > 1 else None
     target, _ = await resolve_target(update, context, specific_arg=target_arg)
     if not target: target = sender
-    is_self = target['user_id'] == sender['user_id']
+    is_self = target.get('user_id') == sender.get('user_id')
 
-    if not is_self and sender.get("partner_id") != target["user_id"]:
+    if not is_self and sender.get("partner_id") != target.get("user_id"):
          return await update.message.reply_text("⛔ You can only protect yourself or your partner!", parse_mode=ParseMode.HTML)
 
     expiry = get_active_protection(target)
@@ -168,7 +163,7 @@ async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not is_self: msg = f"🛡️ <b>Safe!</b> {get_mention(target)} has <code>{format_time(rem)}</code> left."
         return await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
     
-    if sender['balance'] < cost: return await update.message.reply_text(f"❌ <b>Poor!</b> Need <code>{format_money(cost)}</code>.", parse_mode=ParseMode.HTML)
+    if sender.get('balance', 0) < cost: return await update.message.reply_text(f"❌ <b>Poor!</b> Need <code>{format_money(cost)}</code>.", parse_mode=ParseMode.HTML)
 
     users_collection.update_one({"user_id": sender["user_id"]}, {"$inc": {"balance": -cost}})
     expiry_dt = datetime.utcnow() + timedelta(days=days)
@@ -188,12 +183,13 @@ async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target, _ = await resolve_target(update, context)
     if not target: target = reviver
 
-    if target['status'] == 'alive': return await update.message.reply_text("✨ Alive!", parse_mode=ParseMode.HTML)
+    if target.get('status') == 'alive': return await update.message.reply_text("✨ Alive!", parse_mode=ParseMode.HTML)
     
     if check_auto_revive(target):
         return await update.message.reply_text("✨ <b>Miracle!</b> Auto-revived just now.", parse_mode=ParseMode.HTML)
 
-    if reviver['balance'] < REVIVE_COST: return await update.message.reply_text(f"❌ Need <code>{format_money(REVIVE_COST)}</code>.", parse_mode=ParseMode.HTML)
+    if reviver.get('balance', 0) < REVIVE_COST: 
+        return await update.message.reply_text(f"❌ Need <code>{format_money(REVIVE_COST)}</code>.", parse_mode=ParseMode.HTML)
 
     users_collection.update_one({"user_id": reviver["user_id"]}, {"$inc": {"balance": -REVIVE_COST}})
     users_collection.update_one({"user_id": OWNER_ID}, {"$inc": {"balance": REVIVE_COST}})
