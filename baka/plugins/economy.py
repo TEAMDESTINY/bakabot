@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Economy Plugin - Destiny Bot (Fixed Logic & Serif Font)
+# Final Economy Plugin - Destiny Bot (Optimized Logic)
 
 import random
 import time
@@ -13,7 +13,7 @@ from baka.database import users_collection, groups_collection, get_group_data, u
 # --- CONFIGURATION ---
 EXP_COOLDOWN = 60  
 EXP_RANGE = (1, 5) 
-EXCHANGE_RATE = 10 
+EXCHANGE_RATE = 10 # 10 EXP = 1 Coin
 user_cooldowns = {} 
 
 # --- INVENTORY CALLBACK ---
@@ -23,14 +23,14 @@ async def inventory_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     item_id = data[1]
     
     item = next((i for i in SHOP_ITEMS if i['id'] == item_id), None)
-    if not item: return await query.answer("❌ Error: Item Not Found", show_alert=True)
+    if not item: return await query.answer("❌ Item Not Found", show_alert=True)
 
     rarity = "⚪ Common"
     if item['price'] > 50000: rarity = "🔵 Rare"
     if item['price'] > 500000: rarity = "🟡 Legendary"
     if item['price'] > 10000000: rarity = "🔴 Godly"
 
-    text = f"💎 {stylize_text(item['name'])}\n💰 {format_money(item['price'])}\n🌟 {rarity}\n🛡️ Safe (Until Death)"
+    text = f"💎 {stylize_text(item['name'])}\n💰 {format_money(item['price'])}\n🌟 {rarity}\n🛡️ {stylize_text('Protected Status')}"
     await query.answer(text, show_alert=True)
 
 # --- ECONOMY COMMANDS ---
@@ -48,8 +48,6 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target, error = await resolve_target(update, context)
     if not target and error == "No target": target = ensure_user_exists(update.effective_user)
     elif not target: return await update.message.reply_text(error, parse_mode=ParseMode.HTML)
-
-    users_collection.update_one({"user_id": target['user_id']}, {"$set": {"last_chat_id": update.effective_chat.id}})
 
     bal = target.get('balance', 0)
     rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
@@ -133,6 +131,21 @@ async def claim(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"💰 <b>{stylize_text('Reward')}:</b> <code>{format_money(CLAIM_BONUS)}</code>", 
         parse_mode=ParseMode.HTML
     )
+
+async def sell_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if not context.args: return await update.message.reply_text(f"⚠️ <b>{stylize_text('Usage')}:</b> <code>/sellxp 100</code>")
+    
+    try: amt = int(context.args[0])
+    except: return await update.message.reply_text("❌ Invalid number!")
+
+    user_data = users_collection.find_one({"user_id": user.id})
+    if not user_data or user_data.get("exp", 0) < amt: 
+        return await update.message.reply_text("❌ Not enough EXP!")
+
+    coins = amt // EXCHANGE_RATE
+    users_collection.update_one({"user_id": user.id}, {"$inc": {"exp": -amt, "balance": coins}})
+    await update.message.reply_text(f"🔄 <b>{stylize_text('Exchange Complete')}!</b>\nSold {amt} EXP for <code>{format_money(coins)}</code>", parse_mode=ParseMode.HTML)
 
 # --- AUTO HANDLERS ---
 async def check_chat_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
