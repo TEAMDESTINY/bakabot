@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Network Resilience & Aesthetic Font Sync
+# Stable Ryan.py - Fixed TypeError & Network Resilience
 
 import os
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -24,7 +24,7 @@ from baka.plugins import (
     shop, daily, leaderboard, group_econ 
 )
 
-# --- FLASK SERVER (For Heroku/Render uptime) ---
+# --- FLASK SERVER ---
 app = Flask(__name__)
 @app.route('/')
 def health(): return "Alive"
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     if not TOKEN:
         print("CRITICAL: BOT_TOKEN is missing.")
     else:
-        # Optimization: Connection pools and Timeouts for Network Errors
+        # Network resilience configuration
         t_request = HTTPXRequest(
             connection_pool_size=20, 
             connect_timeout=30.0, 
@@ -110,10 +110,9 @@ if __name__ == '__main__':
 
         print("ᴅєsᴛɪηʏ ʙσᴛ ɪs ʟɪᴠє! 🚀")
         
-        # Fixed Polling with Bootstrap Retries
+        # Polling fixed: read_timeout argument removed to prevent TypeError
         app_bot.run_polling(
             allowed_updates=Update.ALL_TYPES, 
             drop_pending_updates=True,
-            bootstrap_retries=5,
-            read_timeout=30
+            bootstrap_retries=5
         )
