@@ -1,8 +1,9 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Stable, Multi-Feature & Error-Free Polling
+# Final Ryan.py - Optimized for High Traffic & Global Groups
 
 import os
 import logging
+import asyncio
 from threading import Thread
 from flask import Flask
 from telegram import Update
@@ -12,7 +13,7 @@ from telegram.ext import (
 )
 from telegram.request import HTTPXRequest
 
-# Set environment for GitPython to avoid noise
+# Error noise kam karne ke liye
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 
 # --- LOGGING SETUP ---
@@ -35,67 +36,54 @@ except ImportError as e:
     exit(1)
 
 # --- FLASK SERVER (Uptime Monitoring) ---
-# Keeps the bot alive on services like Render, Heroku, or Koyeb
 app = Flask(__name__)
-
 @app.route('/')
-def health():
-    return "Bot is Running!"
+def health(): return "Destiny Bot is Active! 🚀"
 
 def run_flask(): 
     app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False)
 
 # --- STARTUP LOGIC ---
 async def post_init(application):
-    """Executes once the bot starts successfully."""
-    print("✅ BOT CONNECTED! SETTING MENU COMMANDS...")
+    print("✅ DESTINY ENGINE CONNECTED!")
     
     commands = [
-        ("start", "🌸 Main Menu"), 
-        ("help", "📖 Command Diary"),
-        ("bal", "👛 Wallet"), 
-        ("shop", "🛒 Shop"),
-        ("kill", "🔪 Kill"), 
-        ("rob", "💰 Steal"), 
-        ("give", "💸 Transfer"), 
-        ("claim", "💎 Bonus"),
-        ("daily", "📅 Daily"), 
-        ("ranking", "🏆 Top Players"),
-        ("propose", "💍 Marry"), 
-        ("divorce", "💔 Breakup"),
-        ("wpropose", "👰 Waifu"), 
-        ("draw", "🎨 AI Art"),
-        ("speak", "🗣️ Voice"), 
-        ("chatbot", "🧠 AI Chat"),
-        ("ping", "📶 Status")
+        ("start", "🌸 ϻᴧɪη ϻєηυ"), 
+        ("help", "📖 ᴄσϻϻᴧηᴅ ᴅɪᴧꝛʏ"),
+        ("bal", "👛 ᴡᴧʟʟєᴛ"), 
+        ("shop", "🛒 sʜσᴘ"),
+        ("kill", "🔪 ᴋɪʟʟ"), 
+        ("rob", "💰 sᴛєᴧʟ"), 
+        ("give", "💸 ᴛꝛᴧηsғєꝛ"), 
+        ("claim", "💎 ʙσηυs"),
+        ("daily", "📅 ᴅᴧɪʟʏ"), 
+        ("ranking", "🏆 ᴛσᴘs"),
+        ("propose", "💍 ϻᴧꝛꝛʏ"), 
+        ("divorce", "💔 ʙꝛєᴧᴋυᴘ"),
+        ("wpropose", "👰 ᴡᴧɪғυ"), 
+        ("draw", "🎨 ᴧꝛᴛ"),
+        ("speak", "🗣️ νσɪᴄє"), 
+        ("chatbot", "🧠 ᴧɪ"),
+        ("ping", "📶 sᴛᴧᴛυs")
     ]
-    
     await application.bot.set_my_commands(commands)
     
-    try:
-        bot_info = await application.bot.get_me()
-        print(f"✅ Logged in as @{bot_info.username}")
-        await log_to_channel(application.bot, "start", {
-            "user": "System", 
-            "chat": "Cloud Server",
-            "action": f"{BOT_NAME} is now Online! 🚀"
-        })
-    except Exception as e:
-        logger.error(f"Startup Log Failed: {e}")
+    bot_info = await application.bot.get_me()
+    print(f"🚀 Destiny Bot (@{bot_info.username}) is now Online!")
 
 # --- MAIN EXECUTION ---
 if __name__ == '__main__':
-    # Start the web server in a background thread
     Thread(target=run_flask, daemon=True).start()
     
     if not TOKEN:
-        print("CRITICAL ERROR: BOT_TOKEN is missing in config.")
+        print("CRITICAL: BOT_TOKEN missing!")
     else:
-        # High-performance network config for handling high traffic
+        # High-performance request config for Group Overload protection
         t_request = HTTPXRequest(
-            connection_pool_size=25, 
-            connect_timeout=30.0, 
-            read_timeout=30.0
+            connection_pool_size=30, 
+            connect_timeout=40.0, 
+            read_timeout=40.0,
+            write_timeout=40.0
         )
         
         app_bot = (
@@ -106,9 +94,7 @@ if __name__ == '__main__':
             .build()
         )
 
-        # --- REGISTER HANDLERS ---
-        
-        # 1. Basics & Navigation
+        # --- 1. CORE HANDLERS ---
         app_bot.add_handler(CommandHandler("start", start.start))
         app_bot.add_handler(CommandHandler("help", start.help_command))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
@@ -116,7 +102,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_"))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^return_start$"))
         
-        # 2. Economy & Commerce
+        # --- 2. ECONOMY & EMPIRE ---
         app_bot.add_handler(CommandHandler("register", economy.register))
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("ranking", economy.ranking))
@@ -128,25 +114,28 @@ if __name__ == '__main__':
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
         app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_"))
         
-        # 3. RPG / Combat Game
+        # --- 3. RPG & WARFARE ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
         app_bot.add_handler(CommandHandler("protect", game.protect))
         app_bot.add_handler(CommandHandler("revive", game.revive))
-        
-        # 4. Social & Waifu System
+        app_bot.add_handler(CommandHandler("mining", group_econ.passive_mining))
+        app_bot.add_handler(CommandHandler("raid", group_econ.territory_raid))
+        app_bot.add_handler(CommandHandler("stock", group_econ.stock_market))
+        app_bot.add_handler(CommandHandler("governor", group_econ.ai_governor))
+
+        # --- 4. SOCIAL & WAIFU ---
         app_bot.add_handler(CommandHandler("propose", social.propose))
         app_bot.add_handler(CommandHandler("marry", social.marry_status))
         app_bot.add_handler(CommandHandler("divorce", social.divorce))
         app_bot.add_handler(CommandHandler("couple", social.couple_game))
         app_bot.add_handler(CallbackQueryHandler(social.proposal_callback, pattern="^marry_"))
-        
         app_bot.add_handler(CommandHandler("wpropose", waifu.wpropose))
         app_bot.add_handler(CommandHandler("wmarry", waifu.wmarry))
-        for action in waifu.SFW_ACTIONS:
-            app_bot.add_handler(CommandHandler(action, waifu.waifu_action))
+        for act in waifu.SFW_ACTIONS:
+            app_bot.add_handler(CommandHandler(act, waifu.waifu_action))
 
-        # 5. Fun / AI / Media
+        # --- 5. FUN & AI ---
         app_bot.add_handler(CommandHandler("dice", fun.dice))
         app_bot.add_handler(CommandHandler("slots", fun.slots))
         app_bot.add_handler(CommandHandler("riddle", riddle.riddle_command))
@@ -156,47 +145,30 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))           
         app_bot.add_handler(CallbackQueryHandler(chatbot.chatbot_callback, pattern="^ai_")) 
         
-        # 6. Admin & Sudo Controls
+        # --- 6. SYSTEM & ADMIN ---
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
-        app_bot.add_handler(CommandHandler("sudolist", admin.sudolist))
         app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
         app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
-        app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
-        app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
-        app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
-        app_bot.add_handler(CommandHandler("update", admin.update_bot))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
-        app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
-        
-        # 7. Group Analytics
         app_bot.add_handler(CommandHandler("topgroups", group_econ.top_groups))
         app_bot.add_handler(CallbackQueryHandler(group_econ.top_groups, pattern="^topg_"))
+        app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
 
-        # 8. Events & Background Message Listeners
+        # --- 7. MESSAGE LISTENERS (Ordered) ---
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
         
-        # Grouped Message Handling (Ordered by Priority)
-        # Group 1: Waifu Collection logic
+        # Logic Groups (Performance optimized)
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, collection.collect_waifu), group=1)
-        # Group 2: Item Drops logic
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, collection.check_drops), group=2)
-        # Group 3: Riddle Solver logic
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, riddle.check_riddle_answer), group=3)
-        # Group 4: AI Chatbot (Global Responder)
         app_bot.add_handler(MessageHandler((filters.TEXT | filters.Sticker.ALL) & ~filters.COMMAND, chatbot.ai_message_handler), group=4)
-        # Group 5: Group Statistics Tracking
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=5)
 
         print("--------------------------")
-        print("🚀 DESTINY BOT IS LIVE!")
+        print("🚀 DESTINY BOT IS ONLINE!")
         print("--------------------------")
         
-        # Start the bot
-        app_bot.run_polling(
-            allowed_updates=Update.ALL_TYPES, 
-            drop_pending_updates=True, 
-            bootstrap_retries=5
-        )
+        app_bot.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
