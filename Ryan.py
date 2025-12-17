@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Stable Ryan.py - Fixed TypeError & Network Resilience
+# Final Ryan.py - Stable, Feature-Packed & Error-Free
 
 import os
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -24,7 +24,7 @@ from baka.plugins import (
     shop, daily, leaderboard, group_econ 
 )
 
-# --- FLASK SERVER ---
+# --- FLASK SERVER (Uptime Health Check) ---
 app = Flask(__name__)
 @app.route('/')
 def health(): return "Alive"
@@ -39,6 +39,7 @@ async def post_init(application):
         ("start", "🌸 ϻᴧɪη ϻєηυ"), 
         ("help", "📖 ᴄσϻϻᴧηᴅ ᴅɪᴧꝛʏ"),
         ("bal", "👛 ᴡᴧʟʟєᴛ"), 
+        ("claim", "💎 ɢꝛσυᴘ ʙσηυs"), 
         ("topgroups", "🏆 ɢꝛσυᴘ ʟєᴧᴅєꝛʙσᴧꝛᴅ"),
         ("shop", "🛒 sʜσᴘ"),
         ("kill", "🔪 ᴋɪʟʟ"), 
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     if not TOKEN:
         print("CRITICAL: BOT_TOKEN is missing.")
     else:
-        # Network resilience configuration
+        # Optimized for Network Stability
         t_request = HTTPXRequest(
             connection_pool_size=20, 
             connect_timeout=30.0, 
@@ -76,8 +77,12 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("register", economy.register))
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("ranking", economy.ranking))
+        app_bot.add_handler(CommandHandler("give", economy.give))
+        app_bot.add_handler(CommandHandler("claim", economy.claim))
+        app_bot.add_handler(CommandHandler("sellxp", economy.sell_xp))
         app_bot.add_handler(CommandHandler("topgroups", group_econ.top_groups))
         app_bot.add_handler(CallbackQueryHandler(group_econ.top_groups, pattern="^topg_"))
+        app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_"))
 
         # --- 3. GAME & SHOP ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
@@ -85,7 +90,19 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
 
-        # --- 4. ADMIN & SUDO ---
+        # --- 4. SOCIAL & WAIFU ---
+        app_bot.add_handler(CommandHandler("propose", social.propose))
+        app_bot.add_handler(CommandHandler("divorce", social.divorce))
+        app_bot.add_handler(CommandHandler("marry", social.marry_status))
+        app_bot.add_handler(CommandHandler("couple", social.couple_game))
+        app_bot.add_handler(CallbackQueryHandler(social.proposal_callback, pattern="^marry_"))
+        
+        # Waifu System
+        app_bot.add_handler(CommandHandler(waifu.SFW_ACTIONS, waifu.waifu_action))
+        app_bot.add_handler(CommandHandler("wpropose", waifu.wpropose))
+        app_bot.add_handler(CommandHandler("wmarry", waifu.wmarry))
+
+        # --- 5. ADMIN & SUDO ---
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
         app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
@@ -100,17 +117,18 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
 
-        # --- 5. MESSAGE LISTENERS ---
+        # --- 6. MESSAGE LISTENERS ---
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
         
+        # Order-Sensitive Listeners
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=2)
         app_bot.add_handler(MessageHandler((filters.TEXT | filters.Sticker.ALL) & ~filters.COMMAND, chatbot.ai_message_handler), group=3)
 
         print("ᴅєsᴛɪηʏ ʙσᴛ ɪs ʟɪᴠє! 🚀")
         
-        # Polling fixed: read_timeout argument removed to prevent TypeError
+        # Launch Polling with Auto-Retry Logic
         app_bot.run_polling(
             allowed_updates=Update.ALL_TYPES, 
             drop_pending_updates=True,
