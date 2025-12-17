@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Fixed Sudo Handlers & Aesthetic Font Sync
+# Final Ryan.py - Network Resilience & Aesthetic Font Sync
 
 import os
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -24,7 +24,7 @@ from baka.plugins import (
     shop, daily, leaderboard, group_econ 
 )
 
-# --- FLASK SERVER ---
+# --- FLASK SERVER (For Heroku/Render uptime) ---
 app = Flask(__name__)
 @app.route('/')
 def health(): return "Alive"
@@ -54,7 +54,14 @@ if __name__ == '__main__':
     if not TOKEN:
         print("CRITICAL: BOT_TOKEN is missing.")
     else:
-        t_request = HTTPXRequest(connection_pool_size=20, connect_timeout=60.0, read_timeout=60.0)
+        # Optimization: Connection pools and Timeouts for Network Errors
+        t_request = HTTPXRequest(
+            connection_pool_size=20, 
+            connect_timeout=30.0, 
+            read_timeout=30.0, 
+            write_timeout=30.0
+        )
+        
         app_bot = ApplicationBuilder().token(TOKEN).request(t_request).post_init(post_init).build()
 
         # --- 1. BASIC & SYSTEM ---
@@ -78,7 +85,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
 
-        # --- 4. ADMIN & SUDO (FIXED SECTION) ---
+        # --- 4. ADMIN & SUDO ---
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
         app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
@@ -91,18 +98,22 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
         app_bot.add_handler(CommandHandler("update", admin.update_bot))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
-        
-        # IMPORTANT: Callback for Sudo Yes/No buttons
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
 
         # --- 5. MESSAGE LISTENERS ---
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
         
-        # XP & Activity Tracker
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=2)
         app_bot.add_handler(MessageHandler((filters.TEXT | filters.Sticker.ALL) & ~filters.COMMAND, chatbot.ai_message_handler), group=3)
 
         print("ᴅєsᴛɪηʏ ʙσᴛ ɪs ʟɪᴠє! 🚀")
-        app_bot.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+        
+        # Fixed Polling with Bootstrap Retries
+        app_bot.run_polling(
+            allowed_updates=Update.ALL_TYPES, 
+            drop_pending_updates=True,
+            bootstrap_retries=5,
+            read_timeout=30
+        )
