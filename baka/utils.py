@@ -149,16 +149,22 @@ def ensure_user_exists(tg_user):
         users_collection.insert_one(new_user)
         return new_user
     
-    # Auto-Revive Check (If user died and time passed)
+    # Sync Username and Name if changed
+    updates = {}
+    if user_doc.get("username") != username: updates["username"] = username
+    if user_doc.get("name") != tg_user.first_name: updates["name"] = tg_user.first_name
+    
+    # Auto-Revive Check
     death_time = user_doc.get('death_time')
     if user_doc.get('status') == 'dead' and death_time:
         if datetime.utcnow() - death_time > timedelta(hours=AUTO_REVIVE_HOURS):
-            users_collection.update_one(
-                {"user_id": tg_user.id}, 
-                {"$set": {"status": "alive", "death_time": None}, "$inc": {"balance": AUTO_REVIVE_BONUS}}
-            )
+            updates.update({"status": "alive", "death_time": None})
+            users_collection.update_one({"user_id": tg_user.id}, {"$inc": {"balance": AUTO_REVIVE_BONUS}})
             user_doc['status'] = 'alive'
             
+    if updates:
+        users_collection.update_one({"user_id": tg_user.id}, {"$set": updates})
+
     return user_doc
 
 # --- 🏰 GROUP TRACKER ---
