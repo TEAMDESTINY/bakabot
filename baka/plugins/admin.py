@@ -37,7 +37,6 @@ async def addcoins(update, context):
     target, err = await resolve_target(update, context, specific_arg=target_str)
     if not target: return await update.message.reply_text(err or "⚠️ Target not found.")
     
-    # FIX: Sending both UID and Amount in callback data
     await ask(update, f"Add {format_money(amount)} to {get_mention(target)}?", "addcoins", f"{target['user_id']}|{amount}")
 
 async def rmcoins(update, context):
@@ -47,10 +46,29 @@ async def rmcoins(update, context):
     target, err = await resolve_target(update, context, specific_arg=target_str)
     if not target: return await update.message.reply_text(err or "⚠️ Target not found.")
     
-    # FIX: Sending both UID and Amount in callback data
     await ask(update, f"Remove {format_money(amount)} from {get_mention(target)}?", "rmcoins", f"{target['user_id']}|{amount}")
 
-# --- OTHER COMMANDS ---
+# --- SUDO & OWNER MANAGEMENT ---
+async def addsudo(update, context):
+    if update.effective_user.id != OWNER_ID: return
+    target, err = await resolve_target(update, context)
+    if target: await ask(update, f"Promote {get_mention(target)} to Sudo?", "addsudo", str(target['user_id']))
+
+async def rmsudo(update, context):
+    if update.effective_user.id != OWNER_ID: return
+    target, err = await resolve_target(update, context)
+    if target: await ask(update, f"Demote {get_mention(target)} from Sudo?", "rmsudo", str(target['user_id']))
+
+async def sudolist(update, context):
+    if update.effective_user.id not in SUDO_USERS: return
+    msg = f"👑 <b>{stylize_text('Owner & Sudoers')}:</b>\n\n"
+    for uid in list(SUDO_USERS):
+        u_doc = users_collection.find_one({"user_id": uid})
+        role = "Owner" if uid == OWNER_ID else "Sudoer"
+        msg += f"• {get_mention(u_doc) if u_doc else f'<code>{uid}</code>'} - {role}\n"
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+# --- SYSTEM COMMANDS ---
 async def freerevive(update, context):
     if update.effective_user.id not in SUDO_USERS: return
     target, err = await resolve_target(update, context)
@@ -79,7 +97,7 @@ async def ask(update, text, act, arg):
     await update.message.reply_text(f"⚠️ <b>Wait!</b> {text}\nAre you sure?", parse_mode=ParseMode.HTML, reply_markup=kb)
 
 # --- CALLBACK CONFIRMATION ---
-async def confirm_handler(update, context):
+async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     if q.from_user.id not in SUDO_USERS: 
         return await q.answer("❌ Not for you!", show_alert=True)
@@ -91,7 +109,6 @@ async def confirm_handler(update, context):
         return await q.message.edit_text("❌ <b>Action Cancelled.</b>", parse_mode=ParseMode.HTML)
 
     try:
-        # Economy Actions (UID + Amount)
         if act == "addcoins":
             uid, amt = int(data[2]), int(data[3])
             users_collection.update_one({"user_id": uid}, {"$inc": {"balance": amt}})
@@ -102,7 +119,18 @@ async def confirm_handler(update, context):
             users_collection.update_one({"user_id": uid}, {"$inc": {"balance": -amt}})
             await q.message.edit_text(f"🗑️ Removed <b>{format_money(amt)}</b> from <code>{uid}</code>.", parse_mode=ParseMode.HTML)
 
-        # ID Only Actions
+        elif act == "addsudo":
+            uid = int(data[2])
+            sudoers_collection.update_one({"user_id": uid}, {"$set": {"user_id": uid}}, upsert=True)
+            reload_sudoers()
+            await q.message.edit_text(f"✅ User <code>{uid}</code> promoted to Sudo.")
+
+        elif act == "rmsudo":
+            uid = int(data[2])
+            sudoers_collection.delete_one({"user_id": uid})
+            reload_sudoers()
+            await q.message.edit_text(f"🗑️ User <code>{uid}</code> demoted from Sudo.")
+
         elif act == "freerevive":
             uid = int(data[2])
             users_collection.update_one({"user_id": uid}, {"$set": {"status": "alive", "death_time": None}})
