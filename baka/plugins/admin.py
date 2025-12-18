@@ -1,5 +1,6 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Fixed Admin Plugin - Destiny / Baka Bot
+# Location: Supaul, Bihar 
+# Final Admin Plugin - Add/Remove/Manage (Reply, Username, ID Support)
 
 import html
 import os
@@ -12,7 +13,7 @@ from baka.config import OWNER_ID, UPSTREAM_REPO, GIT_TOKEN
 from baka.utils import SUDO_USERS, get_mention, resolve_target, format_money, reload_sudoers, stylize_text
 from baka.database import users_collection, sudoers_collection, groups_collection
 
-# --- HELP PANEL ---
+# --- 🔐 HELP PANEL ---
 async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in SUDO_USERS: return
     msg = (
@@ -29,11 +30,11 @@ async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
-# --- ECONOMY ACTIONS ---
+# --- 💰 ECONOMY ACTIONS ---
 async def addcoins(update, context):
     if update.effective_user.id not in SUDO_USERS: return
     amount, target_str = parse_amount_and_target(context.args)
-    if amount is None: return await update.message.reply_text("⚠️ 𝑼𝒔𝒂𝒈𝒆: <code>/addcoins 100 @user</code>", parse_mode=ParseMode.HTML)
+    if amount is None: return await update.message.reply_text(f"⚠️ {stylize_text('Usage')}: <code>/addcoins 100 @user</code>", parse_mode=ParseMode.HTML)
     target, err = await resolve_target(update, context, specific_arg=target_str)
     if not target: return await update.message.reply_text(err or "⚠️ Target not found.")
     
@@ -42,13 +43,13 @@ async def addcoins(update, context):
 async def rmcoins(update, context):
     if update.effective_user.id not in SUDO_USERS: return
     amount, target_str = parse_amount_and_target(context.args)
-    if amount is None: return await update.message.reply_text("⚠️ 𝑼𝒔𝒂𝒈𝒆: <code>/rmcoins 100 @user</code>", parse_mode=ParseMode.HTML)
+    if amount is None: return await update.message.reply_text(f"⚠️ {stylize_text('Usage')}: <code>/rmcoins 100 @user</code>", parse_mode=ParseMode.HTML)
     target, err = await resolve_target(update, context, specific_arg=target_str)
     if not target: return await update.message.reply_text(err or "⚠️ Target not found.")
     
     await ask(update, f"Remove {format_money(amount)} from {get_mention(target)}?", "rmcoins", f"{target['user_id']}|{amount}")
 
-# --- SUDO & OWNER MANAGEMENT ---
+# --- 👑 SUDO & OWNER MANAGEMENT ---
 async def addsudo(update, context):
     if update.effective_user.id != OWNER_ID: return
     target, err = await resolve_target(update, context)
@@ -68,7 +69,7 @@ async def sudolist(update, context):
         msg += f"• {get_mention(u_doc) if u_doc else f'<code>{uid}</code>'} - {role}\n"
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
-# --- SYSTEM COMMANDS ---
+# --- ⚙️ SYSTEM COMMANDS ---
 async def freerevive(update, context):
     if update.effective_user.id not in SUDO_USERS: return
     target, err = await resolve_target(update, context)
@@ -83,7 +84,7 @@ async def cleandb(update, context):
     if update.effective_user.id != OWNER_ID: return
     await ask(update, "<b>WIPE DATABASE?</b> 🗑️", "cleandb", "0")
 
-# --- UTILS ---
+# --- 🛠️ UTILS ---
 def parse_amount_and_target(args):
     amount = next((int(a) for a in args if a.isdigit()), None)
     target = next((a for a in args if not a.isdigit()), None)
@@ -96,7 +97,7 @@ async def ask(update, text, act, arg):
     ]])
     await update.message.reply_text(f"⚠️ <b>Wait!</b> {text}\nAre you sure?", parse_mode=ParseMode.HTML, reply_markup=kb)
 
-# --- CALLBACK CONFIRMATION ---
+# --- 🎯 CALLBACK CONFIRMATION ---
 async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     if q.from_user.id not in SUDO_USERS: 
@@ -106,7 +107,7 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     act = data[1]
     
     if act == "cancel": 
-        return await q.message.edit_text("❌ <b>Action Cancelled.</b>", parse_mode=ParseMode.HTML)
+        return await q.message.edit_text(f"❌ <b>{stylize_text('Action Cancelled')}</b>", parse_mode=ParseMode.HTML)
 
     try:
         if act == "addcoins":
@@ -144,7 +145,7 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif act == "cleandb":
             users_collection.delete_many({})
             groups_collection.delete_many({})
-            await q.message.edit_text("🗑️ <b>DATABASE WIPED!</b>")
+            await q.message.edit_text(f"🗑️ <b>{stylize_text('DATABASE WIPED')}!</b>")
             
     except Exception as e:
         await q.message.edit_text(f"❌ <b>Error:</b> <code>{e}</code>", parse_mode=ParseMode.HTML)
