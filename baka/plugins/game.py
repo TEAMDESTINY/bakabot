@@ -1,12 +1,12 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Game/RPG Plugin - Dual Protection (Rob & Kill) Fixed
+# Final Game/RPG Plugin - Dual Protection (Rob & Kill) Fully Integrated
 
 import random
 from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.config import PROTECT_1D_COST, PROTECT_2D_COST, REVIVE_COST, OWNER_ID
+from baka.config import PROTECT_1D_COST, REVIVE_COST, OWNER_ID
 from baka.utils import (
     ensure_user_exists, resolve_target, get_active_protection, 
     format_time, format_money, get_mention, stylize_text
@@ -43,11 +43,16 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if target_db.get('status') == 'dead': 
         return await update.message.reply_text("⚰️ <b>Murdon ko dubara nahi maarte!</b>", parse_mode=ParseMode.HTML)
 
-    # --- Dual Protection Check ---
+    # --- 🛡️ PROTECTION CHECK (Murder) ---
     expiry = get_active_protection(target_db)
     if expiry:
         rem = expiry - datetime.utcnow()
-        return await update.message.reply_text(f"🛡️ <b>Blocked!</b> {target_mention} is under protection for <code>{format_time(rem)}</code>.", parse_mode=ParseMode.HTML)
+        return await update.message.reply_text(
+            f"🛡️ <b>{stylize_text('BLOCKED')}!</b>\n\n"
+            f"{target_mention} is under protection for <code>{format_time(rem)}</code>.\n"
+            f"Aap inka baal bhi baka nahi kar sakte!", 
+            parse_mode=ParseMode.HTML
+        )
 
     base_reward = random.randint(100, 200)
     users_collection.update_one({"user_id": target_db["user_id"]}, {"$set": {"status": "dead", "death_time": datetime.utcnow()}})
@@ -77,13 +82,18 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target_mention = get_mention(target_user_obj)
 
     if target_db.get('balance', 0) < amount: 
-        return await update.message.reply_text("📉 Target ke paas itne paise nahi hain.")
+        return await update.message.reply_text(f"📉 {target_mention} ke paas itne paise nahi hain.")
 
-    # --- Dual Protection Check (Added Expiry for Rob too) ---
+    # --- 🛡️ PROTECTION CHECK (Robbery) ---
     expiry = get_active_protection(target_db)
     if expiry:
         rem = expiry - datetime.utcnow()
-        return await update.message.reply_text(f"🛡️ <b>Robbery Failed!</b> {target_mention} has a shield active for <code>{format_time(rem)}</code>.", parse_mode=ParseMode.HTML)
+        return await update.message.reply_text(
+            f"🛡️ <b>{stylize_text('ROBBERY FAILED')}!</b>\n\n"
+            f"{target_mention} has a 𝑮𝒖𝒂𝒓𝒅𝒊𝒂𝒏 𝑺𝒉𝒊𝒆𝒍𝒅 active!\n"
+            f"⏳ Expires in: <code>{format_time(rem)}</code>", 
+            parse_mode=ParseMode.HTML
+        )
 
     users_collection.update_one({"user_id": target_db["user_id"]}, {"$inc": {"balance": -amount}})
     users_collection.update_one({"user_id": attacker_db["user_id"]}, {"$inc": {"balance": amount}})
@@ -91,7 +101,8 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     narration = await get_narrative("rob", attacker_mention, target_mention)
     await update.message.reply_text(
         f"💰 <b>{stylize_text('ROBBERY')}!</b>\n\n📝 <i>{narration}</i>\n\n"
-        f"😈 <b>Thief:</b> {attacker_mention}\n💸 <b>Stolen:</b> <code>{format_money(amount)}</code> from {target_mention}", parse_mode=ParseMode.HTML
+        f"😈 <b>Thief:</b> {attacker_mention}\n💸 <b>Stolen:</b> <code>{format_money(amount)}</code> from {target_mention}", 
+        parse_mode=ParseMode.HTML
     )
 
 # --- 🛡️ PROTECT COMMAND ---
@@ -110,7 +121,7 @@ async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"🛡️ <b>{stylize_text('DUAL SHIELD ON')}!</b>\n\n"
-        f"👤 {get_mention(user)} is now safe from <b>Kills</b> and <b>Robbery</b> for 24 hours!\n"
+        f"👤 {get_mention(user)} is now safe from <b>Murder</b> and <b>Robbery</b> for 24 hours!\n"
         f"💰 Cost: <code>{format_money(PROTECT_1D_COST)}</code>", parse_mode=ParseMode.HTML
     )
 
