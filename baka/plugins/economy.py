@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Economy Plugin - Destiny Bot (Optimized Logic)
+# Final Economy Plugin - With Item Gifting & Optimized Logic
 
 import random
 import time
@@ -75,15 +75,6 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not flex: msg += "\n<i>Empty...</i>"
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(kb) if kb else None)
 
-async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    rich = users_collection.find().sort("balance", -1).limit(10)
-    def get_badge(i): return ["🥇","🥈","🥉"][i-1] if i<=3 else f"<code>{i}.</code>"
-
-    msg = f"🏆 <b>{stylize_text('GLOBAL RICHEST')}</b> 🏆\n\n"
-    for i, d in enumerate(rich, 1): 
-        msg += f"{get_badge(i)} {get_mention(d)} » <b>{format_money(d.get('balance',0))}</b>\n"
-    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
-
 async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sender = ensure_user_exists(update.effective_user)
     args = context.args
@@ -107,6 +98,34 @@ async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"💸 <b>{stylize_text('Transfer Complete')}!</b>\n💰 Sent: <code>{format_money(final)}</code>", parse_mode=ParseMode.HTML)
 
+# --- NEW: GIVE ITEM COMMAND ---
+async def give_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    sender_obj = update.effective_user
+    sender_db = ensure_user_exists(sender_obj)
+    
+    if len(context.args) < 1:
+        return await update.message.reply_text(f"⚠️ <b>{stylize_text('Usage')}:</b> <code>/giveitem [name] @user</code>")
+
+    item_query = context.args[0].lower()
+    target_db, error = await resolve_target(update, context, specific_arg=context.args[1] if len(context.args) > 1 else None)
+    
+    if not target_db: return await update.message.reply_text(error or "❌ User not found!")
+
+    inventory = sender_db.get('inventory', [])
+    item = next((i for i in inventory if item_query in i['name'].lower() or item_query in i['id'].lower()), None)
+
+    if not item: return await update.message.reply_text(f"❌ {stylize_text('Item aapke paas nahi hai!')}")
+    if sender_db['user_id'] == target_db['user_id']: return await update.message.reply_text("🙄")
+
+    users_collection.update_one({"user_id": sender_db['user_id']}, {"$pull": {"inventory": {"id": item['id']}}})
+    users_collection.update_one({"user_id": target_db['user_id']}, {"$push": {"inventory": item}})
+
+    await update.message.reply_text(
+        f"🎁 <b>{stylize_text('ITEM GIFTED')}!</b>\n\n"
+        f"{get_mention(sender_obj)} 𝒏𝒆 {get_mention(target_db)} 𝒌𝒐 <b>{item['name']}</b> 𝒕𝒓𝒂𝒏𝒔𝒇𝒆𝒓 𝒌𝒊𝒚𝒂!",
+        parse_mode=ParseMode.HTML
+    )
+
 async def claim(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     user = update.effective_user
@@ -116,55 +135,27 @@ async def claim(update: Update, context: ContextTypes.DEFAULT_TYPE):
     group_doc = get_group_data(chat.id, chat.title)
     
     if group_doc.get("claimed"): 
-        return await update.message.reply_text(f"🕒 <b>{stylize_text('Already Claimed!')}</b>\nIs group ka bonus aaj khatam ho gaya.")
+        return await update.message.reply_text(f"🕒 <b>{stylize_text('Already Claimed!')}</b>")
     
     count = await context.bot.get_chat_member_count(chat.id)
     if count < MIN_CLAIM_MEMBERS:
-        return await update.message.reply_text(f"❌ <b>{stylize_text('Group too small')}!</b>\nNeed {MIN_CLAIM_MEMBERS} members.")
+        return await update.message.reply_text(f"❌ <b>{stylize_text('Group too small')}!</b>")
     
     users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": CLAIM_BONUS}})
     groups_collection.update_one({"chat_id": chat.id}, {"$set": {"claimed": True}})
     
-    await update.message.reply_text(
-        f"💎 <b>{stylize_text('Daily Bonus')}</b>\n\n"
-        f"✨ {get_mention(user)} 𝒏𝒆 𝒂𝒂𝒋 𝒌𝒂 𝑮𝒓𝒐𝒖𝒑 𝑹𝒆𝒘𝒂𝒓𝒅 𝒍𝒐𝒐𝒕 𝒍𝒊𝒚𝒂!\n"
-        f"💰 <b>{stylize_text('Reward')}:</b> <code>{format_money(CLAIM_BONUS)}</code>", 
-        parse_mode=ParseMode.HTML
-    )
-
-async def sell_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if not context.args: return await update.message.reply_text(f"⚠️ <b>{stylize_text('Usage')}:</b> <code>/sellxp 100</code>")
-    
-    try: amt = int(context.args[0])
-    except: return await update.message.reply_text("❌ Invalid number!")
-
-    user_data = users_collection.find_one({"user_id": user.id})
-    if not user_data or user_data.get("exp", 0) < amt: 
-        return await update.message.reply_text("❌ Not enough EXP!")
-
-    coins = amt // EXCHANGE_RATE
-    users_collection.update_one({"user_id": user.id}, {"$inc": {"exp": -amt, "balance": coins}})
-    await update.message.reply_text(f"🔄 <b>{stylize_text('Exchange Complete')}!</b>\nSold {amt} EXP for <code>{format_money(coins)}</code>", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"💎 <b>{stylize_text('Claimed')}</b> <code>{format_money(CLAIM_BONUS)}</code>!", parse_mode=ParseMode.HTML)
 
 # --- AUTO HANDLERS ---
 async def check_chat_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type == "private" or not update.message or not update.effective_user: 
-        return
+    if not update.effective_chat or update.effective_chat.type == "private" or not update.effective_user: return
     
     user_id = update.effective_user.id
     current_time = time.time()
-    chat_title = update.effective_chat.title
+    update_group_activity(update.effective_chat.id, update.effective_chat.title)
 
-    update_group_activity(update.effective_chat.id, chat_title)
-
-    if user_id in user_cooldowns and (current_time - user_cooldowns[user_id] < EXP_COOLDOWN): 
-        return 
+    if user_id in user_cooldowns and (current_time - user_cooldowns[user_id] < EXP_COOLDOWN): return 
 
     xp_amount = random.randint(*EXP_RANGE)
-    users_collection.update_one(
-        {"user_id": user_id}, 
-        {"$inc": {"exp": xp_amount}, "$set": {"last_chat_id": update.effective_chat.id}}, 
-        upsert=True
-    )
+    users_collection.update_one({"user_id": user_id}, {"$inc": {"exp": xp_amount}}, upsert=True)
     user_cooldowns[user_id] = current_time
