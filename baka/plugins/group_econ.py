@@ -1,12 +1,12 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Group Economy Plugin - Integrated & Logic Fixed
+# Final Group Economy Plugin - Mentions Fixed & Serif Font
 
 import random
 import time
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.utils import get_mention, format_money, stylize_text
+from baka.utils import format_money, stylize_text
 from baka.database import users_collection, groups_collection
 from baka.plugins.chatbot import ask_mistral_raw
 
@@ -38,16 +38,21 @@ async def territory_raid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     target_handle = context.args[0].replace("@", "")
     
+    # Simple Clickable Name without showing UserID text
+    user_mention = f"<a href='tg://user?id={user.id}'>{user.first_name}</a>"
+    
     # 30% Success Rate
     if random.randint(1, 100) > 70:
         loot = random.randint(5000, 15000)
         users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": loot}})
+        
         await update.message.reply_text(
             f"⚔️ <b>{stylize_text('RAID SUCCESS')}!</b>\n\n"
-            f"{get_mention(user)} 𝒏𝒆 <b>{target_handle}</b> 𝒔𝒆 <code>{format_money(loot)}</code> 𝒍𝒐𝒐𝒕 𝒍𝒊𝒚𝒆!"
+            f"{user_mention} {stylize_text('𝒏𝒆')} <b>{target_handle}</b> {stylize_text('𝒔𝒆')} <code>{format_money(loot)}</code> {stylize_text('𝒍𝒐𝒐𝒕 𝒍𝒊𝒚𝒆!')}",
+            parse_mode=ParseMode.HTML
         )
     else:
-        await update.message.reply_text(f"💀 <b>{stylize_text('RAID FAILED')}!</b> Aapki army haar gayi.")
+        await update.message.reply_text(f"💀 <b>{stylize_text('RAID FAILED')}!</b> {stylize_text('Aapki army haar gayi.')}", parse_mode=ParseMode.HTML)
 
 # --- 3. AI GOVERNOR ---
 async def ai_governor(update: Update, context: ContextTypes.DEFAULT_TYPE):
