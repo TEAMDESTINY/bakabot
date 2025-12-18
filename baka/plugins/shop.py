@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Fixed Shop Plugin - Sync with Ryan.py Callback
+# Final Fixed Shop Plugin - Public Access Version
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
@@ -55,7 +55,7 @@ def get_category_kb(category_type, page=0):
     
     nav = []
     if page > 0: nav.append(InlineKeyboardButton("⬅️", callback_data=f"shop_cat|{category_type}|{page-1}"))
-    nav.append(InlineKeyboardButton("🔙 𝐌𝐞𝐧𝐮", callback_data="shop_home"))
+    nav.append(InlineKeyboardButton("🔙 𝐌𝐞𝐧υ", callback_data="shop_home"))
     if end_idx < len(items): nav.append(InlineKeyboardButton("➡️", callback_data=f"shop_cat|{category_type}|{page+1}"))
     keyboard.append(nav)
     return InlineKeyboardMarkup(keyboard)
@@ -63,9 +63,9 @@ def get_category_kb(category_type, page=0):
 def get_item_kb(item_id, category, page, can_afford, is_owned):
     kb = []
     if is_owned: kb.append([InlineKeyboardButton("✅ 𝐎𝐰𝐧𝐞𝐝", callback_data="shop_owned")])
-    elif can_afford: kb.append([InlineKeyboardButton("💳 𝐁𝐮𝐲 𝐍𝐨𝐰", callback_data=f"shop_buy|{item_id}|{category}|{page}")])
-    else: kb.append([InlineKeyboardButton("❌ 𝐂𝐚𝐧'𝐭 𝐀𝐟𝐟𝐨𝐫𝐝", callback_data="shop_poor")])
-    kb.append([InlineKeyboardButton("🔙 𝐁𝐚𝐜𝐤", callback_data=f"shop_cat|{category}|{page}")])
+    elif can_afford: kb.append([InlineKeyboardButton("💳 𝐁υ𝐲 𝐍𝐨𝐰", callback_data=f"shop_buy|{item_id}|{category}|{page}")])
+    else: kb.append([InlineKeyboardButton("❌ 𝐂ᴧη'ᴛ ᴧғғσꝛᴅ", callback_data="shop_poor")])
+    kb.append([InlineKeyboardButton("🔙 𝐁ᴧᴄᴋ", callback_data=f"shop_cat|{category}|{page}")])
     return InlineKeyboardMarkup(kb)
 
 # --- MENUS ---
@@ -83,10 +83,13 @@ async def shop_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=kb)
 
-# --- CALLBACK HANDLER ---
+# --- CALLBACK HANDLER (NO SUDO CHECK) ---
 async def shop_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    
+    # 🚨 FIX: Sabhi users ke liye answer enable kiya
+    await query.answer() 
+    
     user = ensure_user_exists(query.from_user)
     data = query.data.split("|")
     action = data[0]
@@ -132,9 +135,8 @@ async def shop_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         item_with_time['bought_at'] = datetime.utcnow()
         users_collection.update_one({"user_id": user['user_id']}, {"$inc": {"balance": -item['price']}, "$push": {"inventory": item_with_time}})
         await query.answer(f"🎉 Bought {item['name']}!", show_alert=True)
-        # Refresh view
-        query.data = f"shop_view|{item_id}|{cat}|{page}"
-        await shop_callback(update, context)
+        # Refresh current view
+        await shop_menu(update, context)
 
     elif action == "shop_poor": await query.answer("📉 You are too poor!", show_alert=True)
     elif action == "shop_owned": await query.answer("🎒 Already owned!", show_alert=True)
