@@ -12,7 +12,7 @@ from telegram.ext import (
 )
 from telegram.request import HTTPXRequest
 
-# Noise kam karne ke liye
+# Error noise kam karne ke liye
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 
 # --- LOGGING SETUP ---
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     if not TOKEN:
         print("CRITICAL: BOT_TOKEN is missing!")
     else:
-        # High-performance request config
+        # High-performance request config for Group Overload protection
         t_request = HTTPXRequest(
             connection_pool_size=30, 
             connect_timeout=40.0, 
@@ -108,9 +108,10 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("ranking", economy.ranking))
         app_bot.add_handler(CommandHandler("give", economy.give))
-        app_bot.add_handler(CommandHandler("giveitem", economy.give_item)) # GIFTING ADDED
+        app_bot.add_handler(CommandHandler("giveitem", economy.give_item))
         app_bot.add_handler(CommandHandler("claim", economy.claim))
         app_bot.add_handler(CommandHandler("daily", daily.daily))
+        app_bot.add_handler(CommandHandler("sellxp", economy.sell_xp))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
         app_bot.add_handler(CommandHandler("buy", shop.buy))
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
@@ -157,12 +158,18 @@ if __name__ == '__main__':
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
         
-        # Priority Logic Groups
+        # Priority Logic Groups (Performance optimized)
+        # Group 1: Waifu Collection logic
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, collection.collect_waifu), group=1)
+        # Group 2: Item Drops / Spawn logic
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, collection.check_drops), group=2)
+        # Group 3: Riddle Solver logic
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, riddle.check_riddle_answer), group=3)
+        # Group 4: AI Chatbot / Passive Chat
         app_bot.add_handler(MessageHandler((filters.TEXT | filters.Sticker.ALL) & ~filters.COMMAND, chatbot.ai_message_handler), group=4)
-        app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=5)
+        # Group 5: Activity & XP Tracker
+        app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=5)
+        app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=6)
 
         print("--------------------------")
         print("🚀 DESTINY BOT IS LIVE!")
