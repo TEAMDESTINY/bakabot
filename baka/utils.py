@@ -1,6 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Location: Supaul, Bihar 
-# Final Upgraded Utils - Fixed Import Errors & Logger
+# Final Fixed Utils - No More Import Errors
 
 import html
 import re
@@ -48,24 +47,33 @@ def stylize_text(text):
     parts = re.split(pattern, str(text))
     return "".join(part if re.match(pattern, part) else apply_style(part) for part in parts)
 
-# --- 🌟 LOG TO CHANNEL (YE MISSING THA) ---
+# --- 🌟 LOGGING & NOTIFICATIONS ---
 async def log_to_channel(bot: Bot, event_type: str, details: dict):
     if not LOGGER_ID or LOGGER_ID == 0: return
     now = datetime.now().strftime("%I:%M:%S %p")
-    header = f"📜 <b>{stylize_text(event_type.upper())}</b>"
-    text = f"{header}\n━━━━━━━━━━━━━━━━━━\n"
+    text = f"📜 <b>{stylize_text(event_type.upper())}</b>\n━━━━━━━━━━━━━━━━━━\n"
     for k, v in details.items():
         text += f"<b>{k.title()}:</b> {v}\n"
     text += f"━━━━━━━━━━━━━━━━━━\n⌚ <code>{now}</code>"
-    try:
-        await bot.send_message(chat_id=LOGGER_ID, text=text, parse_mode=ParseMode.HTML)
+    try: await bot.send_message(chat_id=LOGGER_ID, text=text, parse_mode=ParseMode.HTML)
     except: pass
 
-# --- 🌟 NOTIFICATION ENGINE ---
 async def notify_victim(bot, user_id, message_text):
     try:
         await bot.send_message(chat_id=user_id, text=message_text, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
     except: pass
+
+# --- 🏰 GROUP TRACKER (FIXED MISSING FUNCTION) ---
+def track_group(chat, user=None):
+    """Groups ko database mein track karne ke liye."""
+    if chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
+        groups_collection.update_one(
+            {"chat_id": chat.id},
+            {"$set": {"title": chat.title}, "$setOnInsert": {"claimed": False}},
+            upsert=True
+        )
+        if user:
+            users_collection.update_one({"user_id": user.id}, {"$addToSet": {"seen_groups": chat.id}})
 
 # --- 👤 MENTION & TARGET ---
 def get_mention(user_data, custom_name=None):
