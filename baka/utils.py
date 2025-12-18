@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Fixed Utils - No More Import Errors
+# Final Complete Utils - No More Missing Imports!
 
 import html
 import re
@@ -63,9 +63,8 @@ async def notify_victim(bot, user_id, message_text):
         await bot.send_message(chat_id=user_id, text=message_text, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
     except: pass
 
-# --- 🏰 GROUP TRACKER (FIXED MISSING FUNCTION) ---
+# --- 🏰 GROUP TRACKER ---
 def track_group(chat, user=None):
-    """Groups ko database mein track karne ke liye."""
     if chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
         groups_collection.update_one(
             {"chat_id": chat.id},
@@ -74,6 +73,21 @@ def track_group(chat, user=None):
         )
         if user:
             users_collection.update_one({"user_id": user.id}, {"$addToSet": {"seen_groups": chat.id}})
+
+# --- 🛡️ PROTECTION ENGINE (YE MISSING THA) ---
+def get_active_protection(user_data):
+    """Checks if protection_expiry is still valid."""
+    try:
+        now = datetime.utcnow()
+        expiry = user_data.get("protection_expiry")
+        if expiry and expiry > now:
+            return expiry
+        return None
+    except:
+        return None
+
+def is_protected(user_data):
+    return get_active_protection(user_data) is not None
 
 # --- 👤 MENTION & TARGET ---
 def get_mention(user_data, custom_name=None):
@@ -89,18 +103,14 @@ async def resolve_target(update, context, specific_arg=None):
         return ensure_user_exists(update.message.reply_to_message.from_user), None
     query = specific_arg or (context.args[0] if context.args else None)
     if not query: return None, "No target"
-    if query.isdigit():
+    if str(query).isdigit():
         doc = users_collection.find_one({"user_id": int(query)})
         return (doc, None) if doc else (None, "ID not found")
     clean_un = query.replace("@", "").lower()
     doc = users_collection.find_one({"username": clean_un})
     return (doc, None) if doc else (None, "User not found")
 
-# --- 🛡️ ECONOMY & STATUS ---
-def is_protected(user_data):
-    expiry = user_data.get("protection_expiry")
-    return expiry and expiry > datetime.utcnow()
-
+# --- 💰 ECONOMY UTILS ---
 def is_user_new(user_id):
     return users_collection.find_one({"user_id": user_id}) is None
 
