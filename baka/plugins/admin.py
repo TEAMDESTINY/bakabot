@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
 # Location: Supaul, Bihar 
-# Final Admin Plugin - Add/Remove/Manage (Reply, Username, ID Support)
+# Final Admin Plugin - Fixed Unprotect & Multi-Target Support
 
 import html
 import os
@@ -139,8 +139,12 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         elif act == "unprotect":
             uid = int(data[2])
-            users_collection.update_one({"user_id": uid}, {"$set": {"protection": None, "protection_expiry": None}})
-            await q.message.edit_text(f"🛡️ Shield removed for <code>{uid}</code>.")
+            # 🔥 DOUBLE RESET: Both fields cleared
+            users_collection.update_one(
+                {"user_id": uid}, 
+                {"$set": {"protection": None, "protection_expiry": None}}
+            )
+            await q.message.edit_text(f"🛡️ {stylize_text('Shield REMOVED for')} <code>{uid}</code>.")
 
         elif act == "cleandb":
             users_collection.delete_many({})
