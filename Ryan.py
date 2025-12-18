@@ -1,9 +1,8 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Optimized for High Traffic & Global Groups
+# Final Ryan.py - Stable, Multi-Feature & High Performance Polling
 
 import os
 import logging
-import asyncio
 from threading import Thread
 from flask import Flask
 from telegram import Update
@@ -13,7 +12,7 @@ from telegram.ext import (
 )
 from telegram.request import HTTPXRequest
 
-# Error noise kam karne ke liye
+# Noise kam karne ke liye
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 
 # --- LOGGING SETUP ---
@@ -38,13 +37,14 @@ except ImportError as e:
 # --- FLASK SERVER (Uptime Monitoring) ---
 app = Flask(__name__)
 @app.route('/')
-def health(): return "Destiny Bot is Active! 🚀"
+def health(): return "Destiny Engine is Active! 🚀"
 
 def run_flask(): 
     app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False)
 
 # --- STARTUP LOGIC ---
 async def post_init(application):
+    """Executes once the bot starts successfully."""
     print("✅ DESTINY ENGINE CONNECTED!")
     
     commands = [
@@ -55,6 +55,7 @@ async def post_init(application):
         ("kill", "🔪 ᴋɪʟʟ"), 
         ("rob", "💰 sᴛєᴧʟ"), 
         ("give", "💸 ᴛꝛᴧηsғєꝛ"), 
+        ("giveitem", "🎁 ɢɪғᴛ ɪᴛєϻ"),
         ("claim", "💎 ʙσηυs"),
         ("daily", "📅 ᴅᴧɪʟʏ"), 
         ("ranking", "🏆 ᴛσᴘs"),
@@ -76,9 +77,9 @@ if __name__ == '__main__':
     Thread(target=run_flask, daemon=True).start()
     
     if not TOKEN:
-        print("CRITICAL: BOT_TOKEN missing!")
+        print("CRITICAL: BOT_TOKEN is missing!")
     else:
-        # High-performance request config for Group Overload protection
+        # High-performance request config
         t_request = HTTPXRequest(
             connection_pool_size=30, 
             connect_timeout=40.0, 
@@ -107,6 +108,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("ranking", economy.ranking))
         app_bot.add_handler(CommandHandler("give", economy.give))
+        app_bot.add_handler(CommandHandler("giveitem", economy.give_item)) # GIFTING ADDED
         app_bot.add_handler(CommandHandler("claim", economy.claim))
         app_bot.add_handler(CommandHandler("daily", daily.daily))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
@@ -114,7 +116,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
         app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_"))
         
-        # --- 3. RPG & WARFARE ---
+        # --- 3. RPG & GROUP WARFARE ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
         app_bot.add_handler(CommandHandler("protect", game.protect))
@@ -135,10 +137,7 @@ if __name__ == '__main__':
         for act in waifu.SFW_ACTIONS:
             app_bot.add_handler(CommandHandler(act, waifu.waifu_action))
 
-        # --- 5. FUN & AI ---
-        app_bot.add_handler(CommandHandler("dice", fun.dice))
-        app_bot.add_handler(CommandHandler("slots", fun.slots))
-        app_bot.add_handler(CommandHandler("riddle", riddle.riddle_command))
+        # --- 5. AI & MEDIA ---
         app_bot.add_handler(CommandHandler("draw", ai_media.draw_command))
         app_bot.add_handler(CommandHandler("speak", ai_media.speak_command))
         app_bot.add_handler(CommandHandler("chatbot", chatbot.chatbot_menu)) 
@@ -148,19 +147,17 @@ if __name__ == '__main__':
         # --- 6. SYSTEM & ADMIN ---
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
-        app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
-        app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
         app_bot.add_handler(CommandHandler("topgroups", group_econ.top_groups))
         app_bot.add_handler(CallbackQueryHandler(group_econ.top_groups, pattern="^topg_"))
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
 
-        # --- 7. MESSAGE LISTENERS (Ordered) ---
+        # --- 7. MESSAGE LISTENERS (Strict Priority) ---
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
         
-        # Logic Groups (Performance optimized)
+        # Priority Logic Groups
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, collection.collect_waifu), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, collection.check_drops), group=2)
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, riddle.check_riddle_answer), group=3)
@@ -168,7 +165,11 @@ if __name__ == '__main__':
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=5)
 
         print("--------------------------")
-        print("🚀 DESTINY BOT IS ONLINE!")
+        print("🚀 DESTINY BOT IS LIVE!")
         print("--------------------------")
         
-        app_bot.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+        app_bot.run_polling(
+            allowed_updates=Update.ALL_TYPES, 
+            drop_pending_updates=True,
+            bootstrap_retries=5
+        )
