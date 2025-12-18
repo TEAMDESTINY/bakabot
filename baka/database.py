@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Database Logic - Destiny / Baka Bot (PRODUCTION READY)
+# Final Database Logic - Destiny / Baka Bot (OPTIMIZED)
 
 from pymongo import MongoClient, ASCENDING
 import certifi
@@ -8,48 +8,44 @@ from datetime import datetime
 from baka.config import MONGO_URI
 
 # --------------------------------------------------
-# Mongo Connection
+# Mongo Connection (High Performance)
 # --------------------------------------------------
-
 RyanBaka = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = RyanBaka["bakabot_db"]
 
-# --------------------------------------------------
 # Collections
-# --------------------------------------------------
-
 users_collection   = db["users"]
 groups_collection  = db["groups"]
 sudoers_collection = db["sudoers"]
 chatbot_collection = db["chatbot"]
 riddles_collection = db["riddles"]
 
-# --------------------------------------------------
-# Indexes (Performance Boost)
-# --------------------------------------------------
-
+# Indexes
 users_collection.create_index([("user_id", ASCENDING)], unique=True)
 groups_collection.create_index([("chat_id", ASCENDING)], unique=True)
 
 # --------------------------------------------------
-# USER LOGIC (SAFE AUTO CREATE)
+# 👤 USER LOGIC (SMART SYNC)
 # --------------------------------------------------
 
 def ensure_user(user):
-    """Create user if not exists (atomic & safe)."""
+    """Create or Sync user data atomically."""
     users_collection.update_one(
         {"user_id": user.id},
         {
             "$setOnInsert": {
                 "user_id": user.id,
-                "name": user.first_name,
-                "username": user.username,
                 "balance": 500,
                 "kills": 0,
                 "status": "alive",
                 "waifus": [],
+                "inventory": [],
                 "protection": None,
                 "created_at": datetime.utcnow()
+            },
+            "$set": {
+                "name": user.first_name,
+                "username": user.username.lower() if user.username else None
             }
         },
         upsert=True
@@ -57,10 +53,11 @@ def ensure_user(user):
     return users_collection.find_one({"user_id": user.id})
 
 # --------------------------------------------------
-# GROUP LOGIC
+# 🏰 GROUP LOGIC (ECONOMY SYNC)
 # --------------------------------------------------
 
 def get_group_data(chat_id, title=None):
+    """Fetch group data with auto-repair for missing fields."""
     group = groups_collection.find_one({"chat_id": chat_id})
 
     if not group:
@@ -75,16 +72,18 @@ def get_group_data(chat_id, title=None):
             "last_active": int(time.time())
         }
         groups_collection.insert_one(group)
-
     else:
-        updates = {}
+        # Auto-fill missing keys if ChatGPT missed them
+        defaults = {
+            "daily_activity": 0, 
+            "weekly_activity": 0, 
+            "claimed": False, 
+            "treasury": 10000
+        }
+        updates = {k: v for k, v in defaults.items() if k not in group}
         if title and group.get("title") != title:
             updates["title"] = title
-        if "daily_activity" not in group: updates["daily_activity"] = 0
-        if "weekly_activity" not in group: updates["weekly_activity"] = 0
-        if "claimed" not in group: updates["claimed"] = False
-        if "shares" not in group: updates["shares"] = 10.0
-
+            
         if updates:
             groups_collection.update_one({"chat_id": chat_id}, {"$set": updates})
             group.update(updates)
@@ -92,57 +91,35 @@ def get_group_data(chat_id, title=None):
     return group
 
 def update_group_activity(chat_id, title=None):
-    update_query = {
-        "$inc": {
-            "daily_activity": 1,
-            "weekly_activity": 1,
-            "treasury": 10
-        },
-        "$set": {
-            "last_active": int(time.time())
-        }
-    }
-
-    if title:
-        update_query["$set"]["title"] = title
-
+    """Increments stats on every message."""
     groups_collection.update_one(
         {"chat_id": chat_id},
-        update_query,
+        {
+            "$inc": {"daily_activity": 1, "weekly_activity": 1, "treasury": 10},
+            "$set": {"last_active": int(time.time()), "title": title} if title else {"$set": {"last_active": int(time.time())}}
+        },
         upsert=True
     )
 
 # --------------------------------------------------
-# RESET LOGIC
-# --------------------------------------------------
-
-def reset_daily_activity():
-    result = groups_collection.update_many(
-        {},
-        {"$set": {"daily_activity": 0, "claimed": False}}
-    )
-    print(f"✨ Daily Stats Reset: {result.modified_count} groups")
-
-def reset_weekly_activity():
-    result = groups_collection.update_many(
-        {},
-        {"$set": {"weekly_activity": 0}}
-    )
-    print(f"👑 Weekly Stats Reset: {result.modified_count} groups")
-
-# --------------------------------------------------
-# CLEANUP: EXPIRED PROTECTION
+# 🛡️ PROTECTION & MAINTENANCE
 # --------------------------------------------------
 
 def cleanup_expired_protection():
+    """Removes protection shield once time is up."""
     now = datetime.utcnow()
-    users_collection.update_many(
+    result = users_collection.update_many(
         {"protection": {"$lte": now}},
         {"$set": {"protection": None}}
     )
+    return result.modified_count
+
+def reset_daily_stats():
+    """Daily reset for /claim and activity."""
+    groups_collection.update_many({}, {"$set": {"daily_activity": 0, "claimed": False}})
 
 # --------------------------------------------------
-# USER HELPER
+# USER HELPERS
 # --------------------------------------------------
 
 def get_user_waifus(user_id):
