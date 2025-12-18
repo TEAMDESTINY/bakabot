@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
 # Location: Supaul, Bihar 
-# Intellectual Property of @WTF_Phantom.
+# Final Upgraded Utils - DM Alerts, Start Checks & Name Sync
 
 import html
 import re
@@ -52,34 +52,18 @@ def stylize_text(text):
     parts = re.split(pattern, str(text))
     return "".join(part if re.match(pattern, part) else apply_style(part) for part in parts)
 
-# --- 🌟 ULTIMATE DASHBOARD LOGGER ---
-async def log_to_channel(bot: Bot, event_type: str, details: dict):
-    if not LOGGER_ID or LOGGER_ID == 0: return
-    now = datetime.now().strftime("%I:%M:%S %p | %d %b")
-
-    headers = {
-        "start": f"🌸 <b>{stylize_text('SYSTEM ONLINE')}</b>",
-        "join": f"🥂 <b>{stylize_text('NEW GROUP JOINED')}</b>",
-        "leave": f"💔 <b>{stylize_text('LEFT GROUP')}</b>",
-        "command": f"👮‍♀️ <b>{stylize_text('ADMIN COMMAND')}</b>",
-        "transfer": f"💸 <b>{stylize_text('TRANSACTION')}</b>"
-    }
-    header = headers.get(event_type, f"📜 <b>{stylize_text('LOG ENTRY')}</b>")
-    text = f"{header}\n━━━━━━━━━━━━━━━━━━\n"
-
-    if 'user' in details: text += f"👤 <b>{stylize_text('User')}:</b> {details['user']}\n"
-    if 'chat' in details: text += f"🏰 <b>{stylize_text('Chat')}:</b> {html.escape(str(details['chat']))}\n"
-    if 'action' in details: text += f"🎬 <b>{stylize_text('Action')}:</b> {details['action']}\n"
-    if 'link' in details:
-        link_val = details['link']
-        if link_val and str(link_val).startswith("http"):
-            text += f"🔗 <b>{stylize_text('Invite')}:</b> <a href='{link_val}'>Click to Join</a>\n"
-        else: text += f"🔒 <b>{stylize_text('Invite')}:</b> <i>Hidden/Private</i>\n"
-
-    text += f"━━━━━━━━━━━━━━━━━━\n⌚ <code>{now}</code>"
-    try: 
-        await bot.send_message(chat_id=LOGGER_ID, text=text, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
-    except Exception as e: print(f"Log Error: {e}")
+# --- 🌟 NOTIFICATION ENGINE (Clickable DMs) ---
+async def notify_victim(bot: Bot, user_id: int, message_text: str):
+    """Victim/Attacker ko DM mein clickable notification bhejta hai."""
+    try:
+        await bot.send_message(
+            chat_id=user_id, 
+            text=message_text, 
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=True
+        )
+    except Exception:
+        pass # User ne bot start nahi kiya ya block kiya hai
 
 # --- 👤 MENTION ENGINE ---
 def get_mention(user_data, custom_name=None):
@@ -127,6 +111,10 @@ def get_active_protection(user_data):
 def is_protected(user_data):
     return get_active_protection(user_data) is not None
 
+def is_user_new(user_id):
+    """Check karta hai ki user ne bot start kiya hai ya nahi (DB check)."""
+    return users_collection.find_one({"user_id": user_id}) is None
+
 def format_money(amount): return f"${amount:,}"
 
 def format_time(timedelta_obj):
@@ -150,12 +138,10 @@ def ensure_user_exists(tg_user):
         users_collection.insert_one(new_user)
         return new_user
     
-    # 🔄 Sync Username and Name if changed (FIX FOR "USER" ISSUE)
     updates = {}
     if user_doc.get("username") != username: updates["username"] = username
     if user_doc.get("name") != tg_user.first_name: updates["name"] = tg_user.first_name
     
-    # ⚰️ Auto-Revive Check
     death_time = user_doc.get('death_time')
     if user_doc.get('status') == 'dead' and death_time:
         if datetime.utcnow() - death_time > timedelta(hours=AUTO_REVIVE_HOURS):
@@ -165,7 +151,7 @@ def ensure_user_exists(tg_user):
             
     if updates:
         users_collection.update_one({"user_id": tg_user.id}, {"$set": updates})
-        user_doc.update(updates) # Instant update in current object
+        user_doc.update(updates)
 
     return user_doc
 
