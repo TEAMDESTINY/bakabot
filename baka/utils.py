@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Utils - Destiny / Baka Bot (FIXED & PRODUCTION READY)
+# Final Utils - Destiny / Baka Bot (FIXED TRACK_GROUP IMPORT)
 
 import html
 import re
@@ -16,7 +16,7 @@ from baka.config import (
 )
 
 # --- 🚀 GLOBAL CONSTANTS ---
-BOT_NAME = "Destiny" # Isse Ryan.py ka Import Error khatam ho jayega.
+BOT_NAME = "Destiny"
 
 # --------------------------------------------------
 # SUDO SYSTEM
@@ -28,12 +28,10 @@ def reload_sudoers():
     """Load sudo users from env + database."""
     SUDO_USERS.clear()
     SUDO_USERS.add(OWNER_ID)
-
     if SUDO_IDS_STR:
         for x in SUDO_IDS_STR.split(','):
             if x.strip().isdigit():
                 SUDO_USERS.add(int(x.strip()))
-
     for doc in sudoers_collection.find({}):
         SUDO_USERS.add(doc['user_id'])
 
@@ -59,12 +57,11 @@ def stylize_text(text: str) -> str:
     return ''.join(font_map.get(c, c) for c in str(text))
 
 # --------------------------------------------------
-# 👤 MENTION ENGINE (Clickable Name - No ID)
+# 👤 MENTION ENGINE
 # --------------------------------------------------
 
 def get_mention(user_data, custom_name=None) -> str:
     if not user_data: return 'Unknown'
-    
     if hasattr(user_data, 'id'):
         uid = user_data.id
         name = user_data.first_name
@@ -72,13 +69,39 @@ def get_mention(user_data, custom_name=None) -> str:
         uid = user_data.get('user_id')
         name = user_data.get('name', 'User')
     else: return 'User'
-
     final_name = custom_name or name
-    # Serif Bold Italic Mention Style
     return f"<a href='tg://user?id={uid}'><b><i>{html.escape(str(final_name))}</i></b></a>"
 
 # --------------------------------------------------
-# 🎯 TARGET RESOLVER (ROB / KILL SAFE)
+# 🏰 GROUP TRACKER (FIXED: Missing function added)
+# --------------------------------------------------
+
+def track_group(chat, user=None):
+    """Initializes group in database if it doesn't exist."""
+    if chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
+        return
+    groups_collection.update_one(
+        {'chat_id': chat.id},
+        {
+            '$setOnInsert': {
+                'chat_id': chat.id,
+                'title': chat.title,
+                'treasury': 10000,
+                'claimed': False,
+                'daily_activity': 0,
+                'weekly_activity': 0
+            }
+        },
+        upsert=True
+    )
+    if user:
+        users_collection.update_one(
+            {'user_id': user.id},
+            {'$addToSet': {'seen_groups': chat.id}}
+        )
+
+# --------------------------------------------------
+# 🎯 TARGET RESOLVER
 # --------------------------------------------------
 
 async def resolve_target(update, context, specific_arg=None):
@@ -87,25 +110,20 @@ async def resolve_target(update, context, specific_arg=None):
         doc = ensure_user_exists(user)
         doc['user_obj'] = user
         return doc, None
-
     query = specific_arg or (context.args[0] if context.args else None)
     if not query: return None, 'No target'
-
     if query.isdigit():
         doc = users_collection.find_one({'user_id': int(query)})
     else:
         username = query.replace('@', '').lower()
         doc = users_collection.find_one({'username': username})
-
     if not doc:
         return None, f"❌ <b>{stylize_text('User not found!')}</b>"
-
-    # User object simulate karna taaki game logic crash na ho
     doc['user_obj'] = doc 
     return doc, None
 
 # --------------------------------------------------
-# 📊 LOGGER & DATABASE HELPERS
+# 📊 DATABASE HELPERS
 # --------------------------------------------------
 
 async def log_to_channel(bot: Bot, event_type: str, details: dict):
@@ -120,7 +138,6 @@ async def log_to_channel(bot: Bot, event_type: str, details: dict):
     except: pass
 
 def ensure_user_exists(tg_user):
-    # Base schema for new users
     users_collection.update_one(
         {'user_id': tg_user.id},
         {'$setOnInsert': {
