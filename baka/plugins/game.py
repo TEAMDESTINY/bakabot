@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
 # Final Game Plugin - Destiny / Baka Bot 
-# Fixed: "User" name issue | Double DM Alerts | Tax Rob
+# Logic: Start Check | Real-name Sync | Double DM Alerts | Owner Bypass
 
 import random
 import html
@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.config import PROTECT_1D_COST, REVIVE_COST
+from baka.config import PROTECT_1D_COST, REVIVE_COST, OWNER_ID
 from baka.utils import (
     ensure_user_exists, resolve_target, get_active_protection, 
     format_money, stylize_text, get_mention, is_protected,
@@ -33,17 +33,20 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text(f"❌ <b>{stylize_text('Target Invalid')}!</b>\n\nSaamne wale ne bot start nahi kiya!")
 
     # --- ⚡ REAL-TIME NAME FIX ---
-    # Database ke 'User' name ko bypass karke direct Telegram se naam uthana
     target_obj = None
     if update.message.reply_to_message:
         target_obj = update.message.reply_to_message.from_user
     
     t_name = target_obj.first_name if target_obj else target_db.get('name', "User")
+    # Clean clickable mention for group messages
     target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(t_name)}</b></a>"
-    # --------------------------
 
-    if is_protected(target_db):
-        return await update.message.reply_text(f"🛡️ {target_mention} {stylize_text('is protected right now!')}", parse_mode=ParseMode.HTML)
+    # 🛡️ PROTECTION CHECK (With Owner Bypass)
+    if is_protected(target_db) and attacker.id != OWNER_ID:
+        return await update.message.reply_text(
+            f"🛡️ {target_mention} {stylize_text('is protected right now!')}", 
+            parse_mode=ParseMode.HTML
+        )
     
     if attacker_db.get('status') == 'dead': 
         return await update.message.reply_text(f"💀 {stylize_text('Pehle khud revive ho jao!')}")
@@ -85,10 +88,13 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target_obj = update.message.reply_to_message.from_user if update.message.reply_to_message else None
     t_name = target_obj.first_name if target_obj else target_db.get('name', "User")
     target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(t_name)}</b></a>"
-    # --------------------------
 
-    if is_protected(target_db):
-        return await update.message.reply_text(f"🛡️ {target_mention} {stylize_text('is protected!')}", parse_mode=ParseMode.HTML)
+    # 🛡️ PROTECTION CHECK (With Owner Bypass)
+    if is_protected(target_db) and user.id != OWNER_ID:
+        return await update.message.reply_text(
+            f"🛡️ {target_mention} {stylize_text('is protected!')}", 
+            parse_mode=ParseMode.HTML
+        )
 
     target_bal = target_db.get('balance', 0)
     if target_bal < 100:
@@ -116,7 +122,7 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
         users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": -fine}})
         await update.message.reply_text(f"💀 {stylize_text('Robbery failed! Fine')}: {format_money(fine)}")
 
-# --- 🛡️ PROTECT & ❤️ REVIVE (Keep as is) ---
+# --- 🛡️ PROTECT & ❤️ REVIVE ---
 async def protect(update, context):
     user = update.effective_user
     user_db = ensure_user_exists(user)
