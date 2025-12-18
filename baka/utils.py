@@ -1,169 +1,151 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Utils - Destiny / Baka Bot (FIXED TRACK_GROUP IMPORT)
+# Location: Supaul, Bihar 
+# Intellectual Property of @WTF_Phantom.
 
 import html
 import re
+import asyncio
 from datetime import datetime, timedelta
-from telegram import Bot
+from telegram import Bot, User, Chat
 from telegram.constants import ParseMode, ChatType
-
+from telegram.error import TelegramError
 from baka.database import users_collection, sudoers_collection, groups_collection
-from baka.config import (
-    OWNER_ID,
-    SUDO_IDS_STR,
-    LOGGER_ID,
-    AUTO_REVIVE_HOURS,
-)
+from baka.config import OWNER_ID, SUDO_IDS_STR, LOGGER_ID, BOT_NAME, AUTO_REVIVE_HOURS, AUTO_REVIVE_BONUS
 
-# --- 🚀 GLOBAL CONSTANTS ---
-BOT_NAME = "Destiny"
-
-# --------------------------------------------------
-# SUDO SYSTEM
-# --------------------------------------------------
-
+# --- SUDO SYSTEM ---
 SUDO_USERS = set()
 
 def reload_sudoers():
-    """Load sudo users from env + database."""
-    SUDO_USERS.clear()
-    SUDO_USERS.add(OWNER_ID)
-    if SUDO_IDS_STR:
-        for x in SUDO_IDS_STR.split(','):
-            if x.strip().isdigit():
-                SUDO_USERS.add(int(x.strip()))
-    for doc in sudoers_collection.find({}):
-        SUDO_USERS.add(doc['user_id'])
+    """Loads Sudo users from Env and DB."""
+    try:
+        SUDO_USERS.clear()
+        SUDO_USERS.add(OWNER_ID)
+        if SUDO_IDS_STR:
+            for x in SUDO_IDS_STR.split(","):
+                if x.strip().isdigit(): SUDO_USERS.add(int(x.strip()))
+        for doc in sudoers_collection.find({}):
+            SUDO_USERS.add(doc["user_id"])
+    except Exception as e:
+        print(f"Sudo Load Error: {e}")
 
 reload_sudoers()
 
-# --------------------------------------------------
-# 🌸 SERIF ITALIC FONT ENGINE
-# --------------------------------------------------
-
-def stylize_text(text: str) -> str:
+# --- 🌸 AESTHETIC FONT ENGINE ---
+def stylize_text(text):
+    """Converts normal text to Aesthetic Math Sans Bold."""
     font_map = {
-        'A': '𝐴','B': '𝐵','C': '𝐶','D': '𝐷','E': '𝐸','F': '𝐹','G': '𝐺',
-        'H': '𝐻','I': '𝐼','J': '𝐽','K': '𝐾','L': '𝐿','M': '𝑀','N': '𝑁',
-        'O': '𝑂','P': '𝑃','Q': '𝑄','R': '𝑅','S': '𝑆','T': '𝑇','U': '𝑈',
-        'V': '𝑉','W': '𝑊','X': '𝑋','Y': '𝑌','Z': '𝑍',
-        'a': '𝑎','b': '𝑏','c': '𝑐','d': '𝑑','e': '𝑒','f': '𝑓','g': '𝑔',
-        'h': 'ℎ','i': '𝑖','j': '𝑗','k': '𝑘','l': '𝑙','m': '𝑚','n': '𝑛',
-        'o': '𝑜','p': '𝑝','q': '𝑞','r': '𝑟','s': '𝑠','t': '𝑡','u': '𝑢',
-        'v': '𝑣','w': '𝑤','x': '𝑥','y': '𝑦','z': '𝑧',
-        '0': '𝟎','1': '𝟏','2': '𝟐','3': '𝟑','4': '𝟒',
-        '5': '𝟓','6': '𝟔','7': '𝟕','8': '𝟖','9': '𝟗'
+        'A': 'ᴧ', 'B': 'ʙ', 'C': 'ᴄ', 'D': 'ᴅ', 'E': 'Є', 'F': 'Ғ', 'G': 'ɢ',
+        'H': 'ʜ', 'I': 'ɪ', 'J': 'ᴊ', 'K': 'ᴋ', 'L': 'ʟ', 'M': 'ϻ', 'N': 'η',
+        'O': 'σ', 'P': 'ᴘ', 'Q': 'ǫ', 'R': 'Ꝛ', 'S': 's', 'T': 'ᴛ', 'U': 'υ',
+        'V': 'ᴠ', 'W': 'ᴡ', 'X': 'x', 'Y': 'ʏ', 'Z': 'ᴢ',
+        'a': 'ᴧ', 'b': 'ʙ', 'c': 'ᴄ', 'd': 'ᴅ', 'e': 'є', 'f': 'ғ', 'g': 'ɢ',
+        'h': 'ʜ', 'i': 'ɪ', 'j': 'ᴊ', 'k': 'ᴋ', 'l': 'ʟ', 'm': 'ϻ', 'n': 'η',
+        'o': 'σ', 'p': 'ᴘ', 'q': 'ǫ', 'r': 'ꝛ', 's': 's', 't': 'ᴛ', 'u': 'υ',
+        'v': 'ᴠ', 'w': 'ᴡ', 'x': 'x', 'y': 'ʏ', 'z': 'ᴢ',
+        '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒', 
+        '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
     }
-    return ''.join(font_map.get(c, c) for c in str(text))
+    def apply_style(t):
+        return "".join(font_map.get(c, c) for c in t)
 
-# --------------------------------------------------
-# 👤 MENTION ENGINE
-# --------------------------------------------------
+    pattern = r"(@\w+|https?://\S+|`[^`]+`|/[a-zA-Z0-9_]+)"
+    parts = re.split(pattern, str(text))
+    result = []
+    for part in parts:
+        if re.match(pattern, part): result.append(part)
+        else: result.append(apply_style(part))
+    return "".join(result)
 
-def get_mention(user_data, custom_name=None) -> str:
-    if not user_data: return 'Unknown'
-    if hasattr(user_data, 'id'):
+# --- 🌟 ULTIMATE DASHBOARD LOGGER ---
+async def log_to_channel(bot: Bot, event_type: str, details: dict):
+    if LOGGER_ID == 0: return
+    now = datetime.now().strftime("%I:%M:%S %p | %d %b")
+
+    headers = {
+        "start": f"🌸 <b>{stylize_text('SYSTEM ONLINE')}</b>",
+        "join": f"🥂 <b>{stylize_text('NEW GROUP JOINED')}</b>",
+        "leave": f"💔 <b>{stylize_text('LEFT GROUP')}</b>",
+        "command": f"👮‍♀️ <b>{stylize_text('ADMIN COMMAND')}</b>",
+        "transfer": f"💸 <b>{stylize_text('TRANSACTION')}</b>"
+    }
+    header = headers.get(event_type, f"📜 <b>{stylize_text('LOG ENTRY')}</b>")
+    text = f"{header}\n━━━━━━━━━━━━━━━━━━\n"
+
+    if 'user' in details: text += f"👤 <b>{stylize_text('User')}:</b> {details['user']}\n"
+    if 'chat' in details: text += f"🏰 <b>{stylize_text('Chat')}:</b> {html.escape(details['chat'])}\n"
+    if 'action' in details: text += f"🎬 <b>{stylize_text('Action')}:</b> {details['action']}\n"
+    if 'link' in details:
+        link_val = details['link']
+        if link_val and str(link_val).startswith("http"):
+            text += f"🔗 <b>{stylize_text('Invite')}:</b> <a href='{link_val}'>Click to Join</a>\n"
+        else: text += f"🔒 <b>{stylize_text('Invite')}:</b> <i>Hidden/Private</i>\n"
+
+    text += f"━━━━━━━━━━━━━━━━━━\n⌚ <code>{now}</code>"
+    try: 
+        await bot.send_message(chat_id=LOGGER_ID, text=text, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+    except Exception as e: print(f"Log Error: {e}")
+
+# --- 👤 MENTION ENGINE ---
+def get_mention(user_data, custom_name=None):
+    if isinstance(user_data, (User, Chat)):
         uid = user_data.id
-        name = user_data.first_name
+        first_name = user_data.first_name if hasattr(user_data, "first_name") else user_data.title
     elif isinstance(user_data, dict):
-        uid = user_data.get('user_id')
-        name = user_data.get('name', 'User')
-    else: return 'User'
-    final_name = custom_name or name
-    return f"<a href='tg://user?id={uid}'><b><i>{html.escape(str(final_name))}</i></b></a>"
+        uid = user_data.get("user_id")
+        first_name = user_data.get("name", "User")
+    else: return "Unknown"
+    name = custom_name or first_name
+    return f"<a href='tg://user?id={uid}'><b>{html.escape(name)}</b></a>"
 
-# --------------------------------------------------
-# 🏰 GROUP TRACKER (FIXED: Missing function added)
-# --------------------------------------------------
-
-def track_group(chat, user=None):
-    """Initializes group in database if it doesn't exist."""
-    if chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
-        return
-    groups_collection.update_one(
-        {'chat_id': chat.id},
-        {
-            '$setOnInsert': {
-                'chat_id': chat.id,
-                'title': chat.title,
-                'treasury': 10000,
-                'claimed': False,
-                'daily_activity': 0,
-                'weekly_activity': 0
-            }
-        },
-        upsert=True
-    )
-    if user:
-        users_collection.update_one(
-            {'user_id': user.id},
-            {'$addToSet': {'seen_groups': chat.id}}
-        )
-
-# --------------------------------------------------
-# 🎯 TARGET RESOLVER
-# --------------------------------------------------
-
+# --- 🎯 TARGET RESOLVER ---
 async def resolve_target(update, context, specific_arg=None):
     if update.message.reply_to_message:
-        user = update.message.reply_to_message.from_user
-        doc = ensure_user_exists(user)
-        doc['user_obj'] = user
-        return doc, None
-    query = specific_arg or (context.args[0] if context.args else None)
-    if not query: return None, 'No target'
+        return ensure_user_exists(update.message.reply_to_message.from_user), None
+    query = specific_arg if specific_arg else (context.args[0] if context.args else None)
+    if not query: return None, "No target"
     if query.isdigit():
-        doc = users_collection.find_one({'user_id': int(query)})
-    else:
-        username = query.replace('@', '').lower()
-        doc = users_collection.find_one({'username': username})
-    if not doc:
-        return None, f"❌ <b>{stylize_text('User not found!')}</b>"
-    doc['user_obj'] = doc 
-    return doc, None
+        doc = users_collection.find_one({"user_id": int(query)})
+        if doc: return doc, None
+        return None, f"❌ <b>{stylize_text('Baka')}!</b> ID <code>{query}</code> not found."
+    clean_username = query.replace("@", "").lower()
+    doc = users_collection.find_one({"username": clean_username})
+    if doc: return doc, None
+    return None, f"❌ <b>{stylize_text('Oops')}!</b> User <code>@{clean_username}</code> has not started me."
 
-# --------------------------------------------------
-# 📊 DATABASE HELPERS
-# --------------------------------------------------
-
-async def log_to_channel(bot: Bot, event_type: str, details: dict):
-    if not LOGGER_ID: return
-    now = datetime.utcnow().strftime('%I:%M:%S %p')
-    text = f"🌸 <b>{stylize_text(event_type.upper())}</b>\n━━━━━━━━━━━━━━━━━━\n"
-    for k, v in details.items():
-        text += f"🔹 <b>{stylize_text(k.title())}:</b> {html.escape(str(v))}\n"
-    text += f"━━━━━━━━━━━━━━━━━━\n⌚ <code>{now}</code>"
-    try:
-        await bot.send_message(chat_id=LOGGER_ID, text=text, parse_mode=ParseMode.HTML)
-    except: pass
-
-def ensure_user_exists(tg_user):
-    users_collection.update_one(
-        {'user_id': tg_user.id},
-        {'$setOnInsert': {
-            'user_id': tg_user.id,
-            'name': tg_user.first_name,
-            'username': tg_user.username.lower() if tg_user.username else None,
-            'balance': 500,
-            'status': 'alive',
-            'inventory': [],
-            'protection': None,
-            'created_at': datetime.utcnow()
-        }}, upsert=True
-    )
-    return users_collection.find_one({'user_id': tg_user.id})
-
+# --- 🛡️ PROTECTION & ECONOMY ---
 def get_active_protection(user_data):
-    expiry = user_data.get('protection')
-    if expiry and expiry > datetime.utcnow():
-        return expiry
-    return None
+    try:
+        now = datetime.utcnow()
+        self_expiry = user_data.get("protection_expiry")
+        partner_expiry = None
+        partner_id = user_data.get("partner_id")
+        if partner_id:
+            partner = users_collection.find_one({"user_id": partner_id})
+            if partner: partner_expiry = partner.get("protection_expiry")
+        valid_expiries = []
+        if self_expiry and self_expiry > now: valid_expiries.append(self_expiry)
+        if partner_expiry and partner_expiry > now: valid_expiries.append(partner_expiry)
+        return max(valid_expiries) if valid_expiries else None
+    except: return None
 
-def format_money(amount: int) -> str:
-    return f"${amount:,}"
+def format_money(amount): return f"${amount:,}"
 
-def format_time(td: timedelta) -> str:
-    secs = int(td.total_seconds())
-    h, rem = divmod(secs, 3600)
-    m, _ = divmod(rem, 60)
-    return f"{h}h {m}m"
+def format_time(timedelta_obj):
+    total_seconds = int(timedelta_obj.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, _ = divmod(remainder, 60)
+    return f"{hours}h {minutes}m"
+
+# --- 👤 DB ENSURE & AUTO-REVIVE ---
+def ensure_user_exists(tg_user):
+    user_doc = users_collection.find_one({"user_id": tg_user.id})
+    username = tg_user.username.lower() if tg_user.username else None
+    if not user_doc:
+        new_user = {
+            "user_id": tg_user.id, "name": tg_user.first_name, "username": username,
+            "balance": 0, "inventory": [], "waifus": [], "kills": 0, "status": "alive",
+            "protection_expiry": datetime.utcnow(), "registered_at": datetime.utcnow()
+        }
+        users_collection.insert_one(new_user)
+        return new_user
+    return user_doc
