@@ -12,7 +12,7 @@ from telegram.error import TelegramError
 from baka.database import users_collection, sudoers_collection, groups_collection
 from baka.config import OWNER_ID, SUDO_IDS_STR, LOGGER_ID, BOT_NAME, AUTO_REVIVE_HOURS, AUTO_REVIVE_BONUS
 
-# --- SUDO SYSTEM ---
+# --- 👑 SUDO SYSTEM ---
 SUDO_USERS = set()
 
 def reload_sudoers():
@@ -32,7 +32,7 @@ reload_sudoers()
 
 # --- 🌸 AESTHETIC FONT ENGINE ---
 def stylize_text(text):
-    """Converts normal text to Aesthetic Math Sans Bold."""
+    """Converts normal text to Aesthetic Math Sans Bold (Baka Style)."""
     font_map = {
         'A': 'ᴧ', 'B': 'ʙ', 'C': 'ᴄ', 'D': 'ᴅ', 'E': 'Є', 'F': 'Ғ', 'G': 'ɢ',
         'H': 'ʜ', 'I': 'ɪ', 'J': 'ᴊ', 'K': 'ᴋ', 'L': 'ʟ', 'M': 'ϻ', 'N': 'η',
@@ -50,15 +50,11 @@ def stylize_text(text):
 
     pattern = r"(@\w+|https?://\S+|`[^`]+`|/[a-zA-Z0-9_]+)"
     parts = re.split(pattern, str(text))
-    result = []
-    for part in parts:
-        if re.match(pattern, part): result.append(part)
-        else: result.append(apply_style(part))
-    return "".join(result)
+    return "".join(part if re.match(pattern, part) else apply_style(part) for part in parts)
 
 # --- 🌟 ULTIMATE DASHBOARD LOGGER ---
 async def log_to_channel(bot: Bot, event_type: str, details: dict):
-    if LOGGER_ID == 0: return
+    if not LOGGER_ID or LOGGER_ID == 0: return
     now = datetime.now().strftime("%I:%M:%S %p | %d %b")
 
     headers = {
@@ -72,7 +68,7 @@ async def log_to_channel(bot: Bot, event_type: str, details: dict):
     text = f"{header}\n━━━━━━━━━━━━━━━━━━\n"
 
     if 'user' in details: text += f"👤 <b>{stylize_text('User')}:</b> {details['user']}\n"
-    if 'chat' in details: text += f"🏰 <b>{stylize_text('Chat')}:</b> {html.escape(details['chat'])}\n"
+    if 'chat' in details: text += f"🏰 <b>{stylize_text('Chat')}:</b> {html.escape(str(details['chat']))}\n"
     if 'action' in details: text += f"🎬 <b>{stylize_text('Action')}:</b> {details['action']}\n"
     if 'link' in details:
         link_val = details['link']
@@ -128,6 +124,9 @@ def get_active_protection(user_data):
         return max(valid_expiries) if valid_expiries else None
     except: return None
 
+def is_protected(user_data):
+    return get_active_protection(user_data) is not None
+
 def format_money(amount): return f"${amount:,}"
 
 def format_time(timedelta_obj):
@@ -140,12 +139,35 @@ def format_time(timedelta_obj):
 def ensure_user_exists(tg_user):
     user_doc = users_collection.find_one({"user_id": tg_user.id})
     username = tg_user.username.lower() if tg_user.username else None
+    
     if not user_doc:
         new_user = {
             "user_id": tg_user.id, "name": tg_user.first_name, "username": username,
-            "balance": 0, "inventory": [], "waifus": [], "kills": 0, "status": "alive",
+            "balance": 500, "inventory": [], "waifus": [], "kills": 0, "status": "alive",
             "protection_expiry": datetime.utcnow(), "registered_at": datetime.utcnow()
         }
         users_collection.insert_one(new_user)
         return new_user
+    
+    # Auto-Revive Check (If user died and time passed)
+    death_time = user_doc.get('death_time')
+    if user_doc.get('status') == 'dead' and death_time:
+        if datetime.utcnow() - death_time > timedelta(hours=AUTO_REVIVE_HOURS):
+            users_collection.update_one(
+                {"user_id": tg_user.id}, 
+                {"$set": {"status": "alive", "death_time": None}, "$inc": {"balance": AUTO_REVIVE_BONUS}}
+            )
+            user_doc['status'] = 'alive'
+            
     return user_doc
+
+# --- 🏰 GROUP TRACKER ---
+def track_group(chat, user=None):
+    if chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
+        groups_collection.update_one(
+            {"chat_id": chat.id},
+            {"$set": {"title": chat.title}, "$setOnInsert": {"claimed": False}},
+            upsert=True
+        )
+        if user:
+            users_collection.update_one({"user_id": user.id}, {"$addToSet": {"seen_groups": chat.id}})
