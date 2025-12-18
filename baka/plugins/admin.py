@@ -1,116 +1,169 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Fixed Admin Plugin - Destiny / Baka Bot
+# Location: Supaul, Bihar 
+# All rights reserved. @WTF_Phantom.
 
+import html
 import os
 import sys
 from datetime import datetime
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.config import OWNER_ID
+from baka.config import OWNER_ID, UPSTREAM_REPO, GIT_TOKEN
 from baka.utils import SUDO_USERS, get_mention, resolve_target, format_money, reload_sudoers, stylize_text
-from baka.database import (
-    users_collection, sudoers_collection, groups_collection, 
-    reset_daily_activity, reset_weekly_activity
-)
-
-# --- PERMISSION CHECK ---
-def is_sudo(user_id):
-    return user_id == OWNER_ID or user_id in SUDO_USERS
+from baka.database import users_collection, sudoers_collection, groups_collection
 
 # --- HELP PANEL ---
 async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_sudo(update.effective_user.id): return
+    if update.effective_user.id not in SUDO_USERS: return
     msg = (
         f"🔐 <b>{stylize_text('Sudo Panel')}</b>\n\n"
         f"<b>💰 {stylize_text('Economy')}:</b>\n"
         "‣ /addcoins [amt] [user]\n"
         "‣ /rmcoins [amt] [user]\n"
         "‣ /freerevive [user]\n"
-        "‣ /unprotect [user]\n\n"
-        f"<b>🏆 {stylize_text('Competition')}:</b>\n"
-        "‣ /resetstats daily\n"
-        "‣ /resetstats weekly\n\n"
+        "‣ /unprotect [user] (Remove Shield)\n\n"
+        f"<b>📢 {stylize_text('Broadcast')}:</b>\n"
+        "‣ /broadcast -user (Reply)\n"
+        "‣ /broadcast -group (Reply)\n\n"
         f"<b>👑 {stylize_text('Owner Only')}:</b>\n"
-        "‣ /update | /cleandb\n"
-        "‣ /addsudo | /rmsudo\n"
+        "‣ /update (Pull Changes)\n"
+        "‣ /addsudo [user]\n"
+        "‣ /rmsudo [user]\n"
+        "‣ /cleandb\n"
         "‣ /sudolist"
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
-# --- ECONOMY ACTIONS ---
-async def addcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_sudo(update.effective_user.id): return
-    if len(context.args) < 2: 
-        return await update.message.reply_text("⚠️ 𝑼𝒔𝒂𝒈𝒆: <code>/addcoins 100 @user</code>", parse_mode=ParseMode.HTML)
-    
-    amount, target_str = parse_amount_and_target(context.args)
-    target, err = await resolve_target(update, context, specific_arg=target_str)
-    
-    if target: 
-        uid = target['user_id']
-        await ask(update, f"𝑨𝒅𝒅 {format_money(amount)} 𝒕𝒐 {get_mention(target)}?", "addcoins", f"{uid}:{amount}")
-
-async def rmcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_sudo(update.effective_user.id): return
-    if len(context.args) < 2: 
-        return await update.message.reply_text("⚠️ 𝑼𝒔𝒂𝒈𝒆: <code>/rmcoins 100 @user</code>", parse_mode=ParseMode.HTML)
-    
-    amount, target_str = parse_amount_and_target(context.args)
-    target, err = await resolve_target(update, context, specific_arg=target_str)
-    
-    if target: 
-        uid = target['user_id']
-        await ask(update, f"𝑹𝒆𝒎𝒐ᴠ𝒆 {format_money(amount)} 𝒇𝒓𝒐𝒎 {get_mention(target)}?", "rmcoins", f"{uid}:{amount}")
-
-# --- 🧹 CLEANDB COMMAND (Fixed Missing Attribute) ---
-async def cleandb(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# --- UPDATER LOGIC ---
+async def update_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
-    await ask(update, "𝑾𝑰𝑷𝑬 𝑨𝑳𝑳 𝑫𝑨𝑻𝑨𝑩𝑨𝑺𝑬? (Ghost users will be removed)", "cleandb", "0")
+    if not UPSTREAM_REPO: return await update.message.reply_text("❌ <b>UPSTREAM_REPO</b> missing!", parse_mode=ParseMode.HTML)
+    msg = await update.message.reply_text("🔄 <b>Checking for updates...</b>", parse_mode=ParseMode.HTML)
+    try:
+        import git
+        try: repo = git.Repo()
+        except: 
+            repo = git.Repo.init()
+            origin = repo.create_remote('origin', UPSTREAM_REPO)
+            origin.fetch()
+            repo.create_head('master', origin.refs.master).set_tracking_branch(origin.refs.master).checkout()
+        
+        repo_url = UPSTREAM_REPO
+        if GIT_TOKEN and "github.com" in repo_url: 
+            repo_url = repo_url.replace("https://", f"https://{GIT_TOKEN}@")
+        
+        repo.remotes.origin.set_url(repo_url)
+        repo.remotes.origin.pull()
+        await msg.edit_text("✅ <b>Update Found!</b>\nRestarting bot now... 🚀", parse_mode=ParseMode.HTML)
+        os.execl(sys.executable, sys.executable, "Ryan.py")
+    except Exception as e: 
+        await msg.edit_text(f"❌ <b>Update Failed!</b>\nError: <code>{e}</code>", parse_mode=ParseMode.HTML)
 
-async def addsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# --- ADMIN ACTIONS ---
+async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id not in SUDO_USERS: return
+    msg = f"👑 <b>{stylize_text('Owner & Sudoers')}:</b>\n\n"
+    for uid in list(SUDO_USERS):
+        u_doc = users_collection.find_one({"user_id": uid})
+        role = "Owner" if uid == OWNER_ID else "Sudoer"
+        msg += f"• {get_mention(u_doc) if u_doc else f'<code>{uid}</code>'} - {role}\n"
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+# --- HANDLERS (With Confirmation) ---
+async def addsudo(update, context):
     if update.effective_user.id != OWNER_ID: return
     target, err = await resolve_target(update, context)
-    if target: await ask(update, f"𝑷𝒓𝒐𝒎𝒐𝒕𝒆 {get_mention(target)} 𝒕𝒐 𝑺𝒖𝒅𝒐?", "addsudo", str(target['user_id']))
+    if not target: return await update.message.reply_text(err or "Usage: /addsudo <target>", parse_mode=ParseMode.HTML)
+    await ask(update, f"Promote {get_mention(target)} to Sudo?", "addsudo", str(target['user_id']))
 
-# --- UTILS & CALLBACK ---
+async def rmsudo(update, context):
+    if update.effective_user.id != OWNER_ID: return
+    target, err = await resolve_target(update, context)
+    if not target: return await update.message.reply_text(err or "Usage: /rmsudo <target>", parse_mode=ParseMode.HTML)
+    await ask(update, f"Demote {get_mention(target)} from Sudo?", "rmsudo", str(target['user_id']))
+
+async def addcoins(update, context):
+    if update.effective_user.id not in SUDO_USERS: return
+    amount, target_str = parse_amount_and_target(context.args)
+    if amount is None: return await update.message.reply_text("⚠️ Usage: <code>/addcoins 100 @user</code>", parse_mode=ParseMode.HTML)
+    target, err = await resolve_target(update, context, specific_arg=target_str)
+    if not target: return await update.message.reply_text(err or "⚠️ Target not found.", parse_mode=ParseMode.HTML)
+    await ask(update, f"Give <b>{format_money(amount)}</b> to {get_mention(target)}?", "addcoins", f"{target['user_id']}|{amount}")
+
+async def rmcoins(update, context):
+    if update.effective_user.id not in SUDO_USERS: return
+    amount, target_str = parse_amount_and_target(context.args)
+    if amount is None: return await update.message.reply_text("⚠️ Usage: <code>/rmcoins 100 @user</code>", parse_mode=ParseMode.HTML)
+    target, err = await resolve_target(update, context, specific_arg=target_str)
+    if not target: return await update.message.reply_text(err or "⚠️ Target not found.", parse_mode=ParseMode.HTML)
+    await ask(update, f"Remove <b>{format_money(amount)}</b> from {get_mention(target)}?", "rmcoins", f"{target['user_id']}|{amount}")
+
+async def freerevive(update, context):
+    if update.effective_user.id not in SUDO_USERS: return
+    target, err = await resolve_target(update, context)
+    if target: await ask(update, f"Free Revive {get_mention(target)}?", "freerevive", str(target['user_id']))
+
+async def unprotect(update, context):
+    if update.effective_user.id not in SUDO_USERS: return
+    target, err = await resolve_target(update, context)
+    if target: await ask(update, f"Remove 🛡️ from {get_mention(target)}?", "unprotect", str(target['user_id']))
+
+async def cleandb(update, context):
+    if update.effective_user.id != OWNER_ID: return
+    await ask(update, "<b>WIPE DATABASE?</b> 🗑️", "cleandb", "0")
+
+# --- UTILS ---
 def parse_amount_and_target(args):
-    amount = next((int(a) for a in args if a.isdigit()), 0)
+    amount = next((int(a) for a in args if a.isdigit()), None)
     target = next((a for a in args if not a.isdigit()), None)
     return amount, target
 
-async def ask(update: Update, text: str, act: str, arg: str):
+async def ask(update, text, act, arg):
     kb = InlineKeyboardMarkup([[
-        InlineKeyboardButton("✅ 𝒀𝒆𝒔", callback_data=f"cnf|{act}|{arg}"), 
-        InlineKeyboardButton("❌ 𝑵𝒐", callback_data="cnf|cancel|0")
+        InlineKeyboardButton("✅ Yes", callback_data=f"cnf|{act}|{arg}"), 
+        InlineKeyboardButton("❌ No", callback_data="cnf|cancel|0")
     ]])
-    await update.message.reply_text(f"⚠️ {text}", reply_markup=kb, parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"⚠️ <b>Wait!</b> {text}\nAre you sure?", parse_mode=ParseMode.HTML, reply_markup=kb)
 
-async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# --- CALLBACK CONFIRMATION ---
+async def confirm_handler(update, context):
     q = update.callback_query
-    if not is_sudo(q.from_user.id): return await q.answer("❌ Not for you!", show_alert=True)
+    if q.from_user.id not in SUDO_USERS: return await q.answer("❌ Not for you!", show_alert=True)
     
     data = q.data.split("|")
-    act, arg = data[1], data[2]
-    
-    if act == "cancel": return await q.message.edit_text("❌ 𝑨𝒄𝒕𝒊𝒐𝒏 𝑪𝒂𝒏𝒄𝒆𝒍𝒍𝒆𝒅.")
+    act = data[1]
+    if act == "cancel": return await q.message.edit_text("❌ <b>Cancelled.</b>", parse_mode=ParseMode.HTML)
 
     try:
-        if act == "addcoins":
-            uid, amt = map(int, arg.split(":"))
-            users_collection.update_one({"user_id": uid}, {"$inc": {"balance": amt}})
-            await q.message.edit_text(f"✅ 𝑪𝒐𝒊𝒏𝒔 𝑨𝒅𝒅𝒆𝒅!")
-        elif act == "rmcoins":
-            uid, amt = map(int, arg.split(":"))
-            users_collection.update_one({"user_id": uid}, {"$inc": {"balance": -amt}})
-            await q.message.edit_text(f"🗑️ 𝑪𝒐𝒊𝒏𝒔 𝑹𝒆𝒎𝒐ᴠ𝒆𝒅!")
-        elif act == "addsudo":
-            sudoers_collection.update_one({"user_id": int(arg)}, {"$set": {"user_id": int(arg)}}, upsert=True)
+        if act == "addsudo":
+            uid = int(data[2])
+            sudoers_collection.update_one({"user_id": uid}, {"$set": {"user_id": uid}}, upsert=True)
             reload_sudoers()
-            await q.message.edit_text(f"✅ 𝑺𝒖𝒅𝒐 𝑷𝒓𝒐𝒎𝒐𝒕𝒆𝒅!")
+            await q.message.edit_text(f"✅ User <code>{uid}</code> promoted.")
+        elif act == "rmsudo":
+            uid = int(data[2])
+            sudoers_collection.delete_one({"user_id": uid})
+            reload_sudoers()
+            await q.message.edit_text(f"🗑️ User <code>{uid}</code> demoted.")
+        elif act == "addcoins":
+            uid, amt = int(data[2]), int(data[3])
+            users_collection.update_one({"user_id": uid}, {"$inc": {"balance": amt}})
+            await q.message.edit_text(f"✅ Added <b>{format_money(amt)}</b> to <code>{uid}</code>.", parse_mode=ParseMode.HTML)
+        elif act == "rmcoins":
+            uid, amt = int(data[2]), int(data[3])
+            users_collection.update_one({"user_id": uid}, {"$inc": {"balance": -amt}})
+            await q.message.edit_text(f"✅ Removed <b>{format_money(amt)}</b> from <code>{uid}</code>.", parse_mode=ParseMode.HTML)
+        elif act == "freerevive":
+            uid = int(data[2])
+            users_collection.update_one({"user_id": uid}, {"$set": {"status": "alive", "death_time": None}})
+            await q.message.edit_text(f"✅ User <code>{uid}</code> revived.")
+        elif act == "unprotect":
+            uid = int(data[2])
+            users_collection.update_one({"user_id": uid}, {"$set": {"protection": None}}) 
+            await q.message.edit_text(f"🛡️ Protection <b>REMOVED</b> from <code>{uid}</code>.", parse_mode=ParseMode.HTML)
         elif act == "cleandb":
-            # Safely cleaning inactive users (0 balance, 0 kills)
-            deleted = users_collection.delete_many({"balance": 500, "kills": 0})
-            await q.message.edit_text(f"🧹 Cleaned {deleted.deleted_count} ghost users!")
-    except Exception as e: 
-        await q.message.edit_text(f"❌ 𝑬𝒓𝒓𝒐𝒓: {e}")
+            users_collection.delete_many({}); groups_collection.delete_many({})
+            await q.message.edit_text("🗑️ <b>DATABASE WIPED!</b>")
+    except Exception as e:
+        await q.message.edit_text(f"❌ <b>Error:</b> <code>{e}</code>", parse_mode=ParseMode.HTML)
