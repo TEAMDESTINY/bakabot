@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Stable, Multi-Feature & High Performance Polling
+# Final Ryan.py - Stable, Multi-Feature & Callbacks Fixed
 
 import os
 import logging
@@ -43,7 +43,6 @@ def run_flask():
     app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False)
 
 # --- 🛡️ GLOBAL ERROR HANDLER ---
-# Ye function kisi bhi plugin ke error ko catch kar lega aur bot ko crash hone se bachayega
 async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
 
@@ -74,6 +73,7 @@ if __name__ == '__main__':
     if not TOKEN:
         print("CRITICAL: BOT_TOKEN is missing!")
     else:
+        # Optimized Request Config
         t_request = HTTPXRequest(
             connection_pool_size=30, 
             connect_timeout=40.0, 
@@ -92,50 +92,59 @@ if __name__ == '__main__':
         # Register Global Error Handler
         app_bot.add_error_handler(global_error_handler)
 
-        # --- 1. CORE HANDLERS ---
+        # --- 1. CORE & PING ---
         app_bot.add_handler(CommandHandler("start", start.start))
         app_bot.add_handler(CommandHandler("help", start.help_command))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         app_bot.add_handler(CallbackQueryHandler(ping.ping_callback, pattern="^sys_stats$"))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_"))
         
-        # --- 2. ECONOMY & RPG ---
+        # --- 2. ECONOMY & SHOP (FIXED) ---
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("daily", daily.daily))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
+        app_bot.add_handler(CommandHandler("buy", shop.buy))
+        # YE LINE SHOP BUTTONS KE LIYE ZAROORI HAI:
+        app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
+        
+        # --- 3. RPG & GAMES ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
+        app_bot.add_handler(CommandHandler("mining", group_econ.passive_mining))
+        app_bot.add_handler(CommandHandler("raid", group_econ.territory_raid))
         
-        # --- 3. SOCIAL & WAIFU ---
+        # --- 4. SOCIAL & WAIFU ---
         for act in waifu.SFW_ACTIONS:
             app_bot.add_handler(CommandHandler(act, waifu.waifu_action))
         app_bot.add_handler(CommandHandler("wpropose", waifu.wpropose))
+        app_bot.add_handler(CommandHandler("wmarry", waifu.wmarry))
 
-        # --- 4. SYSTEM & ADMIN ---
+        # --- 5. SYSTEM & ADMIN (FIXED) ---
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
         app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
+        # YE LINE ADMIN CONFIRMATION BUTTONS KE LIYE HAI:
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
 
-        # --- 5. MESSAGE LISTENERS (Priority Groups) ---
-        # Group 1: Collection (Filters.TEXT ensures only text triggers it)
+        # --- 6. MESSAGE LISTENERS (Priority Groups) ---
+        # Group 1: Collection
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, collection.collect_waifu), group=1)
-        
-        # Group 2: XP & Events
+        # Group 2: XP
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=2)
+        # Group 3: Events
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
-        
-        # Group 4: AI & Welcome
+        # Group 4: Welcome & AI
+        app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
         app_bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot.ai_message_handler), group=4)
 
         print("--------------------------")
-        print(f"🚀 {BOT_NAME} IS LIVE!")
+        print(f"🚀 {BOT_NAME} IS LIVE & SECURE!")
         print("--------------------------")
         
         app_bot.run_polling(drop_pending_updates=True)
