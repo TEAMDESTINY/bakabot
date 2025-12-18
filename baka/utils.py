@@ -144,17 +144,18 @@ def ensure_user_exists(tg_user):
         new_user = {
             "user_id": tg_user.id, "name": tg_user.first_name, "username": username,
             "balance": 500, "inventory": [], "waifus": [], "kills": 0, "status": "alive",
-            "protection_expiry": datetime.utcnow(), "registered_at": datetime.utcnow()
+            "protection_expiry": datetime.utcnow(), "registered_at": datetime.utcnow(),
+            "death_time": None
         }
         users_collection.insert_one(new_user)
         return new_user
     
-    # Sync Username and Name if changed
+    # 🔄 Sync Username and Name if changed (FIX FOR "USER" ISSUE)
     updates = {}
     if user_doc.get("username") != username: updates["username"] = username
     if user_doc.get("name") != tg_user.first_name: updates["name"] = tg_user.first_name
     
-    # Auto-Revive Check
+    # ⚰️ Auto-Revive Check
     death_time = user_doc.get('death_time')
     if user_doc.get('status') == 'dead' and death_time:
         if datetime.utcnow() - death_time > timedelta(hours=AUTO_REVIVE_HOURS):
@@ -164,6 +165,7 @@ def ensure_user_exists(tg_user):
             
     if updates:
         users_collection.update_one({"user_id": tg_user.id}, {"$set": updates})
+        user_doc.update(updates) # Instant update in current object
 
     return user_doc
 
