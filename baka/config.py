@@ -70,11 +70,18 @@ SHOP_ITEMS = [
     {"id": "vibranium", "name": "🛡️ Vibranium", "price": 1500000, "type": "armor", "buff": 0.50},
     {"id": "plot", "name": "🎬 Plot Armor", "price": 10000000, "type": "armor", "buff": 0.60},
 
-    # 💎 FLEX (Collection)
+   # 💎 FLEX (Collection Items)
     {"id": "iphone", "name": "📱 iPhone 16 Pro", "price": 25000, "type": "flex", "buff": 0},
-    {"id": "lambo", "name": "🏎️ Lambo", "price": 800000, "type": "flex", "buff": 0},
-    {"id": "mansion", "name": "🏰 Mansion", "price": 5000000, "type": "flex", "buff": 0},
-    {"id": "island", "name": "🏝️ Island", "price": 50000000, "type": "flex", "buff": 0},
+    {"id": "rolex", "name": "⌚ Rolex Platinum", "price": 150000, "type": "flex", "buff": 0},
+    {"id": "lambo", "name": "🏎️ Lamborghini Revuelto", "price": 800000, "type": "flex", "buff": 0},
+    {"id": "private_jet", "name": "🛩️ Private Jet", "price": 2500000, "type": "flex", "buff": 0},
+    {"id": "mansion", "name": "🏰 Royal Mansion", "price": 5000000, "type": "flex", "buff": 0},
+    {"id": "taj_mahal", "name": "🕌 Taj Mahal", "price": 20000000, "type": "flex", "buff": 0},
+    {"id": "island", "name": "🏝️ Private Island", "price": 50000000, "type": "flex", "buff": 0},
+    {"id": "moon", "name": "🌑 The Moon", "price": 250000000, "type": "flex", "buff": 0},
+    {"id": "solar_system", "name": "☀️ Solar System", "price": 1000000000, "type": "flex", "buff": 0},
     {"id": "galaxy", "name": "🌌 Milky Way", "price": 5000000000, "type": "flex", "buff": 0},
     {"id": "blackhole", "name": "🕳️ Black Hole", "price": 9999999999, "type": "flex", "buff": 0},
+    {"id": "time_machine", "name": "⏳ Time Machine", "price": 50000000000, "type": "flex", "buff": 0},
+    {"id": "multiverse", "name": "🌀 The Multiverse", "price": 999999999999, "type": "flex", "buff": 0},
 ]
