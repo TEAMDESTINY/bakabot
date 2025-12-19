@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Complete Utils - No More Missing Imports!
+# Final Complete Utils - Added Inspector Logic & All Missing Imports!
 
 import html
 import re
@@ -74,7 +74,7 @@ def track_group(chat, user=None):
         if user:
             users_collection.update_one({"user_id": user.id}, {"$addToSet": {"seen_groups": chat.id}})
 
-# --- 🛡️ PROTECTION ENGINE (YE MISSING THA) ---
+# --- 🛡️ PROTECTION & INSPECTOR ENGINE ---
 def get_active_protection(user_data):
     """Checks if protection_expiry is still valid."""
     try:
@@ -88,6 +88,17 @@ def get_active_protection(user_data):
 
 def is_protected(user_data):
     return get_active_protection(user_data) is not None
+
+def is_inspector(user_data):
+    """Checks if a user is an approved spy/inspector."""
+    try:
+        now = datetime.utcnow()
+        expiry = user_data.get("inspector_expiry")
+        if expiry and expiry > now:
+            return True
+        return False
+    except:
+        return False
 
 # --- 👤 MENTION & TARGET ---
 def get_mention(user_data, custom_name=None):
