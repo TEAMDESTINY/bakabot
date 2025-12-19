@@ -27,7 +27,7 @@ async def approve_inspector(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not target_db:
         return await update.message.reply_text(f"⚠️ {stylize_text('Usage')}: <code>/approve 1d @username</code>", parse_mode=ParseMode.HTML)
 
-    # Time parsing logic
+    # Time parsing logic (1d, 12h etc)
     time_arg = context.args[0] if context.args else "1d"
     match = re.search(r'(\d+)([dh])', time_arg.lower())
     
@@ -55,6 +55,7 @@ async def check_protection_cmd(update: Update, context: ContextTypes.DEFAULT_TYP
     user = update.effective_user
     user_db = ensure_user_exists(user)
 
+    # Check if authorized
     if not is_inspector(user_db) and user.id != OWNER_ID:
         return await update.message.reply_text(f"❌ {stylize_text('Access Denied! Owner se approval lein.')}")
 
@@ -81,7 +82,7 @@ async def check_protection_cmd(update: Update, context: ContextTypes.DEFAULT_TYP
         await context.bot.send_message(chat_id=user.id, text=msg, parse_mode=ParseMode.HTML)
         await update.message.reply_text(f"📩 {stylize_text('Details DM mein bhej di gayi hain!')}")
     except:
-        await update.message.reply_text(f"❌ {stylize_text('Pehle bot start karo!')}")
+        await update.message.reply_text(f"❌ {stylize_text('Pehle bot start karo taaki main DM bhej sakun!')}")
 
 # --- 🔪 KILL COMMAND ---
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,6 +95,7 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not target_db:
         return await update.message.reply_text(f"❌ <b>{stylize_text('Target Invalid')}!</b>\n\nSaamne wale ne bot start nahi kiya!")
 
+    # Real-time name sync
     target_obj = update.message.reply_to_message.from_user if update.message.reply_to_message else None
     t_name = target_obj.first_name if target_obj else target_db.get('name', "User")
     target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(t_name)}</b></a>"
@@ -155,10 +157,10 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         fine = random.randint(200, 500)
         users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": -fine}})
-        await update.message.reply_text(f"💀 {stylize_text('Robbery failed! Fine')}: {format_money(fine)}")
+        await update.message.reply_text(f"💀 {stylize_text('Robbery failed! Fine paid')}: {format_money(fine)}")
 
 # --- 🛡️ PROTECT & ❤️ REVIVE ---
-async def protect(update, context):
+async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_db = ensure_user_exists(user)
     if user_db.get('balance', 0) < PROTECT_1D_COST: return await update.message.reply_text(f"❌ {stylize_text('No money for Shield!')}")
@@ -166,7 +168,7 @@ async def protect(update, context):
     users_collection.update_one({"user_id": user.id}, {"$set": {"protection_expiry": expiry}, "$inc": {"balance": -PROTECT_1D_COST}})
     await update.message.reply_text(f"🛡️ <b>{stylize_text('SHIELD ACTIVATED')}!</b>", parse_mode=ParseMode.HTML)
 
-async def revive(update, context):
+async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_db = ensure_user_exists(user)
     if user_db.get('status') == 'alive': return await update.message.reply_text(f"✨ Already alive!")
