@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Stable, Multi-Feature & Callbacks Fixed
+# Final Ryan.py - Stable, Multi-Feature & Inspector System Integrated
 
 import os
 import logging
@@ -60,7 +60,8 @@ async def post_init(application):
         ("rob", "💰 sᴛєᴧʟ"), 
         ("daily", "📅 ᴅᴧɪʟʏ"), 
         ("ranking", "🏆 ᴛσᴘs"),
-        ("ping", "📶 sᴛᴧᴛυs")
+        ("ping", "📶 sᴛᴧᴛυs"),
+        ("checkprotection", "🔍 sᴘʏ ση sʜɪєʟᴅ")
     ]
     await application.bot.set_my_commands(commands)
     bot_info = await application.bot.get_me()
@@ -99,19 +100,22 @@ if __name__ == '__main__':
         app_bot.add_handler(CallbackQueryHandler(ping.ping_callback, pattern="^sys_stats$"))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_"))
         
-        # --- 2. ECONOMY & SHOP (FIXED) ---
+        # --- 2. ECONOMY & SHOP ---
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("daily", daily.daily))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
         app_bot.add_handler(CommandHandler("buy", shop.buy))
-        # YE LINE SHOP BUTTONS KE LIYE ZAROORI HAI:
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
         
-        # --- 3. RPG & GAMES ---
+        # --- 3. RPG, GAMES & INSPECTOR (UPDATED) ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
+        # Naye Inspector Commands yahan hain:
+        app_bot.add_handler(CommandHandler("approve", game.approve_inspector))
+        app_bot.add_handler(CommandHandler("checkprotection", game.check_protection_cmd))
+        
         app_bot.add_handler(CommandHandler("mining", group_econ.passive_mining))
         app_bot.add_handler(CommandHandler("raid", group_econ.territory_raid))
         
@@ -121,24 +125,19 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("wpropose", waifu.wpropose))
         app_bot.add_handler(CommandHandler("wmarry", waifu.wmarry))
 
-        # --- 5. SYSTEM & ADMIN (FIXED) ---
+        # --- 5. SYSTEM & ADMIN ---
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
         app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
-        # YE LINE ADMIN CONFIRMATION BUTTONS KE LIYE HAI:
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
 
         # --- 6. MESSAGE LISTENERS (Priority Groups) ---
-        # Group 1: Collection
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, collection.collect_waifu), group=1)
-        # Group 2: XP
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=2)
-        # Group 3: Events
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
-        # Group 4: Welcome & AI
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
         app_bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot.ai_message_handler), group=4)
