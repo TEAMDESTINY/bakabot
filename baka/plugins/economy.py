@@ -1,8 +1,9 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Economy Plugin - Destiny Bot (No Missing Attributes)
+# Final Economy Plugin - Destiny Bot (Fixed "User" Bug & Optimized)
 
 import random
 import time
+import html
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
@@ -40,15 +41,32 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🎉 <b>{stylize_text('Yayy!')}</b> {get_mention(user)} Registered!\n🎁 <b>{stylize_text('Bonus')}:</b> <code>+{format_money(REGISTER_BONUS)}</code>", parse_mode=ParseMode.HTML)
 
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    target, error = await resolve_target(update, context)
-    if not target and error == "No target": target = ensure_user_exists(update.effective_user)
-    elif not target: return await update.message.reply_text(error, parse_mode=ParseMode.HTML)
-
-    bal = target.get('balance', 0)
-    rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
-    status = "💖 Alive" if target.get('status', 'alive') == 'alive' else "💀 Dead"
+    # 🎯 Resolver ka use karke target dhoondna
+    target_db, error = await resolve_target(update, context)
     
-    inventory = target.get('inventory', [])
+    if not target_db and error == "No target": 
+        target_db = ensure_user_exists(update.effective_user)
+    elif not target_db: 
+        return await update.message.reply_text(error, parse_mode=ParseMode.HTML)
+
+    # --- ⚡ NAME BUG FIX LOGIC ---
+    # Reply se naam uthana (Sabse accurate), warna sender ka naam, warna DB ka naam
+    if update.message.reply_to_message:
+        real_name = update.message.reply_to_message.from_user.first_name
+    elif not context.args:
+        real_name = update.effective_user.first_name
+    else:
+        real_name = target_db.get('name', "User")
+
+    # Final Mention taiyaar karna
+    target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(real_name)}</b></a>"
+    # ----------------------------
+
+    bal = target_db.get('balance', 0)
+    rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
+    status = "💖 Alive" if target_db.get('status', 'alive') == 'alive' else "💀 Dead"
+    
+    inventory = target_db.get('inventory', [])
     flex = [i for i in inventory if i.get('type') == 'flex']
     
     kb = []
@@ -60,14 +78,19 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if row: kb.append(row)
     
     msg = (
-        f"👤 <b>{get_mention(target)}</b>\n"
+        f"👤 {target_mention}\n"
         f"👛 <b>{format_money(bal)}</b> | 🏆 <b>#{rank}</b>\n"
-        f"✨ <b>{stylize_text('EXP')}:</b> <code>{target.get('exp', 0)}</code>\n"
+        f"✨ <b>{stylize_text('EXP')}:</b> <code>{target_db.get('exp', 0)}</code>\n"
         f"❤️ <b>{status}</b>\n\n"
         f"💎 <b>{stylize_text('Flex Collection')}</b>:"
     )
     if not flex: msg += "\n<i>Empty...</i>"
-    await update.message.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(kb) if kb else None)
+    
+    await update.message.reply_text(
+        msg, 
+        parse_mode=ParseMode.HTML, 
+        reply_markup=InlineKeyboardMarkup(kb) if kb else None
+    )
 
 async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rich = users_collection.find().sort("balance", -1).limit(10)
