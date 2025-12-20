@@ -14,7 +14,7 @@
 
 
 <a href="https://t.me/lll_TOXICC_PAPA_lll">
-<img src="https://files.catbox.moe/gyi5iu.jpg" alt="ToxicBaka Bot" width="400" style="border-radius: 20px; box-shadow: 0px 0px 20px rgba(0,0,0,0.5);">
+<img src="https://files.catbox.moe/28no0e.jpg" alt="ToxicBaka Bot" width="400" style="border-radius: 20px; box-shadow: 0px 0px 20px rgba(0,0,0,0.5);">
 </a>
 
 
