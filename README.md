@@ -1,4 +1,4 @@
-# 🤖 ᴛᴏxɪᴄ ᴀɪ ʙᴀᴋᴀ ɢᴀᴍᴇ & ᴄʜᴀᴛʙᴏᴛ  
+# 🤖 ᴅᴇsᴛɪɴʏ ᴀɪ ʙᴀᴋᴀ ɢᴀᴍᴇ & ᴄʜᴀᴛʙᴏᴛ  
 <p align="center">⚡ ʏᴇ ᴀᴅᴠᴀɴᴄᴇ ᴀɪ ɢᴀᴍᴇʙᴏᴛ ʜᴀɪ ⚡</p>
 
 <p align="center">
@@ -18,12 +18,12 @@
 </a>
 
 
-🫧 𝐓𝐨𝐱𝐢𝐜𝐁𝐚𝐤𝐚 𝐁𝐨𝐭 ×͜࿐
+🫧 𝐃𝐞𝐬𝐭𝐢𝐧𝐲 𝐁𝐨𝐭 ×͜࿐
 
 
 
 
-<i>𝙰 𝙿𝚛𝚘𝚓𝚎𝚌𝚝 𝙱𝚢 <b>𝐈ꜱʜᴀ𝐁ᴏᴛꜱ</b></i>
+<i>𝙰 𝙿𝚛𝚘𝚓𝚎𝚌𝚝 𝙱𝚢 <b>𝐃𝐞𝐬ᴛɪɴʏ𝐁ᴏᴛꜱ</b></i>
 </h1>
 ​<p align="center">
 <b>Advanced AI-Powered RPG, Economy & Management Bot.</b>
@@ -37,7 +37,7 @@
 </p>
 ​<h3 align="center">🌐 Deploy On Render</h3>
 ​<p align="center">
-<a href="https://render.com/deploy?repo=https://github.com/toxicpapa00/Bakaa">
+<a href="https://render.com/deploy?repo=https://github.com/sparshshivhare2007-pixel/PRIVATE">
 <img src="https://img.shields.io/badge/🚀%20Deploy%20To%20Render-orange?style=for-the-badge&logo=render" width="250">
 </a>
 </p>
