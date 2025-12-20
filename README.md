@@ -101,7 +101,7 @@ pip install -r requirements.txt
 python3 Ryan.py
 ```
 <h3 align="center">
-Made with ❤️ by <a href="https://t.me/lll_TOXICC_PAPA_lll">𝗧𝗢𝗫𝗜𝗖</a>
+Made with ❤️ by <a href="https://t.me/Maayavi_hubhai">𝗧𝗢𝗫𝗜𝗖</a>
 
-Owner of <b>IshaBots</b>
+Owner of <b>𝐃𝐞𝐬ᴛɪɴʏ𝐁ᴏᴛꜱ</b>
 </h3>
