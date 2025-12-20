@@ -13,7 +13,7 @@
 ​<h1 align="center">
 
 
-<a href="https://t.me/lll_TOXICC_PAPA_lll">
+<a href="https://t.me/Maayavi_hubhai">
 <img src="https://files.catbox.moe/28no0e.jpg" alt="ToxicBaka Bot" width="400" style="border-radius: 20px; box-shadow: 0px 0px 20px rgba(0,0,0,0.5);">
 </a>
 
@@ -101,7 +101,7 @@ pip install -r requirements.txt
 python3 Ryan.py
 ```
 <h3 align="center">
-Made with ❤️ by <a href="https://t.me/Maayavi_hubhai">𝗧𝗢𝗫𝗜𝗖</a>
+Made with ❤️ by <a href="https://t.me/Maayavi_hubhai">𝗗𝗘𝗦𝗧𝗜𝗡𝗬</a>
 
 Owner of <b>𝐃𝐞𝐬ᴛɪɴʏ𝐁ᴏᴛꜱ</b>
 </h3>
