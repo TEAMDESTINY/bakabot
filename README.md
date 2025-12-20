@@ -8,7 +8,7 @@
 <h1 align="center">🚩🚩 𝐉𝐀𝐈 𝐁𝐀𝐉𝐑𝐀𝐍𝐆 𝐁𝐀𝐋𝐈 🚩🚩</h1>
 ​<p align="center">
 <p align="center">
-<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=900&color=F7006A&width=650&lines=🍁🚩+𝗣𝗢𝗪𝗘𝗥𝗘𝗗+𝗕𝗬+𝗧𝗢𝗫𝗜𝗖;🤖+𝗔𝗗𝗩𝗔𝗡𝗖𝗘+𝗔𝗜+𝗖𝗛𝗔𝗧+𝗦𝗬𝗦𝗧𝗘𝗠;⚡+𝗔𝗨𝗧𝗢+𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗥+𝗕𝗢𝗧">
+<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=900&color=F7006A&width=650&lines=🍁🚩+𝗣𝗢𝗪𝗘𝗥𝗘𝗗+𝗕𝗬+𝗗𝗘𝗦𝗧𝗜𝗡𝗬;🤖+𝗔𝗗𝗩𝗔𝗡𝗖𝗘+𝗔𝗜+𝗖𝗛𝗔𝗧+𝗦𝗬𝗦𝗧𝗘𝗠;⚡+𝗔𝗨𝗧𝗢+𝗥𝗘𝗦𝗣𝗢𝗡𝗗𝗘𝗥+𝗕𝗢𝗧">
 </p>
 ​<h1 align="center">
 
