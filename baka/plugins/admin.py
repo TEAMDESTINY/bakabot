@@ -1,15 +1,13 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Location: Supaul, Bihar 
-# Final Admin Plugin - Fixed Unprotect & Multi-Target Support
+# Final Admin Plugin - Destiny Bot (Fixed Callback Routing)
 
 import html
 import os
-import sys
 from datetime import datetime
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.config import OWNER_ID, UPSTREAM_REPO, GIT_TOKEN
+from baka.config import OWNER_ID
 from baka.utils import SUDO_USERS, get_mention, resolve_target, format_money, reload_sudoers, stylize_text
 from baka.database import users_collection, sudoers_collection, groups_collection
 
@@ -24,7 +22,7 @@ async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "‣ /freerevive [user]\n"
         "‣ /unprotect [user]\n\n"
         f"<b>👑 {stylize_text('Owner Only')}:</b>\n"
-        "‣ /update | /cleandb\n"
+        "‣ /cleandb\n"
         "‣ /addsudo | /rmsudo\n"
         "‣ /sudolist"
     )
@@ -34,7 +32,9 @@ async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def addcoins(update, context):
     if update.effective_user.id not in SUDO_USERS: return
     amount, target_str = parse_amount_and_target(context.args)
-    if amount is None: return await update.message.reply_text(f"⚠️ {stylize_text('Usage')}: <code>/addcoins 100 @user</code>", parse_mode=ParseMode.HTML)
+    if amount is None: 
+        return await update.message.reply_text(f"⚠️ {stylize_text('Usage')}: <code>/addcoins 100 @user</code>", parse_mode=ParseMode.HTML)
+    
     target, err = await resolve_target(update, context, specific_arg=target_str)
     if not target: return await update.message.reply_text(err or "⚠️ Target not found.")
     
@@ -43,13 +43,15 @@ async def addcoins(update, context):
 async def rmcoins(update, context):
     if update.effective_user.id not in SUDO_USERS: return
     amount, target_str = parse_amount_and_target(context.args)
-    if amount is None: return await update.message.reply_text(f"⚠️ {stylize_text('Usage')}: <code>/rmcoins 100 @user</code>", parse_mode=ParseMode.HTML)
+    if amount is None: 
+        return await update.message.reply_text(f"⚠️ {stylize_text('Usage')}: <code>/rmcoins 100 @user</code>", parse_mode=ParseMode.HTML)
+    
     target, err = await resolve_target(update, context, specific_arg=target_str)
     if not target: return await update.message.reply_text(err or "⚠️ Target not found.")
     
     await ask(update, f"Remove {format_money(amount)} from {get_mention(target)}?", "rmcoins", f"{target['user_id']}|{amount}")
 
-# --- 👑 SUDO & OWNER MANAGEMENT ---
+# --- 👑 SUDO MANAGEMENT ---
 async def addsudo(update, context):
     if update.effective_user.id != OWNER_ID: return
     target, err = await resolve_target(update, context)
@@ -91,6 +93,7 @@ def parse_amount_and_target(args):
     return amount, target
 
 async def ask(update, text, act, arg):
+    # Prefix 'cnf|' ensures this hits the admin confirm_handler
     kb = InlineKeyboardMarkup([[
         InlineKeyboardButton("✅ Yes", callback_data=f"cnf|{act}|{arg}"), 
         InlineKeyboardButton("❌ No", callback_data="cnf|cancel|0")
@@ -139,10 +142,9 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         elif act == "unprotect":
             uid = int(data[2])
-            # 🔥 DOUBLE RESET: Both fields cleared
             users_collection.update_one(
                 {"user_id": uid}, 
-                {"$set": {"protection": None, "protection_expiry": None}}
+                {"$set": {"protection_expiry": None}} # Fixed logic
             )
             await q.message.edit_text(f"🛡️ {stylize_text('Shield REMOVED for')} <code>{uid}</code>.")
 
