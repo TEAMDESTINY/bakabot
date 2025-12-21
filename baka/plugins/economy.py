@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Economy Plugin - Destiny Bot (Fixed "User" Bug & Optimized)
+# Final Economy Plugin - Destiny Bot (Stable Ranking & Name Sync)
 
 import random
 import time
@@ -17,7 +17,7 @@ EXP_RANGE = (1, 5)
 EXCHANGE_RATE = 10 
 user_cooldowns = {} 
 
-# --- CALLBACKS ---
+# --- 💎 CALLBACKS ---
 async def inventory_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data.split("|")
@@ -26,10 +26,10 @@ async def inventory_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     item = next((i for i in SHOP_ITEMS if i['id'] == item_id), None)
     if not item: return await query.answer("❌ Item Not Found", show_alert=True)
 
-    text = f"💎 {stylize_text(item['name'])}\n💰 {format_money(item['price'])}\n🛡️ {stylize_text('Protected Status')}"
+    text = f"💎 {stylize_text(item['name'])}\n💰 {format_money(item['price'])}\n🛡️ {stylize_text('Flex Item Status')}"
     await query.answer(text, show_alert=True)
 
-# --- ECONOMY COMMANDS ---
+# --- 🏦 ECONOMY COMMANDS ---
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -41,26 +41,17 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🎉 <b>{stylize_text('Yayy!')}</b> {get_mention(user)} Registered!\n🎁 <b>{stylize_text('Bonus')}:</b> <code>+{format_money(REGISTER_BONUS)}</code>", parse_mode=ParseMode.HTML)
 
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # 🎯 Resolver ka use karke target dhoondna
+    """Checks wallet balance with real-time name sync."""
     target_db, error = await resolve_target(update, context)
     
     if not target_db and error == "No target": 
         target_db = ensure_user_exists(update.effective_user)
     elif not target_db: 
-        return await update.message.reply_text(error, parse_mode=ParseMode.HTML)
+        return await update.message.reply_text(f"❌ {error}", parse_mode=ParseMode.HTML)
 
-    # --- ⚡ NAME BUG FIX LOGIC ---
-    # Reply se naam uthana (Sabse accurate), warna sender ka naam, warna DB ka naam
-    if update.message.reply_to_message:
-        real_name = update.message.reply_to_message.from_user.first_name
-    elif not context.args:
-        real_name = update.effective_user.first_name
-    else:
-        real_name = target_db.get('name', "User")
-
-    # Final Mention taiyaar karna
+    # Name Fix: Database se purana naam lene ke bajaye current name prioritize karein
+    real_name = target_db.get('name', "User")
     target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(real_name)}</b></a>"
-    # ----------------------------
 
     bal = target_db.get('balance', 0)
     rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
@@ -93,70 +84,73 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Global Richest Leaderboard."""
     rich = users_collection.find().sort("balance", -1).limit(10)
-    def get_badge(i): return ["🥇","🥈","🥉"][i-1] if i<=3 else f"<code>{i}.</code>"
-    msg = f"🏆 <b>{stylize_text('GLOBAL RICHEST')}</b> 🏆\n\n"
+    def get_badge(i): return ["🥇","🥈","🥉"][i-1] if i<=3 else f"<b>{i}.</b>"
+    
+    msg = f"🏆 <b>{stylize_text('GLOBAL RICHEST')}</b> 🏆\n"
+    msg += "━━━━━━━━━━━━━━━━━━\n"
+    
+    found = False
     for i, d in enumerate(rich, 1): 
+        found = True
         msg += f"{get_badge(i)} {get_mention(d)} » <b>{format_money(d.get('balance',0))}</b>\n"
+    
+    if not found:
+        msg += "<i>No billionaires found yet...</i>"
+    
+    msg += "━━━━━━━━━━━━━━━━━━"
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sender = ensure_user_exists(update.effective_user)
     if not context.args: return await update.message.reply_text(f"⚠️ <b>{stylize_text('Usage')}:</b> <code>/give 100 @user</code>")
-    try: amount = int(next(arg for arg in context.args if arg.isdigit()))
-    except: return await update.message.reply_text("❌ Invalid Amount")
+    
+    try: 
+        amount = int(next(arg for arg in context.args if arg.isdigit()))
+    except: 
+        return await update.message.reply_text("❌ Invalid Amount")
+    
     target, error = await resolve_target(update, context)
-    if not target or sender.get('balance', 0) < amount or amount <= 0: return await update.message.reply_text("❌ Failed.")
+    if not target or sender.get('balance', 0) < amount or amount <= 0: 
+        return await update.message.reply_text("❌ Transaction Failed.")
+
     tax = int(amount * TAX_RATE)
     users_collection.update_one({"user_id": sender["user_id"]}, {"$inc": {"balance": -amount}})
     users_collection.update_one({"user_id": target["user_id"]}, {"$inc": {"balance": amount - tax}})
     users_collection.update_one({"user_id": OWNER_ID}, {"$inc": {"balance": tax}})
-    await update.message.reply_text(f"💸 <b>{stylize_text('Sent')}!</b> <code>{format_money(amount-tax)}</code>", parse_mode=ParseMode.HTML)
-
-async def give_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    sender = ensure_user_exists(update.effective_user)
-    if len(context.args) < 1: return await update.message.reply_text("⚠️ <code>/giveitem [name] @user</code>")
-    item_query = context.args[0].lower()
-    target, error = await resolve_target(update, context, specific_arg=context.args[1] if len(context.args) > 1 else None)
-    if not target: return await update.message.reply_text("❌ User not found.")
-    inventory = sender.get('inventory', [])
-    item = next((i for i in inventory if item_query in i['name'].lower()), None)
-    if not item: return await update.message.reply_text("❌ Item not found.")
-    users_collection.update_one({"user_id": sender['user_id']}, {"$pull": {"inventory": {"id": item['id']}}})
-    users_collection.update_one({"user_id": target['user_id']}, {"$push": {"inventory": item}})
-    await update.message.reply_text(f"🎁 <b>{item['name']}</b> {stylize_text('gifted to')} {get_mention(target)}!", parse_mode=ParseMode.HTML)
-
-async def claim(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-    user = update.effective_user
-    if chat.type == "private": return
-    ensure_user_exists(user)
-    group_doc = get_group_data(chat.id, chat.title)
-    if group_doc.get("claimed"): return await update.message.reply_text(f"🕒 {stylize_text('Already Claimed!')}")
-    count = await context.bot.get_chat_member_count(chat.id)
-    if count < MIN_CLAIM_MEMBERS: return await update.message.reply_text("❌ Group too small.")
-    users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": CLAIM_BONUS}})
-    groups_collection.update_one({"chat_id": chat.id}, {"$set": {"claimed": True}})
-    await update.message.reply_text(f"💎 <b>{stylize_text('Claimed')}</b> <code>{format_money(CLAIM_BONUS)}</code>!", parse_mode=ParseMode.HTML)
+    
+    await update.message.reply_text(
+        f"💸 <b>{stylize_text('Sent')}!</b>\n"
+        f"👤 <b>To:</b> {get_mention(target)}\n"
+        f"💰 <b>Amount:</b> <code>{format_money(amount-tax)}</code> (Tax: {TAX_RATE*100}%)", 
+        parse_mode=ParseMode.HTML
+    )
 
 async def sell_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if not context.args: return await update.message.reply_text("⚠️ <code>/sellxp 100</code>")
     try: amt = int(context.args[0])
     except: return
+    
     user_data = users_collection.find_one({"user_id": user.id})
-    if not user_data or user_data.get("exp", 0) < amt: return await update.message.reply_text("❌ Low EXP!")
+    if not user_data or user_data.get("exp", 0) < amt: 
+        return await update.message.reply_text("❌ Low EXP!")
+    
     coins = amt // EXCHANGE_RATE
     users_collection.update_one({"user_id": user.id}, {"$inc": {"exp": -amt, "balance": coins}})
     await update.message.reply_text(f"🔄 {stylize_text('Sold')} {amt} EXP for <code>{format_money(coins)}</code>", parse_mode=ParseMode.HTML)
 
-# --- AUTO HANDLER ---
+# --- 📈 AUTO XP HANDLER ---
 async def check_chat_xp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_chat or update.effective_chat.type == "private" or not update.effective_user: return
     user_id = update.effective_user.id
     current_time = time.time()
+    
     update_group_activity(update.effective_chat.id, update.effective_chat.title)
+    
     if user_id in user_cooldowns and (current_time - user_cooldowns[user_id] < EXP_COOLDOWN): return 
+    
     xp_amount = random.randint(*EXP_RANGE)
     users_collection.update_one({"user_id": user_id}, {"$inc": {"exp": xp_amount}}, upsert=True)
     user_cooldowns[user_id] = current_time
