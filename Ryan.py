@@ -1,8 +1,9 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Stable, Multi-Feature & Inspector System Integrated
+# Final Ryan.py - Stable, Multi-Feature & All Handlers Integrated
 
 import os
 import logging
+import asyncio
 from threading import Thread
 from flask import Flask
 from telegram import Update
@@ -55,11 +56,12 @@ async def post_init(application):
         ("start", "🌸 ϻᴧɪη ϻєηυ"), 
         ("help", "📖 ᴄσϻϻᴧηᴅ ᴅɪᴧꝛʏ"),
         ("bal", "👛 ᴡᴧʟʟєᴛ"), 
+        ("ranking", "🏆 ᴛσᴘ ʀɪᴄʜᴇsᴛ"),
         ("shop", "🛒 sʜσᴘ"),
         ("kill", "🔪 ᴋɪʟʟ"), 
         ("rob", "💰 sᴛєᴧʟ"), 
+        ("claim", "🏰 ᴄʟᴧɪϻ ɢꝚσυᴘ"),
         ("daily", "📅 ᴅᴧɪʟʏ"), 
-        ("ranking", "🏆 ᴛσᴘs"),
         ("ping", "📶 sᴛᴧᴛυs"),
         ("checkprotection", "🔍 sᴘʏ ση sʜɪєʟᴅ")
     ]
@@ -69,12 +71,13 @@ async def post_init(application):
 
 # --- MAIN EXECUTION ---
 if __name__ == '__main__':
+    # Start Flask in a separate thread
     Thread(target=run_flask, daemon=True).start()
     
     if not TOKEN:
         print("CRITICAL: BOT_TOKEN is missing!")
     else:
-        # Optimized Request Config
+        # Optimized Request Config for better performance
         t_request = HTTPXRequest(
             connection_pool_size=30, 
             connect_timeout=40.0, 
@@ -102,20 +105,21 @@ if __name__ == '__main__':
         
         # --- 2. ECONOMY & SHOP ---
         app_bot.add_handler(CommandHandler("bal", economy.balance))
+        app_bot.add_handler(CommandHandler("ranking", economy.ranking)) # Ranking Fix
         app_bot.add_handler(CommandHandler("daily", daily.daily))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
         app_bot.add_handler(CommandHandler("buy", shop.buy))
+        app_bot.add_handler(CommandHandler("give", economy.give))
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
+        app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_view|"))
         
-        # --- 3. RPG, GAMES & INSPECTOR (UPDATED) ---
+        # --- 3. RPG, GAMES & INSPECTOR ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
-        # Naye Inspector Commands yahan hain:
         app_bot.add_handler(CommandHandler("approve", game.approve_inspector))
         app_bot.add_handler(CommandHandler("checkprotection", game.check_protection_cmd))
-        
         app_bot.add_handler(CommandHandler("mining", group_econ.passive_mining))
         app_bot.add_handler(CommandHandler("raid", group_econ.territory_raid))
         
@@ -126,6 +130,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("wmarry", waifu.wmarry))
 
         # --- 5. SYSTEM & ADMIN ---
+        app_bot.add_handler(CommandHandler("claim", events.claim_group)) # Claim Fix
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
@@ -135,9 +140,14 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
 
         # --- 6. MESSAGE LISTENERS (Priority Groups) ---
+        # Group 1: Collection (Waifus)
         app_bot.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS & ~filters.COMMAND, collection.collect_waifu), group=1)
+        # Group 2: XP (Economy)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=2)
+        # Group 3: Events (Group Tracking)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
+        
+        # Group 4: Welcome & AI Chatbot
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
         app_bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot.ai_message_handler), group=4)
