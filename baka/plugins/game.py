@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Mirror Game Plugin - Absolute Protection Logic
+# Final Mirror Game Plugin - Absolute Protection Logic Fixed
 
 import random
 import html
@@ -16,19 +16,6 @@ from baka.utils import (
 )
 from baka.database import users_collection
 
-# --- 👮 INSPECTOR & INTELLIGENCE ---
-async def approve_inspector(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID: return
-    target_db, error = await resolve_target(update, context)
-    if not target_db:
-        return await update.message.reply_text(f"⚠️ {stylize_text('Usage')}: /approve 1d @username")
-    time_arg = context.args[0] if context.args else "1d"
-    match = re.search(r'(\d+)([dh])', time_arg.lower())
-    amount, unit = (int(match.group(1)), match.group(2)) if match else (1, 'd')
-    expiry = datetime.utcnow() + (timedelta(days=amount) if unit == 'd' else timedelta(hours=amount))
-    users_collection.update_one({"user_id": target_db['user_id']}, {"$set": {"inspector_expiry": expiry}})
-    await update.message.reply_text(f"✅ {get_mention(target_db)} {stylize_text('Approved')} for {time_arg}!", parse_mode=ParseMode.HTML)
-
 # --- 🔪 KILL COMMAND (FIXED PROTECTION) ---
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     attacker = update.effective_user
@@ -39,12 +26,13 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not target_db: return await update.message.reply_text("❌ User nahi mila!")
 
+    # Target ka dynamic name nikalna
     t_name = target_user.first_name if target_user else target_db.get('name', "User")
     target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(t_name)}</b></a>"
 
-    # 🔥 🛡️ ABSOLUTE KILL PROTECTION
+    # 🔥 🛡️ ABSOLUTE KILL PROTECTION (Check logic first)
     if is_protected(target_db) and attacker.id != OWNER_ID:
-        return await update.message.reply_text(f"🛡️ 𝖥 {t_name} is protected. Kill attempt failed!", parse_mode=ParseMode.HTML)
+        return await update.message.reply_text(f"🛡️ This <b>{html.escape(t_name)}</b> is protected.", parse_mode=ParseMode.HTML)
     
     if attacker_db.get('status') == 'dead': 
         return await update.message.reply_text(f"💀 Pehle khud revive ho jao!")
@@ -80,9 +68,9 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t_name = target_user.first_name if target_user else target_db.get('name', "User")
     target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(t_name)}</b></a>"
 
-    # 🔥 🛡️ ABSOLUTE ROB PROTECTION
+    # 🔥 🛡️ ABSOLUTE ROB PROTECTION (Check logic first)
     if is_protected(target_db) and user.id != OWNER_ID:
-        return await update.message.reply_text(f"🛡️ 𝖥 {t_name} is protected. Robbery failed!", parse_mode=ParseMode.HTML)
+        return await update.message.reply_text(f"🛡️ This <b>{html.escape(t_name)}</b> is protected.", parse_mode=ParseMode.HTML)
 
     target_bal = target_db.get('balance', 0)
     if target_bal < 100: return await update.message.reply_text(f"📉 {t_name} bahut gareeb hai!")
@@ -113,11 +101,13 @@ async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(f"❤️ <b>{stylize_text('REVIVED')}!</b>", parse_mode=ParseMode.HTML)
 
-# --- 🛡️ PROTECT ---
+# --- 🛡️ PROTECT (1 Day Activation) ---
 async def protect(update, context):
     user = update.effective_user
     user_db = ensure_user_exists(user)
     if user_db.get('balance', 0) < PROTECT_1D_COST: return await update.message.reply_text("❌ Low balance!")
+    
+    # Exactly 24 Hours Shield
     expiry = datetime.utcnow() + timedelta(days=1)
     users_collection.update_one({"user_id": user.id}, {"$set": {"protection_expiry": expiry}, "$inc": {"balance": -PROTECT_1D_COST}})
-    await update.message.reply_text(f"🛡️ <b>Shield Activated!</b>", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"🛡️ <b>Shield Activated!</b> Aap 24 ghante tak safe hain.", parse_mode=ParseMode.HTML)
