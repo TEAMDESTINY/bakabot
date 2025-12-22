@@ -11,7 +11,7 @@ from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, 
     ChatMemberHandler, MessageHandler, filters, ContextTypes
 )
-# Optimized Request Config
+# Optimized Request Config for high-speed handling
 from telegram.request import HTTPXRequest
 
 # Error noise kam karne ke liye
@@ -53,6 +53,7 @@ async def post_init(application):
     """Executes once the bot starts successfully."""
     print("✅ DESTINY ENGINE CONNECTED!")
     
+    # Setting up the Menu for easy navigation
     commands = [
         ("start", "🌸 ϻᴧɪη ϻєηυ"), 
         ("help", "📖 ᴄσϻϻᴧηᴅ ᴅɪᴧꝛʏ"),
@@ -72,11 +73,13 @@ async def post_init(application):
 
 # --- MAIN EXECUTION ---
 if __name__ == '__main__':
+    # Flask thread starts for keeping the bot alive
     Thread(target=run_flask, daemon=True).start()
     
     if not TOKEN:
         print("CRITICAL: BOT_TOKEN is missing!")
     else:
+        # High-performance HTTPX configuration
         t_request = HTTPXRequest(
             connection_pool_size=30, 
             connect_timeout=40.0, 
@@ -103,14 +106,14 @@ if __name__ == '__main__':
         
         # --- 2. ECONOMY & SHOP ---
         app_bot.add_handler(CommandHandler("bal", economy.balance))
-        app_bot.add_handler(CommandHandler("ranking", economy.ranking)) # Ranking Fix
+        app_bot.add_handler(CommandHandler("ranking", economy.ranking)) # Leaderboard fix
         app_bot.add_handler(CommandHandler("daily", daily.daily))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
         app_bot.add_handler(CommandHandler("buy", shop.buy))
         app_bot.add_handler(CommandHandler("give", economy.give))
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
         
-        # 🔥 CALLBACK ORDER FIX: Admin handler must be before Economy
+        # 🔥 CALLBACK ORDER FIX: Admin handler must be prioritized
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
         app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_view|"))
         
@@ -125,7 +128,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("raid", group_econ.territory_raid))
         
         # --- 4. SYSTEM & ADMIN ---
-        app_bot.add_handler(CommandHandler("claim", events.claim_group)) # Claim Fix
+        app_bot.add_handler(CommandHandler("claim", events.claim_group)) # Group claiming fix
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
         app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
@@ -136,6 +139,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
 
         # --- 5. LISTENERS ---
+        # Group activity and XP listeners
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=2)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
