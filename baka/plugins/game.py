@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Mirror Game Plugin - Fixed Rob Loot & Shield Logic
+# Final Mirror Game Plugin - 100% Fixed Protection & Partial Loot Logic
 
 import random
 import html
@@ -16,7 +16,7 @@ from baka.utils import (
 )
 from baka.database import users_collection
 
-# --- 👮 INSPECTOR LOGIC ---
+# --- 👮 INSPECTOR & INTELLIGENCE ---
 async def approve_inspector(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return 
     target_db, error = await resolve_target(update, context)
@@ -29,90 +29,73 @@ async def approve_inspector(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users_collection.update_one({"user_id": target_db['user_id']}, {"$set": {"inspector_expiry": expiry}})
     await update.message.reply_text(f"✅ {get_mention(target_db)} {stylize_text('Approved')} for {time_arg}!", parse_mode=ParseMode.HTML)
 
-async def check_protection_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    user_db = ensure_user_exists(user)
-    if not is_inspector(user_db) and user.id != OWNER_ID:
-        return await update.message.reply_text(f"❌ {stylize_text('Access Denied!')}")
-    target_db, error = await resolve_target(update, context)
-    if not target_db: return await update.message.reply_text("⚠️ Target missing!")
-    expiry = target_db.get("protection_expiry")
-    now = datetime.utcnow()
-    is_dead = target_db.get('status') == 'dead'
-    has_shield = expiry and expiry > now
-    k_status = "✅ Available" if not has_shield and not is_dead else "🛡️ Blocked"
-    r_status = "✅ Available" if not has_shield and target_db.get('balance', 0) >= 100 else "📉 Blocked"
-    msg = (
-        f"🕵️‍♂️ <b>{stylize_text('TARGET INTELLIGENCE')}</b>\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"👤 <b>Target:</b> {get_mention(target_db)}\n"
-        f"❤️ <b>Status:</b> {'💀 Dead' if is_dead else '💖 Alive'}\n"
-        f"🛡️ <b>Shield:</b> {format_time(expiry - now) if has_shield else 'None'}\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"🔪 <b>Kill:</b> {k_status}\n"
-        f"💰 <b>Rob:</b> {r_status}\n"
-        f"━━━━━━━━━━━━━━━━━━"
-    )
-    try: await context.bot.send_message(chat_id=user.id, text=msg, parse_mode=ParseMode.HTML)
-    except: await update.message.reply_text("❌ DM me bot start karo!")
-
 # --- 🔪 KILL COMMAND ---
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     attacker = update.effective_user
     attacker_db = ensure_user_exists(attacker)
     target_user = update.message.reply_to_message.from_user if update.message.reply_to_message else None
     target_db = ensure_user_exists(target_user) if target_user else (await resolve_target(update, context))[0]
+    
     if not target_db: return await update.message.reply_text("❌ User not found.")
-    t_name = target_user.first_name if target_user else target_db.get('name', "User")
-    target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(t_name)}</b></a>"
+
+    # 🛡️ PROTECTION CHECK (Strict)
     if is_protected(target_db) and attacker.id != OWNER_ID:
-        return await update.message.reply_text(f"🛡️ {target_mention} is protected!", parse_mode=ParseMode.HTML)
+        return await update.message.reply_text(f"🛡️ {get_mention(target_db)} is protected!", parse_mode=ParseMode.HTML)
+    
     if attacker_db.get('status') == 'dead': 
         return await update.message.reply_text(f"💀 Pehle khud revive ho jao!")
+    
     if target_db.get('status') == 'dead':
-        return await update.message.reply_text(f"⚰️ {target_mention} is already dead!", parse_mode=ParseMode.HTML)
+        return await update.message.reply_text(f"⚰️ {get_mention(target_db)} is already dead!", parse_mode=ParseMode.HTML)
+
     reward = random.randint(150, 300)
     users_collection.update_one({"user_id": target_db["user_id"]}, {"$set": {"status": "dead", "death_time": datetime.utcnow()}})
     users_collection.update_one({"user_id": attacker.id}, {"$inc": {"balance": reward}})
-    await update.message.reply_text(f"🔪 {get_mention(attacker)} killed {target_mention}!\n💰 +{format_money(reward)}", parse_mode=ParseMode.HTML)
-    await notify_victim(context.bot, target_db['user_id'], f"☠️ <b>Killed by</b> {get_mention(attacker)}")
+    await update.message.reply_text(f"🔪 {get_mention(attacker)} killed {get_mention(target_db)}!\n💰 +{format_money(reward)}", parse_mode=ParseMode.HTML)
 
-# --- 💰 ROB COMMAND (FIXED LOOT & SHIELD) ---
+# --- 💰 ROB COMMAND (FIXED SHIELD BYPASS) ---
 async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     sender_db = ensure_user_exists(user)
     target_user = update.message.reply_to_message.from_user if update.message.reply_to_message else None
     target_db = ensure_user_exists(target_user) if target_user else (await resolve_target(update, context))[0]
+
     if not target_db: return await update.message.reply_text("❌ Victim not found.")
 
-    # 1. 🛡️ Shield Check (Priority)
+    # 🔥 🛡️ ABSOLUTE PROTECTION CHECK (Must be first)
     if is_protected(target_db) and user.id != OWNER_ID:
-        return await update.message.reply_text(f"🛡️ {get_mention(target_db)} protected hai!")
+        return await update.message.reply_text(f"🛡️ {get_mention(target_db)} is protected by a shield!", parse_mode=ParseMode.HTML)
 
     target_bal = target_db.get('balance', 0)
     if target_bal < 100: return await update.message.reply_text(f"📉 Too broke!")
 
-    # 2. 🎲 Success Logic (40% Chance)
+    # 🎲 Success Logic (40% Chance)
     if random.randint(1, 100) <= 40:
-        # 3. 💸 Partial Loot (30% to 70%) - Saare paise nahi jayenge
+        # 💸 Balanced Loot (30% to 70%)
         loot_percent = random.randint(30, 70)
         loot_amount = int(target_bal * (loot_percent / 100))
+        
         users_collection.update_one({"user_id": target_db["user_id"]}, {"$inc": {"balance": -loot_amount}})
         users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": loot_amount}})
-        await update.message.reply_text(f"💰 Success! Looted {format_money(loot_amount)} ({loot_percent}%)", parse_mode=ParseMode.HTML)
+        
+        await update.message.reply_text(
+            f"💰 <b>Success!</b>\nLooted <b>{format_money(loot_amount)}</b> ({loot_percent}%) from {get_mention(target_db)}!", 
+            parse_mode=ParseMode.HTML
+        )
     else:
         fine = random.randint(200, 500)
         users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": -fine}})
-        await update.message.reply_text(f"💀 Failed! Fine: {format_money(fine)}")
+        await update.message.reply_text(f"💀 <b>Failed!</b>\nAap pakde gaye aur <b>{format_money(fine)}</b> jurmana bharna pada.")
 
-# --- ❤️ REVIVE (STABLE) ---
+# --- ❤️ REVIVE ---
 async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_db = ensure_user_exists(user)
     if user_db.get('status') == 'alive': 
-        return await update.message.reply_text("✨ Already alive!")
+        return await update.message.reply_text("✨ You are already alive!")
     if user_db.get('balance', 0) < REVIVE_COST: 
-        return await update.message.reply_text(f"❌ Cost: {format_money(REVIVE_COST)}")
+        return await update.message.reply_text(f"❌ Revive cost: {format_money(REVIVE_COST)}")
+    
     users_collection.update_one(
         {"user_id": user.id}, 
         {"$set": {"status": "alive", "death_time": None}, "$inc": {"balance": -REVIVE_COST}}
@@ -124,6 +107,7 @@ async def protect(update, context):
     user = update.effective_user
     user_db = ensure_user_exists(user)
     if user_db.get('balance', 0) < PROTECT_1D_COST: return await update.message.reply_text("❌ Low balance!")
+    
     expiry = datetime.utcnow() + timedelta(days=1)
     users_collection.update_one({"user_id": user.id}, {"$set": {"protection_expiry": expiry}, "$inc": {"balance": -PROTECT_1D_COST}})
-    await update.message.reply_text(f"🛡️ <b>Shield Activated!</b>", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"🛡️ <b>Shield Activated!</b> (1 Day)", parse_mode=ParseMode.HTML)
