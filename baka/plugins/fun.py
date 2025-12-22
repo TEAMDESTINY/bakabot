@@ -1,97 +1,91 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Location: Supaul, Bihar 
-#
-# All rights reserved.
-#
-# This code is the intellectual property of @WTF_Phantom.
-# You are not allowed to copy, modify, redistribute, or use this
-# code for commercial or personal projects without explicit permission.
-#
-# Allowed:
-# - Forking for personal learning
-# - Submitting improvements via pull requests
-#
-# Not Allowed:
-# - Claiming this code as your own
-# - Re-uploading without credit or permission
-# - Selling or using commercially
-#
-# Contact for permissions:
-# Email: king25258069@gmail.com
+# Final Fun & Gambling Plugin - GIFs + Dice + Slots
 
+import random
+import html
 import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.utils import ensure_user_exists, get_mention, format_money
+from baka.utils import ensure_user_exists, get_mention, format_money, stylize_text
 from baka.database import users_collection
 
-async def dice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Real Telegram Dice."""
-    user = ensure_user_exists(update.effective_user)
-    chat_id = update.effective_chat.id
+# --- 🎬 GIF DATABASE ---
+ACTION_GIFS = {
+    "slap": ["https://media.giphy.com/media/Zau0yrl17uzdEXqzjZ/giphy.gif", "https://media.giphy.com/media/u8u0R5uUuUuUu/giphy.gif"],
+    "punch": ["https://media.giphy.com/media/D8S8C8C8C8C8C/giphy.gif", "https://media.giphy.com/media/uGjDHNXIPWSZ2/giphy.gif"],
+    "hug": ["https://media.giphy.com/media/u9BxkneOhicx2/giphy.gif", "https://media.giphy.com/media/3M4NpbLCTxBqU/giphy.gif"],
+    "kiss": ["https://media.giphy.com/media/Gj8bn4pgOcFuw/giphy.gif", "https://media.giphy.com/media/11rWo7pgv8QoUw/giphy.gif"]
+}
+
+# --- ⚙️ ACTION HANDLER ---
+async def perform_action(update: Update, context: ContextTypes.DEFAULT_TYPE, action_name: str, emoji: str):
+    sender = update.effective_user
+    if not update.message.reply_to_message:
+        return await update.message.reply_text(f"❗ {stylize_text('Usage')}: Reply to someone to {action_name.lower()} them!")
     
-    if not context.args: 
-        return await update.message.reply_text("🎲 <b>Usage:</b> <code>/dice [amount]</code>", parse_mode=ParseMode.HTML)
+    target = update.message.reply_to_message.from_user
+    if target.id == sender.id:
+        return await update.message.reply_text(f"🤔 Khud ko hi {action_name.lower()} karoge?")
+
+    gif_url = random.choice(ACTION_GIFS.get(action_name.lower(), []))
+    caption = f"{emoji} {get_mention(sender)} <b>{action_name.upper()}ED</b> {get_mention(target)}!"
+
+    try:
+        await update.message.reply_animation(animation=gif_url, caption=caption, parse_mode=ParseMode.HTML)
+    except:
+        await update.message.reply_text(caption, parse_mode=ParseMode.HTML)
+
+# --- 🖐️ FUN ACTIONS (RYAN.PY SYNC) ---
+async def slap(update: Update, context: ContextTypes.DEFAULT_TYPE): await perform_action(update, context, "Slap", "🖐️")
+async def punch(update: Update, context: ContextTypes.DEFAULT_TYPE): await perform_action(update, context, "Punch", "👊")
+async def hug(update: Update, context: ContextTypes.DEFAULT_TYPE): await perform_action(update, context, "Hug", "🫂")
+async def kiss(update: Update, context: ContextTypes.DEFAULT_TYPE): await perform_action(update, context, "Kiss", "💋")
+
+# --- 🎲 GAMBLING: DICE ---
+async def dice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = ensure_user_exists(update.effective_user)
+    if not context.args: return await update.message.reply_text("🎲 <b>Usage:</b> <code>/dice [amount]</code>", parse_mode=ParseMode.HTML)
     
     try: bet = int(context.args[0])
-    except: return await update.message.reply_text("⚠️ Invalid bet.", parse_mode=ParseMode.HTML)
+    except: return await update.message.reply_text("⚠️ Invalid bet.")
     
-    if bet < 50: return await update.message.reply_text("⚠️ Min bet is $50.", parse_mode=ParseMode.HTML)
-    if user['balance'] < bet: return await update.message.reply_text("📉 Not enough money.", parse_mode=ParseMode.HTML)
+    if bet < 50: return await update.message.reply_text("⚠️ Min bet is $50.")
+    if user['balance'] < bet: return await update.message.reply_text("📉 Not enough money.")
     
-    # Send the native Dice
-    msg = await context.bot.send_dice(chat_id, emoji='🎲')
-    result = msg.dice.value # 1-6
+    msg = await context.bot.send_dice(update.effective_chat.id, emoji='🎲')
+    result = msg.dice.value 
+    await asyncio.sleep(3) # Animation delay
     
-    # Wait for animation
-    await asyncio.sleep(3)
-    
-    if result > 3: # 4, 5, 6 Wins
-        win_amt = bet 
-        users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": win_amt}})
-        await update.message.reply_text(
-            f"🎲 <b>Result:</b> {result}\n🎉 <b>You Won!</b> +<code>{format_money(win_amt)}</code>",
-            reply_to_message_id=msg.message_id,
-            parse_mode=ParseMode.HTML
-        )
-    else: # 1, 2, 3 Loses
+    if result > 3: # Win: 4, 5, 6
+        users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": bet}})
+        text = f"🎲 <b>Result:</b> {result}\n🎉 <b>You Won!</b> +<code>{format_money(bet)}</code>"
+    else: # Loss: 1, 2, 3
         users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": -bet}})
-        await update.message.reply_text(
-            f"🎲 <b>Result:</b> {result}\n💀 <b>You Lost!</b> -<code>{format_money(bet)}</code>",
-            reply_to_message_id=msg.message_id,
-            parse_mode=ParseMode.HTML
-        )
-
-async def slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Real Telegram Slots."""
-    user = ensure_user_exists(update.effective_user)
-    chat_id = update.effective_chat.id
-    bet = 100 # Fixed bet
+        text = f"🎲 <b>Result:</b> {result}\n💀 <b>You Lost!</b> -<code>{format_money(bet)}</code>"
     
-    if user['balance'] < bet: return await update.message.reply_text("📉 Need $100 to spin.", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(text, reply_to_message_id=msg.message_id, parse_mode=ParseMode.HTML)
+
+# --- 🎰 GAMBLING: SLOTS ---
+async def slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = ensure_user_exists(update.effective_user)
+    bet = 100 
+    if user['balance'] < bet: return await update.message.reply_text("📉 Need $100 to spin.")
     
     users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": -bet}})
-    
-    # Send native Slot Machine
-    msg = await context.bot.send_dice(chat_id, emoji='🎰')
+    msg = await context.bot.send_dice(update.effective_chat.id, emoji='🎰')
     value = msg.dice.value 
-    # Values: 1-64. 
-    # 64 = 777 (Jackpot), 1 = all different, 43 = grapes/grapes/grapes etc.
-    # Telegram logic is complex, simpler approximation:
+    await asyncio.sleep(2)
     
-    await asyncio.sleep(2) # Wait for spin
-    
-    # Winning logic based on Telegram API values
-    if value == 64: # 777
+    if value == 64: # Jackpot (777)
         prize = bet * 10
         users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": prize}})
         text = f"🎰 <b>JACKPOT! (777)</b>\n🎉 You won <code>{format_money(prize)}</code>!"
-    elif value in [1, 22, 43]: # 3 matching fruits usually
+    elif value in [1, 22, 43]: # Triple Fruits
         prize = bet * 3
         users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": prize}})
         text = f"🎰 <b>Winner!</b>\n🎉 You won <code>{format_money(prize)}</code>!"
     else:
-        text = f"🎰 <b>Lost!</b> Better luck next time."
-
+        text = f"🎰 <b>Lost!</b>"
+    
     await update.message.reply_text(text, reply_to_message_id=msg.message_id, parse_mode=ParseMode.HTML)
