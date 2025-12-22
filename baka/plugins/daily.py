@@ -1,55 +1,68 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Location: Supaul, Bihar 
-#
-# All rights reserved.
-#
-# This code is the intellectual property of @WTF_Phantom.
-# You are not allowed to copy, modify, redistribute, or use this
-# code for commercial or personal projects without explicit permission.
-#
-# Allowed:
-# - Forking for personal learning
-# - Submitting improvements via pull requests
-#
-# Not Allowed:
-# - Claiming this code as your own
-# - Re-uploading without credit or permission
-# - Selling or using commercially
-#
-# Contact for permissions:
-# Email: king25258069@gmail.com
+# Final Daily Plugin - Streak System & Weekly Bonus Integrated
 
 from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.utils import ensure_user_exists, format_money
+from baka.utils import ensure_user_exists, format_money, stylize_text
 from baka.database import users_collection
 
+# --- CONFIGURATION ---
+DAILY_REWARD = 500
+WEEKLY_BONUS = 10000
+
 async def daily(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = ensure_user_exists(update.effective_user)
+    """Handles daily rewards and streak logic."""
+    user_data = ensure_user_exists(update.effective_user)
+    user_id = user_data['user_id']
     now = datetime.utcnow()
-    last = user.get("last_daily")
+    last_claim = user_data.get("last_daily")
     
-    if last and (now - last) < timedelta(hours=24):
-        rem = timedelta(hours=24) - (now - last)
-        return await update.message.reply_text(f"⏳ <b>Cooldown!</b> Wait {int(rem.total_seconds()//3600)}h.", parse_mode=ParseMode.HTML)
+    # 1. ⏳ COOLDOWN CHECK (24 Hours)
+    if last_claim and (now - last_claim) < timedelta(hours=24):
+        rem = timedelta(hours=24) - (now - last_claim)
+        hours = int(rem.total_seconds() // 3600)
+        minutes = int((rem.total_seconds() % 3600) // 60)
+        return await update.message.reply_text(
+            f"⏳ <b>{stylize_text('Cooldown')}!</b>\n"
+            f"Bhai, thoda sabar karo! Agla reward <b>{hours}h {minutes}m</b> baad milega.", 
+            parse_mode=ParseMode.HTML
+        )
     
-    streak = user.get("daily_streak", 0)
-    if last and (now - last) > timedelta(hours=48): streak = 0 # Reset
+    # 2. 🔥 STREAK LOGIC
+    streak = user_data.get("daily_streak", 0)
+    
+    # Agar 48 ghante se zyada ho gaye, toh streak reset
+    if last_claim and (now - last_claim) > timedelta(hours=48):
+        streak = 0 
     
     streak += 1
-    reward = 500
-    bonus = 10000 if streak % 7 == 0 else 0
+    reward = DAILY_REWARD
+    bonus = WEEKLY_BONUS if streak % 7 == 0 else 0
+    total_reward = reward + bonus
     
-    msg = f"📅 <b>Day {streak}!</b>\nReceived: <code>{format_money(reward)}</code>"
-    if bonus: msg += f"\n🎉 <b>Weekly Bonus:</b> <code>{format_money(bonus)}</code>"
-        
+    # 3. 💰 DATABASE UPDATE
     users_collection.update_one(
-        {"user_id": user['user_id']},
+        {"user_id": user_id},
         {
             "$set": {"last_daily": now, "daily_streak": streak},
-            "$inc": {"balance": reward + bonus}
+            "$inc": {"balance": total_reward}
         }
     )
+    
+    # 4. 📝 MESSAGE FORMATTING
+    msg = (
+        f"📅 <b>{stylize_text('Day')} {streak}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"🎁 <b>Claimed:</b> <code>{format_money(reward)}</code>\n"
+    )
+    
+    if bonus:
+        msg += f"🎉 <b>Weekly Bonus:</b> <code>{format_money(bonus)}</code>\n"
+        msg += f"✨ <i>Wow! 7 din lagatar claim karne ka tohfa!</i>\n"
+    
+    msg += f"━━━━━━━━━━━━━━━━━━\n"
+    msg += f"💰 <b>Total Balance:</b> <code>{format_money(user_data.get('balance', 0) + total_reward)}</code>"
+    
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
