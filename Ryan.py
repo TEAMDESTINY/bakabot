@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Stable & Fixed Attribute Errors
+# Final Ryan.py - Fully Integrated & Fixed Handlers
 
 import os
 import logging
@@ -53,6 +53,8 @@ async def post_init(application):
         ("kill", "🔪 ᴋɪʟʟ"), 
         ("rob", "💰 sᴛєᴧʟ"), 
         ("revive", "❤️ Ꝛєᴠɪᴠє"),
+        ("daily", "📅 ᴅᴧɪʟʏ ꝚєᴡᴧꝚᴅ"),
+        ("shop", "🛒 sʜσᴘ"),
         ("claim", "🏰 ᴄʟᴧɪϻ ɢꝚσυᴘ")
     ]
     await application.bot.set_my_commands(commands)
@@ -75,35 +77,60 @@ if __name__ == '__main__':
             .build()
         )
 
-        # --- 1. CORE ---
+        # --- 1. CORE COMMANDS ---
         app_bot.add_handler(CommandHandler("start", start.start))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         
-        # --- 2. ECONOMY ---
+        # --- 2. ECONOMY & SHOP ---
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("ranking", economy.ranking))
         app_bot.add_handler(CommandHandler("give", economy.give))
+        app_bot.add_handler(CommandHandler("daily", daily.daily_claim))
+        app_bot.add_handler(CommandHandler("shop", shop.open_shop))
+        app_bot.add_handler(CommandHandler("buy", shop.buy_item))
+        app_bot.add_handler(CommandHandler("top", leaderboard.show_leaderboard))
+        app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_view|"))
         
-        # --- 3. RPG & GAMES (FIXED HANDLERS) ---
+        # --- 3. RPG & GAMES ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
-        
-        # 🔥 ERROR FIX: Sirf tab add karein agar game.py mein function maujud ho
         if hasattr(game, 'check_protection_cmd'):
             app_bot.add_handler(CommandHandler("checkprotection", game.check_protection_cmd))
-        if hasattr(game, 'approve_inspector'):
-            app_bot.add_handler(CommandHandler("approve", game.approve_inspector))
 
-        # --- 4. ADMIN & CALLBACKS ---
-        app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
-        app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_view|"))
-        app_bot.add_handler(CommandHandler("claim", events.claim_group))
+        # --- 4. FUN & SOCIAL (Yahan aapke fun commands hain) ---
+        app_bot.add_handler(CommandHandler("slap", fun.slap))
+        app_bot.add_handler(CommandHandler("hug", fun.hug))
+        app_bot.add_handler(CommandHandler("kiss", fun.kiss))
+        app_bot.add_handler(CommandHandler("punch", fun.punch))
+        app_bot.add_handler(CommandHandler("bite", fun.bite))
+        app_bot.add_handler(CommandHandler("pat", fun.pat))
+        app_bot.add_handler(CommandHandler("waifu", waifu.get_waifu))
+        app_bot.add_handler(CommandHandler("riddle", riddle.get_riddle))
+
+        # --- 5. ADMIN & OWNER ONLY ---
+        app_bot.add_handler(CommandHandler("sudohelp", admin.sudo_help))
+        app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
+        app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
+        app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
+        app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
+        app_bot.add_handler(CommandHandler("sudolist", admin.sudolist))
+        app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
+        app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
+        app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
+        
+        # IMPORTANT: Admin confirmation callbacks
+        app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
-        # --- 5. LISTENERS ---
+        # --- 6. LISTENERS & EVENTS ---
+        app_bot.add_handler(CommandHandler("claim", events.claim_group))
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
+        
+        # Chatbot (Optional toggle)
+        app_bot.add_handler(CommandHandler("chatbot", chatbot.toggle_chatbot))
 
+        print("✅ All Handlers Loaded Successfully!")
         app_bot.run_polling(drop_pending_updates=True)
