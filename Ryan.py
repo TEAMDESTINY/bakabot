@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Ryan.py - Stable, Multi-Feature & Conflict-Free
+# Final Ryan.py - Stable, Multi-Feature & Conflict-Free Engine
 
 import os
 import logging
@@ -11,8 +11,7 @@ from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, 
     ChatMemberHandler, MessageHandler, filters, ContextTypes
 )
-# Optimized Request Config for high-speed handling
-from telegram.request import HTTPXRequest
+from telegram.request import HTTPXRequest # Optimized request config
 
 # Error noise kam karne ke liye
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
@@ -53,7 +52,6 @@ async def post_init(application):
     """Executes once the bot starts successfully."""
     print("✅ DESTINY ENGINE CONNECTED!")
     
-    # Setting up the Menu for easy navigation
     commands = [
         ("start", "🌸 ϻᴧɪη ϻєηυ"), 
         ("help", "📖 ᴄσϻϻᴧηᴅ ᴅɪᴧꝛʏ"),
@@ -62,6 +60,7 @@ async def post_init(application):
         ("shop", "🛒 sʜσᴘ"),
         ("kill", "🔪 ᴋɪʟʟ"), 
         ("rob", "💰 sᴛєᴧʟ"), 
+        ("revive", "❤️ Ꝛєᴠɪᴠє"), # Handler menu update
         ("claim", "🏰 ᴄʟᴧɪϻ ɢꝚσυᴘ"),
         ("daily", "📅 ᴅᴧɪʟʏ"), 
         ("ping", "📶 sᴛᴧᴛυs"),
@@ -73,13 +72,11 @@ async def post_init(application):
 
 # --- MAIN EXECUTION ---
 if __name__ == '__main__':
-    # Flask thread starts for keeping the bot alive
     Thread(target=run_flask, daemon=True).start()
     
     if not TOKEN:
         print("CRITICAL: BOT_TOKEN is missing!")
     else:
-        # High-performance HTTPX configuration
         t_request = HTTPXRequest(
             connection_pool_size=30, 
             connect_timeout=40.0, 
@@ -113,22 +110,20 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("give", economy.give))
         app_bot.add_handler(CallbackQueryHandler(shop.shop_callback, pattern="^shop_"))
         
-        # 🔥 CALLBACK ORDER FIX: Admin handler must be prioritized
+        # 🔥 CALLBACK ORDER FIX: Admin handler must be before Economy
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern="^cnf|"))
         app_bot.add_handler(CallbackQueryHandler(economy.inventory_callback, pattern="^inv_view|"))
         
         # --- 3. RPG & GAMES ---
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
-        app_bot.add_handler(CommandHandler("revive", game.revive))
+        app_bot.add_handler(CommandHandler("revive", game.revive)) # Revive fix handler
         app_bot.add_handler(CommandHandler("protect", game.protect))
         app_bot.add_handler(CommandHandler("approve", game.approve_inspector))
         app_bot.add_handler(CommandHandler("checkprotection", game.check_protection_cmd))
-        app_bot.add_handler(CommandHandler("mining", group_econ.passive_mining))
-        app_bot.add_handler(CommandHandler("raid", group_econ.territory_raid))
         
         # --- 4. SYSTEM & ADMIN ---
-        app_bot.add_handler(CommandHandler("claim", events.claim_group)) # Group claiming fix
+        app_bot.add_handler(CommandHandler("claim", events.claim_group)) # Claim logic integrated
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
         app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
@@ -139,7 +134,6 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
 
         # --- 5. LISTENERS ---
-        # Group activity and XP listeners
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & ~filters.COMMAND, economy.check_chat_xp), group=2)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
@@ -147,7 +141,7 @@ if __name__ == '__main__':
         app_bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot.ai_message_handler), group=4)
 
         print("--------------------------")
-        print(f"🚀 {BOT_NAME} IS LIVE & SECURE!")
+        print(f"🚀 {BOT_NAME} IS LIVE & STABLE!")
         print("--------------------------")
         
         app_bot.run_polling(drop_pending_updates=True)
