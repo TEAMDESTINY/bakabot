@@ -13,9 +13,9 @@ from baka.database import users_collection
 # --- 🎬 GIF DATABASE ---
 ACTION_GIFS = {
     "slap": ["https://media.giphy.com/media/Zau0yrl17uzdEXqzjZ/giphy.gif", "https://media.giphy.com/media/u8u0R5uUuUuUu/giphy.gif"],
-    "punch": ["https://media.giphy.com/media/D8S8C8C8C8C8C/giphy.gif", "https://media.giphy.com/media/uGjDHNXIPWSZ2/giphy.gif"],
-    "hug": ["https://media.giphy.com/media/u9BxkneOhicx2/giphy.gif", "https://media.giphy.com/media/3M4NpbLCTxBqU/giphy.gif"],
-    "kiss": ["https://media.giphy.com/media/Gj8bn4pgOcFuw/giphy.gif", "https://media.giphy.com/media/11rWo7pgv8QoUw/giphy.gif"]
+    "punch": ["https://media.giphy.com/media/D8S8C8C8C8C8C/giphy.gif", "https://media.giphy.com/media/uGjDHNXIPWSZ2/giphy.gi"],
+    "hug": ["https://files.catbox.moe/zknne5.mp4", "https://files.catbox.moe/8skije.mp4" , "https://files.catbox.moe/4oytk6.mp4"],
+    "kiss": ["https://files.catbox.moe/rp395w.mp4", "https://files.catbox.moe/bd5t8n.mp4" , "https://files.catbox.moe/1w6ap9.mp4"]
 }
 
 # --- ⚙️ ACTION HANDLER ---
