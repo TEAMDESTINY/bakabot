@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - ABSOLUTE SYNC WITH ALL PLUGINS
+# FINAL MASTER RYAN.PY - FULL PLUGINS & COUPLE INTEGRATED
 
 import os
 import logging
@@ -24,7 +24,8 @@ try:
     from baka.utils import BOT_NAME
     from baka.plugins import (
         start, economy, game, admin, broadcast, fun, events, 
-        ping, chatbot, riddle, waifu, daily, leaderboard, shop 
+        ping, chatbot, riddle, waifu, daily, leaderboard, shop,
+        couple # Naya Couple Plugin
     )
 except ImportError as e:
     print(f"❌ Critical Import Error: {e}")
@@ -40,6 +41,7 @@ def run_flask():
 
 # --- STARTUP MENU (Stylized) ---
 async def post_init(application):
+    """Refreshes command list on startup."""
     commands = [
         ("start", "🌸 ϻᴧɪη ϻєηυ"), 
         ("bal", "👛 ᴡᴧʟʟєᴛ"), 
@@ -47,8 +49,8 @@ async def post_init(application):
         ("kill", "🔪 ᴋɪʟʟ"), 
         ("rob", "💰 sᴛєᴧʟ"), 
         ("daily", "📅 ᴅᴧɪʟʏ ꝚєᴡᴧꝚᴅ"),
+        ("couple", "👩‍❤️‍👨 ᴄσυᴘʟє"),
         ("waifu", "👗 ᴡᴧɪғυ"),
-        ("dice", "🎲 ɢᴧϻʙʟє"),
         ("shop", "🛒 sʜσᴘ")
     ]
     await application.bot.set_my_commands(commands)
@@ -72,20 +74,21 @@ if __name__ == '__main__':
 
         # 2. Economy & Games (Fixed Names)
         app_bot.add_handler(CommandHandler("bal", economy.balance))
-        app_bot.add_handler(CommandHandler("daily", daily.daily)) # Sync with daily.py
-        app_bot.add_handler(CommandHandler("top", leaderboard.leaderboard)) # Sync with leaderboard.py
+        app_bot.add_handler(CommandHandler("daily", daily.daily)) 
+        app_bot.add_handler(CommandHandler("top", leaderboard.leaderboard)) 
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob))
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
 
-        # 3. Fun & Anime (Fixed Names)
+        # 3. Fun, Gambling & Couple (Fixed Names)
         app_bot.add_handler(CommandHandler("slap", fun.slap))
         app_bot.add_handler(CommandHandler("punch", fun.punch))
         app_bot.add_handler(CommandHandler("hug", fun.hug))
         app_bot.add_handler(CommandHandler("kiss", fun.kiss))
-        app_bot.add_handler(CommandHandler("waifu", waifu.waifu_cmd)) # Sync with waifu.py
+        app_bot.add_handler(CommandHandler("couple", couple.couple)) # Naya Couple Handler
+        app_bot.add_handler(CommandHandler("waifu", waifu.waifu_cmd)) 
         app_bot.add_handler(CommandHandler("propose", waifu.wpropose))
         app_bot.add_handler(CommandHandler("marry", waifu.wmarry))
         app_bot.add_handler(CommandHandler("dice", fun.dice))
@@ -93,17 +96,17 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("riddle", riddle.riddle))
 
         # 4. Global Action Handlers (Anime Actions)
-        # Isse saari actions (bite, lick, pat etc.) waifu.py ke handler se connect ho jayengi
         if hasattr(waifu, 'SFW_ACTIONS'):
             for act in waifu.SFW_ACTIONS:
                 app_bot.add_handler(CommandHandler(act, waifu.waifu_action))
 
-        # 5. Listeners
+        # 5. Listeners & Riddle Answers
         app_bot.add_handler(CommandHandler("claim", events.claim_group))
+        app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & (~filters.COMMAND), riddle.check_riddle_answer), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
 
         print(f"--------------------------")
-        print(f"🚀 {BOT_NAME} IS ONLINE!")
+        print(f"🚀 {BOT_NAME} ENGINE STARTED!")
         print(f"--------------------------")
         
         app_bot.run_polling(drop_pending_updates=True)
