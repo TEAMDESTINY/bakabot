@@ -18,7 +18,9 @@ COUPLE_VIDEOS = [
     "https://files.catbox.moe/a9gpqj.mp4",
     "https://files.catbox.moe/i1r03f.mp4",
     "https://files.catbox.moe/pqstlj.mp4",
-    "https://files.catbox.moe/dlf5be.mp4"
+    "https://files.catbox.moe/dlf5be.mp4",
+    "https://files.catbox.moe/dlf5be.mp4",
+    "https://files.catbox.moe/xid34t.mp4"
 ]
 
 async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
