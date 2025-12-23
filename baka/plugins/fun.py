@@ -12,8 +12,8 @@ from baka.database import users_collection
 
 # --- 🎬 GIF DATABASE ---
 ACTION_GIFS = {
-    "slap": ["https://media.giphy.com/media/Zau0yrl17uzdEXqzjZ/giphy.gif", "https://media.giphy.com/media/u8u0R5uUuUuUu/giphy.gif"],
-    "punch": ["https://media.giphy.com/media/D8S8C8C8C8C8C/giphy.gif", "https://media.giphy.com/media/uGjDHNXIPWSZ2/giphy.gi"],
+    "slap": ["https://giphy.com/gifs/yhuW8n4EkcFroBPyEA", "https://giphy.com/gifs/u4NlnT97rltFZEROjo"],
+    "punch": ["https://giphy.com/gifs/dsUtTbPhnJYHYTB5z8", "https://giphy.com/gifs/GLhxaMPYFgHZ7oXMEA"],
     "hug": ["https://files.catbox.moe/zknne5.mp4", "https://files.catbox.moe/8skije.mp4" , "https://files.catbox.moe/4oytk6.mp4"],
     "kiss": ["https://files.catbox.moe/rp395w.mp4", "https://files.catbox.moe/bd5t8n.mp4" , "https://files.catbox.moe/1w6ap9.mp4"]
 }
