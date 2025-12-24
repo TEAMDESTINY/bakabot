@@ -13,6 +13,7 @@ from baka.database import users_collection, sudoers_collection, groups_collectio
 
 # --- 🔐 HELP PANEL ---
 async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Shows the advanced Sudo Panel for authorized users."""
     if update.effective_user.id not in SUDO_USERS: return
     msg = (
         f"🔐 <b>{stylize_text('Sudo Panel')}</b>\n\n"
@@ -29,7 +30,7 @@ async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 # --- 💰 ECONOMY ACTIONS ---
-async def addcoins(update, context):
+async def addcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in SUDO_USERS: return
     amount, target_str = parse_amount_and_target(context.args)
     if amount is None: 
@@ -40,7 +41,7 @@ async def addcoins(update, context):
     
     await ask(update, f"Add {format_money(amount)} to {get_mention(target)}?", "addcoins", f"{target['user_id']}|{amount}")
 
-async def rmcoins(update, context):
+async def rmcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in SUDO_USERS: return
     amount, target_str = parse_amount_and_target(context.args)
     if amount is None: 
@@ -52,17 +53,17 @@ async def rmcoins(update, context):
     await ask(update, f"Remove {format_money(amount)} from {get_mention(target)}?", "rmcoins", f"{target['user_id']}|{amount}")
 
 # --- 👑 SUDO MANAGEMENT ---
-async def addsudo(update, context):
+async def addsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     target, err = await resolve_target(update, context)
     if target: await ask(update, f"Promote {get_mention(target)} to Sudo?", "addsudo", str(target['user_id']))
 
-async def rmsudo(update, context):
+async def rmsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     target, err = await resolve_target(update, context)
     if target: await ask(update, f"Demote {get_mention(target)} from Sudo?", "rmsudo", str(target['user_id']))
 
-async def sudolist(update, context):
+async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in SUDO_USERS: return
     msg = f"👑 <b>{stylize_text('Owner & Sudoers')}:</b>\n\n"
     for uid in list(SUDO_USERS):
@@ -72,17 +73,17 @@ async def sudolist(update, context):
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 # --- ⚙️ SYSTEM COMMANDS ---
-async def freerevive(update, context):
+async def freerevive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in SUDO_USERS: return
     target, err = await resolve_target(update, context)
     if target: await ask(update, f"Free Revive {get_mention(target)}?", "freerevive", str(target['user_id']))
 
-async def unprotect(update, context):
+async def unprotect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in SUDO_USERS: return
     target, err = await resolve_target(update, context)
     if target: await ask(update, f"Remove shield from {get_mention(target)}?", "unprotect", str(target['user_id']))
 
-async def cleandb(update, context):
+async def cleandb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     await ask(update, "<b>WIPE DATABASE?</b> 🗑️", "cleandb", "0")
 
@@ -93,15 +94,15 @@ def parse_amount_and_target(args):
     return amount, target
 
 async def ask(update, text, act, arg):
-    # Prefix 'cnf|' ensures this hits the admin confirm_handler
     kb = InlineKeyboardMarkup([[
         InlineKeyboardButton("✅ Yes", callback_data=f"cnf|{act}|{arg}"), 
         InlineKeyboardButton("❌ No", callback_data="cnf|cancel|0")
     ]])
     await update.message.reply_text(f"⚠️ <b>Wait!</b> {text}\nAre you sure?", parse_mode=ParseMode.HTML, reply_markup=kb)
 
-# --- 🎯 CALLBACK CONFIRMATION ---
+# --- 🎯 CALLBACK CONFIRMATION HANDLER ---
 async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Processes callback data for admin actions."""
     q = update.callback_query
     if q.from_user.id not in SUDO_USERS: 
         return await q.answer("❌ Not for you!", show_alert=True)
@@ -142,10 +143,7 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         elif act == "unprotect":
             uid = int(data[2])
-            users_collection.update_one(
-                {"user_id": uid}, 
-                {"$set": {"protection_expiry": None}} # Fixed logic
-            )
+            users_collection.update_one({"user_id": uid}, {"$set": {"protection_expiry": None}})
             await q.message.edit_text(f"🛡️ {stylize_text('Shield REMOVED for')} <code>{uid}</code>.")
 
         elif act == "cleandb":
