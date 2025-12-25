@@ -84,6 +84,7 @@ if __name__ == '__main__':
     if not TOKEN:
         print("CRITICAL: TOKEN MISSING!")
     else:
+        # Request connection pool configuration
         t_request = HTTPXRequest(connection_pool_size=30, read_timeout=40.0)
         app_bot = ApplicationBuilder().token(TOKEN).request(t_request).post_init(post_init).build()
 
@@ -103,6 +104,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb)) 
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
+        # Logic to route administrative confirmation callbacks
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
         # 3. Economy & RPG
@@ -136,6 +138,7 @@ if __name__ == '__main__':
         # 6. Listeners
         app_bot.add_handler(CommandHandler("claim", events.claim_group))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
+        # Riddle answer checking MessageHandler
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & (~filters.COMMAND), riddle.check_riddle_answer), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
 
