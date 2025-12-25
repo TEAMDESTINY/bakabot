@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - FULL PLUGINS & ADMIN/SUDO SYNCED
+# FINAL MASTER RYAN.PY - FULL MENU & HANDLER SYNC
 
 import os
 import logging
@@ -39,20 +39,43 @@ def health(): return "Destiny Engine Active! 🚀"
 def run_flask(): 
     app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False)
 
-# --- STARTUP MENU ---
+# --- STARTUP MENU (FULL COMMAND LIST) ---
 async def post_init(application):
-    """Adds essential commands to the Telegram menu button."""
+    """Refreshes the full command list in the Telegram menu button."""
     commands = [
+        # --- Basic & Info ---
         ("start", "🌸 ϻᴧɪη ϻєηυ"), 
         ("help", "📖 𝖧𝖤𝖫𝖯"),
+        ("ping", "📡 𝖯𝖨𝖭𝖦"),
+        
+        # --- Economy ---
         ("bal", "👛 ᴡᴧʟʟєᴛ"), 
         ("top", "🏆 ʟєᴧᴅєꝚʙσᴧꝚᴅ"), 
         ("daily", "📅 ᴅᴧɪʟʏ ꝚєᴡᴧꝚᴅ"),
+        ("shop", "🛒 sʜσᴘ"),
+        ("claim", "🏰 ᴄʟᴧɪϻ ɢꝚσυᴘ"),
+        
+        # --- RPG & Games ---
+        ("kill", "🔪 ᴋɪʟʟ"), 
+        ("rob", "💰 sᴛєᴧʟ"), 
+        ("revive", "❤️ Ꝛєᴠɪᴠє"),
+        ("protect", "🛡️ 𝖲𝖧𝖨𝖤𝖫𝖣"),
+        
+        # --- Fun & Social ---
         ("couple", "👩‍❤️‍👨 ᴄσυᴘʟє"),
-        ("sudo", "🔐 𝖲𝖴𝖣𝖮 𝖯𝖠𝖭𝖤𝖫")
+        ("waifu", "👗 ᴡᴧɪғυ"),
+        ("riddle", "🧩 𝖱𝖨𝖣𝖣𝖫𝖤"),
+        ("dice", "🎲 ᴅ𝖨𝖢𝖤"),
+        ("slots", "🎰 sʟσᴛs"),
+        
+        # --- Admin/Sudo ---
+        ("sudo", "🔐 𝖲𝖴𝖣𝖮 𝖯𝖠𝖭𝖤𝖫"),
+        ("addcoins", "💰 𝖠𝖣𝖣 𝖢𝖮𝖨𝖭𝖲"),
+        ("rmcoins", "🚫 𝖱𝖬 𝖢𝖮𝖨𝖭𝖲"),
+        ("sudolist", "📜 sυᴅσ ʟɪsᴛ")
     ]
     await application.bot.set_my_commands(commands)
-    print(f"✅ {BOT_NAME} Menu Synchronized!")
+    print(f"✅ {BOT_NAME} Menu Synchronized with {len(commands)} commands!")
 
 # --- MAIN ENGINE ---
 if __name__ == '__main__':
@@ -69,25 +92,20 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("help", start.help_command))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_|return_start"))
 
-        # 2. 🔐 REGISTERING ALL SUDO & OWNER COMMANDS
-        # Economy Admin
+        # 2. Sudo & Owner Handlers
+        app_bot.add_handler(CommandHandler("sudo", admin.sudo_help)) 
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins)) 
         app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
-        app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
-        app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
-        
-        # Owner Only & System
-        app_bot.add_handler(CommandHandler("sudo", admin.sudo_help)) 
         app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
         app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
         app_bot.add_handler(CommandHandler("sudolist", admin.sudolist))
+        app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
+        app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb)) 
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
-        
-        # Admin Callback (For Yes/No Buttons)
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
-        # 3. Economy & RPG Games
+        # 3. Economy & RPG
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("daily", daily.daily)) 
         app_bot.add_handler(CommandHandler("top", leaderboard.leaderboard)) 
@@ -97,7 +115,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("protect", game.protect))
         app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
 
-        # 4. Fun, Social & Couple
+        # 4. Fun & Social
         app_bot.add_handler(CommandHandler("slap", fun.slap))
         app_bot.add_handler(CommandHandler("punch", fun.punch))
         app_bot.add_handler(CommandHandler("hug", fun.hug))
@@ -110,11 +128,16 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("slots", fun.slots))
         app_bot.add_handler(CommandHandler("riddle", riddle.riddle))
 
-        # 5. Listeners
+        # 5. Global Action Handlers
+        if hasattr(waifu, 'SFW_ACTIONS'):
+            for act in waifu.SFW_ACTIONS:
+                app_bot.add_handler(CommandHandler(act, waifu.waifu_action))
+
+        # 6. Listeners
         app_bot.add_handler(CommandHandler("claim", events.claim_group))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & (~filters.COMMAND), riddle.check_riddle_answer), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
 
-        print(f"🚀 {BOT_NAME} IS ONLINE WITH ALL ADMIN TOOLS!")
+        print(f"🚀 {BOT_NAME} ONLINE - FULL MENU ACTIVATED!")
         app_bot.run_polling(drop_pending_updates=True)
