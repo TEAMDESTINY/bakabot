@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - ABSOLUTE SYNC WITH ALL PLUGINS & CALLBACKS
+# FINAL MASTER RYAN.PY - FULL PLUGINS & ADMIN/SUDO SYNCED
 
 import os
 import logging
@@ -9,13 +9,12 @@ from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, 
     ChatMemberHandler, MessageHandler, filters
 )
-# HTTPXRequest is used for handling connection pool and timeouts
 from telegram.request import HTTPXRequest
 
 # Error noise control
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 
-# --- LOGGING SETUP ---
+# --- LOGGING ---
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,6 @@ logger = logging.getLogger(__name__)
 try:
     from baka.config import TOKEN, PORT
     from baka.utils import BOT_NAME
-    # Importing all plugin modules to register their handlers
     from baka.plugins import (
         start, economy, game, admin, broadcast, fun, events, 
         ping, chatbot, riddle, waifu, daily, leaderboard, shop,
@@ -33,7 +31,7 @@ except ImportError as e:
     print(f"❌ Critical Import Error: {e}")
     exit(1)
 
-# --- FLASK SERVER (Uptime Monitoring for Heroku) ---
+# --- FLASK SERVER ---
 app = Flask(__name__)
 @app.route('/')
 def health(): return "Destiny Engine Active! 🚀"
@@ -41,19 +39,17 @@ def health(): return "Destiny Engine Active! 🚀"
 def run_flask(): 
     app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False)
 
-# --- STARTUP MENU (Bot Command List) ---
+# --- STARTUP MENU ---
 async def post_init(application):
-    """Refreshes command list in the Telegram menu on startup."""
+    """Adds essential commands to the Telegram menu button."""
     commands = [
         ("start", "🌸 ϻᴧɪη ϻєηυ"), 
         ("help", "📖 𝖧𝖤𝖫𝖯"),
         ("bal", "👛 ᴡᴧʟʟєᴛ"), 
         ("top", "🏆 ʟєᴧᴅєꝚʙσᴧꝚᴅ"), 
-        ("kill", "🔪 ᴋɪʟʟ"), 
-        ("rob", "💰 sᴛєᴧʟ"), 
         ("daily", "📅 ᴅᴧɪʟʏ ꝚєᴡᴧꝚᴅ"),
         ("couple", "👩‍❤️‍👨 ᴄσυᴘʟє"),
-        ("waifu", "👗 ᴡᴧɪғυ")
+        ("sudo", "🔐 𝖲𝖴𝖣𝖮 𝖯𝖠𝖭𝖤𝖫")
     ]
     await application.bot.set_my_commands(commands)
     print(f"✅ {BOT_NAME} Menu Synchronized!")
@@ -65,22 +61,30 @@ if __name__ == '__main__':
     if not TOKEN:
         print("CRITICAL: TOKEN MISSING!")
     else:
-        # Configuring request parameters for better stability
         t_request = HTTPXRequest(connection_pool_size=30, read_timeout=40.0)
         app_bot = ApplicationBuilder().token(TOKEN).request(t_request).post_init(post_init).build()
 
-        # 1. Core & Help Callbacks (Critical for Buttons)
+        # 1. Core & Help Callbacks
         app_bot.add_handler(CommandHandler("start", start.start))
         app_bot.add_handler(CommandHandler("help", start.help_command))
-        # Logic to handle help category buttons and 'back' buttons
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_|return_start"))
 
-        # 2. Admin & Owner Commands
-        app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
-        app_bot.add_handler(CommandHandler("sudo", admin.sudo_help)) 
+        # 2. 🔐 REGISTERING ALL SUDO & OWNER COMMANDS
+        # Economy Admin
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins)) 
+        app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
+        app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
+        app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
+        
+        # Owner Only & System
+        app_bot.add_handler(CommandHandler("sudo", admin.sudo_help)) 
+        app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
+        app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
+        app_bot.add_handler(CommandHandler("sudolist", admin.sudolist))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb)) 
-        # Pattern to handle administrative confirmation buttons
+        app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
+        
+        # Admin Callback (For Yes/No Buttons)
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
         # 3. Economy & RPG Games
@@ -106,21 +110,11 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("slots", fun.slots))
         app_bot.add_handler(CommandHandler("riddle", riddle.riddle))
 
-        # 5. Global Anime Action Handlers
-        if hasattr(waifu, 'SFW_ACTIONS'):
-            for act in waifu.SFW_ACTIONS:
-                app_bot.add_handler(CommandHandler(act, waifu.waifu_action))
-
-        # 6. Listeners (Group tracking & Riddle answers)
+        # 5. Listeners
         app_bot.add_handler(CommandHandler("claim", events.claim_group))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
-        # Riddle answer checking logic
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & (~filters.COMMAND), riddle.check_riddle_answer), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
 
-        print(f"--------------------------")
-        print(f"🚀 {BOT_NAME} ENGINE STARTED!")
-        print(f"--------------------------")
-        
-        # Starts the bot and drops any updates that were received while it was offline
+        print(f"🚀 {BOT_NAME} IS ONLINE WITH ALL ADMIN TOOLS!")
         app_bot.run_polling(drop_pending_updates=True)
