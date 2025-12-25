@@ -1,36 +1,34 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Mirror Game Plugin - Absolute Protection Logic Fixed
+# Final Game Plugin - Custom Amount Robbing & Absolute Protection
 
 import random
 import html
-import re
 from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from baka.config import PROTECT_1D_COST, REVIVE_COST, OWNER_ID
 from baka.utils import (
-    ensure_user_exists, resolve_target, get_active_protection, 
-    format_money, stylize_text, get_mention, is_protected,
-    notify_victim, is_inspector, format_time
+    ensure_user_exists, resolve_target, format_money, 
+    stylize_text, get_mention, is_protected, notify_victim
 )
 from baka.database import users_collection
 
-# --- 🔪 KILL COMMAND (FIXED PROTECTION) ---
+# --- 🔪 KILL COMMAND ---
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     attacker = update.effective_user
     attacker_db = ensure_user_exists(attacker)
 
+    # Target resolve logic
     target_user = update.message.reply_to_message.from_user if update.message.reply_to_message else None
     target_db = ensure_user_exists(target_user) if target_user else (await resolve_target(update, context))[0]
     
     if not target_db: return await update.message.reply_text("❌ User nahi mila!")
 
-    # Target ka dynamic name nikalna
     t_name = target_user.first_name if target_user else target_db.get('name', "User")
     target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(t_name)}</b></a>"
 
-    # 🔥 🛡️ ABSOLUTE KILL PROTECTION (Check logic first)
+    # 🔥 🛡️ Protection Check
     if is_protected(target_db) and attacker.id != OWNER_ID:
         return await update.message.reply_text(f"🛡️ This <b>{html.escape(t_name)}</b> is protected.", parse_mode=ParseMode.HTML)
     
@@ -55,36 +53,45 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
     await notify_victim(context.bot, target_db['user_id'], f"☠️ <b>Killed by</b> {get_mention(attacker)}")
 
-# --- 💰 ROB COMMAND (FIXED PROTECTION) ---
+# --- 💰 ROB COMMAND (FIXED FOR CUSTOM AMOUNT) ---
 async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Loot the exact amount specified in command args."""
     user = update.effective_user
-    sender_db = ensure_user_exists(user)
+    ensure_user_exists(user)
 
-    target_user = update.message.reply_to_message.from_user if update.message.reply_to_message else None
-    target_db, err = await resolve_target(update, context) if not target_user else (ensure_user_exists(target_user), None)
+    # Must be a reply to rob
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("❌ <b>Usage:</b> Reply to someone with <code>/rob [amount]</code>")
 
-    if not target_db: return await update.message.reply_text("❌ Victim nahi mila!")
+    target_user = update.message.reply_to_message.from_user
+    target_db = ensure_user_exists(target_user)
 
-    t_name = target_user.first_name if target_user else target_db.get('name', "User")
-    target_mention = f"<a href='tg://user?id={target_db['user_id']}'><b>{html.escape(t_name)}</b></a>"
+    if target_user.id == user.id:
+        return await update.message.reply_text("🙄 Apne aap ko kaise lootoge?")
 
-    # 🔥 🛡️ ABSOLUTE ROB PROTECTION (Check logic first)
-    if is_protected(target_db) and user.id != OWNER_ID:
-        return await update.message.reply_text(f"🛡️ This <b>{html.escape(t_name)}</b> is protected.", parse_mode=ParseMode.HTML)
-
+    # Parse custom amount
+    if not context.args or not context.args[0].isdigit():
+        return await update.message.reply_text("⚠️ Please specify amount! Example: <code>/rob 3282</code>")
+    
+    rob_amount = int(context.args[0])
     target_bal = target_db.get('balance', 0)
-    if target_bal < 100: return await update.message.reply_text(f"📉 {t_name} bahut gareeb hai!")
 
-    if random.randint(1, 100) <= 40:
-        loot_percent = random.randint(30, 70)
-        loot_amount = int(target_bal * (loot_percent / 100))
-        users_collection.update_one({"user_id": target_db["user_id"]}, {"$inc": {"balance": -loot_amount}})
-        users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": loot_amount}})
-        await update.message.reply_text(f"💰 <b>Success!</b> Looted <b>{format_money(loot_amount)}</b> from {target_mention}", parse_mode=ParseMode.HTML)
-    else:
-        fine = random.randint(200, 500)
-        users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": -fine}})
-        await update.message.reply_text(f"💀 <b>Failed!</b>\nAap pakde gaye aur <b>{format_money(fine)}</b> jurmana bharna pada.", parse_mode=ParseMode.HTML)
+    # 🔥 🛡️ Protection Check
+    if is_protected(target_db) and user.id != OWNER_ID:
+        return await update.message.reply_text(f"🛡️ Target is protected!")
+
+    # Check if victim has enough balance
+    if target_bal < rob_amount:
+        return await update.message.reply_text(f"📉 Target ke paas sirf {format_money(target_bal)} hai!")
+
+    # Perform Loot
+    users_collection.update_one({"user_id": target_user.id}, {"$inc": {"balance": -rob_amount}})
+    users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": rob_amount}})
+
+    await update.message.reply_text(
+        f"💰 <b>Success!</b> Looted <code>{format_money(rob_amount)}</code> from {get_mention(target_user)}!",
+        parse_mode=ParseMode.HTML
+    )
 
 # --- ❤️ REVIVE ---
 async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -101,13 +108,16 @@ async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(f"❤️ <b>{stylize_text('REVIVED')}!</b>", parse_mode=ParseMode.HTML)
 
-# --- 🛡️ PROTECT (1 Day Activation) ---
-async def protect(update, context):
+# --- 🛡️ PROTECT ---
+async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_db = ensure_user_exists(user)
-    if user_db.get('balance', 0) < PROTECT_1D_COST: return await update.message.reply_text("❌ Low balance!")
+    if user_db.get('balance', 0) < PROTECT_1D_COST: 
+        return await update.message.reply_text("❌ Low balance!")
     
-    # Exactly 24 Hours Shield
     expiry = datetime.utcnow() + timedelta(days=1)
-    users_collection.update_one({"user_id": user.id}, {"$set": {"protection_expiry": expiry}, "$inc": {"balance": -PROTECT_1D_COST}})
-    await update.message.reply_text(f"🛡️ <b>Shield Activated!</b> Aap 24 ghante tak safe hain.", parse_mode=ParseMode.HTML)
+    users_collection.update_one(
+        {"user_id": user.id}, 
+        {"$set": {"protection_expiry": expiry}, "$inc": {"balance": -PROTECT_1D_COST}}
+    )
+    await update.message.reply_text(f"🛡️ <b>Shield Activated!</b> Safe for 24 hours.", parse_mode=ParseMode.HTML)
