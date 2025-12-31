@@ -1,15 +1,29 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Fixed Shop Plugin - Public Access Version
+# Final Shop Plugin - Buying, Gifting & Inventory System
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.utils import ensure_user_exists, format_money, get_mention, stylize_text
+from baka.utils import ensure_user_exists, format_money, get_mention, stylize_text, resolve_target
 from baka.database import users_collection
 from baka.config import SHOP_ITEMS
 from datetime import datetime
 
 ITEMS_PER_PAGE = 6
+
+# --- 🎁 SOCIAL GIFT ITEMS DATA (As requested earlier) ---
+GIFT_ITEMS = {
+    "rose": {"name": "🌹 Rose", "price": 500},
+    "chocolate": {"name": "🍫 Chocolate", "price": 800},
+    "ring": {"name": "💍 Ring", "price": 2000},
+    "teddy bear": {"name": "🧸 Teddy Bear", "price": 1500},
+    "pizza": {"name": "🍕 Pizza", "price": 600},
+    "surprise box": {"name": "🎁 Surprise Box", "price": 2500},
+    "puppy": {"name": "🐶 Puppy", "price": 3000},
+    "cake": {"name": "🎂 Cake", "price": 1000},
+    "love letter": {"name": "💌 Love Letter", "price": 400},
+    "cat": {"name": "🐱 Cat", "price": 2500}
+}
 
 # --- HELPERS ---
 def get_rarity(price):
@@ -68,12 +82,12 @@ def get_item_kb(item_id, category, page, can_afford, is_owned):
     kb.append([InlineKeyboardButton("🔙 𝐁ᴧᴄᴋ", callback_data=f"shop_cat|{category}|{page}")])
     return InlineKeyboardMarkup(kb)
 
-# --- MENUS ---
+# --- MENUS & COMMANDS ---
 async def shop_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = ensure_user_exists(update.effective_user)
     text = (
         f"🛒 <b>{stylize_text('Baka Marketplace')}</b>\n\n"
-        f"👤 <b>Customer:</b> {get_mention(user)}\n"
+        f"👤 <b>Customer:</b> {user['name']}\n"
         f"👛 <b>Wallet:</b> <code>{format_money(user['balance'])}</code>\n\n"
         f"<i>Select a category to browse our goods!</i>"
     )
@@ -83,11 +97,71 @@ async def shop_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=kb)
 
-# --- CALLBACK HANDLER (NO SUDO CHECK) ---
+# This fixes the AttributeError for /items
+async def items_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = "<b>🛍️ Social Gift Items</b>\n\n"
+    for key, val in GIFT_ITEMS.items():
+        msg += f"• {val['name']} — <code>{format_money(val['price'])}</code>\n"
+    msg += "\n📌 <b>Usage:</b> Reply with <code>/gift [item name]</code>\n"
+    msg += "ℹ️ Use <code>/shop</code> for Weapons & Armor."
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+# This fixes the AttributeError for /item (Inventory)
+async def view_inventory(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target_db, error = await resolve_target(update, context)
+    if not target_db:
+        target_db = ensure_user_exists(update.effective_user)
+
+    inv = target_db.get('inventory', [])
+    name = target_db.get('name', "User")
+
+    msg = f"📦 <b>{name}'s Inventory</b>\n━━━━━━━━━━━━━━━━━━\n"
+    if not inv:
+        msg += "<i>Empty... Go earn some gifts or buy gear!</i>"
+    else:
+        item_counts = {}
+        for i in inv:
+            name_str = i['name']
+            item_counts[name_str] = item_counts.get(name_str, 0) + 1
+        
+        for item_name, count in item_counts.items():
+            msg += f"• {item_name} (x{count})\n"
+
+    msg += "\n━━━━━━━━━━━━━━━━━━"
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+# GIFTING LOGIC
+async def gift_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    sender = update.effective_user
+    sender_db = ensure_user_exists(sender)
+
+    if not update.message.reply_to_message:
+        return await update.message.reply_text("❗ <b>Usage:</b> Reply to someone with <code>/gift [item name]</code>")
+
+    if not context.args:
+        return await update.message.reply_text("⚠️ Specify an item! Example: <code>/gift rose</code>")
+
+    target = update.message.reply_to_message.from_user
+    item_query = " ".join(context.args).lower()
+    item = GIFT_ITEMS.get(item_query)
+
+    if not item:
+        return await update.message.reply_text("❌ Social gift not found! Use <code>/items</code> to see the list.")
+
+    if sender_db.get('balance', 0) < item['price']:
+        return await update.message.reply_text(f"❌ Low balance! Needs {format_money(item['price'])}.")
+
+    users_collection.update_one({"user_id": sender.id}, {"$inc": {"balance": -item['price']}})
+    users_collection.update_one(
+        {"user_id": target.id}, 
+        {"$push": {"inventory": {"name": item['name'], "gifted_by": sender.first_name, "date": datetime.utcnow()}}}
+    )
+
+    await update.message.reply_text(f"🎁 <b>{sender.first_name}</b> gifted a {item['name']} to <b>{target.first_name}</b>!", parse_mode=ParseMode.HTML)
+
+# --- CALLBACK HANDLER ---
 async def shop_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    
-    # 🚨 FIX: Sabhi users ke liye answer enable kiya
     await query.answer() 
     
     user = ensure_user_exists(query.from_user)
@@ -135,22 +209,7 @@ async def shop_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         item_with_time['bought_at'] = datetime.utcnow()
         users_collection.update_one({"user_id": user['user_id']}, {"$inc": {"balance": -item['price']}, "$push": {"inventory": item_with_time}})
         await query.answer(f"🎉 Bought {item['name']}!", show_alert=True)
-        # Refresh current view
         await shop_menu(update, context)
 
     elif action == "shop_poor": await query.answer("📉 You are too poor!", show_alert=True)
     elif action == "shop_owned": await query.answer("🎒 Already owned!", show_alert=True)
-
-async def buy(update, context):
-    user = ensure_user_exists(update.effective_user)
-    if not context.args: return await update.message.reply_text("⚠️ <b>Usage:</b> <code>/buy knife</code>", parse_mode=ParseMode.HTML)
-    item_key = context.args[0].lower()
-    item = next((i for i in SHOP_ITEMS if i['id'] == item_key), None)
-    if not item: return await update.message.reply_text(f"❌ Item <b>{item_key}</b> not found.", parse_mode=ParseMode.HTML)
-    if user['balance'] < item['price']: return await update.message.reply_text(f"❌ You need <code>{format_money(item['price'])}</code>!", parse_mode=ParseMode.HTML)
-    if any(i['id'] == item_key for i in user.get('inventory', [])): return await update.message.reply_text("⚠️ Already owned!", parse_mode=ParseMode.HTML)
-
-    item_with_time = item.copy()
-    item_with_time['bought_at'] = datetime.utcnow()
-    users_collection.update_one({"user_id": user['user_id']}, {"$inc": {"balance": -item['price']}, "$push": {"inventory": item_with_time}})
-    await update.message.reply_text(f"✅ Bought <b>{item['name']}</b>!", parse_mode=ParseMode.HTML)
