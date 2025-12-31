@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
 # Location: Bihar | All rights reserved.
-# Updated for Baka’s Economy System Sync
+# Final Sync for Baka’s Economy & Group Claim System
 
 import os
 import time
@@ -38,29 +38,25 @@ LOGGER_ID = get_env_id("LOGGER_ID")
 OWNER_ID = get_env_id("OWNER_ID")
 SUDO_IDS_STR = os.getenv("SUDO_IDS", "")
 
-# --- 💰 UPDATED ECONOMY CONSTANTS ---
+# --- 💰 FINAL ECONOMY CONSTANTS ---
 BOT_NAME = "𝐁ᴀᴋᴀ 💗"
 REGISTER_BONUS = 50       # Initial signup amount
 DAILY_BONUS = 50          # 12-hour bonus amount
-BONUS_COOLDOWN = 12       # Hours between bonus claims
+BONUS_COOLDOWN = 12       # Hours between bonus claims (12h)
 
-# Protection Prices
+# Protection Prices (New Rules)
 PROTECT_1D_COST = 100     # 1-day protection = $100
 PROTECT_2D_COST = 500     # 2-day protection = $500
 
-# Death & Revive
+# Death & Revive (Sync with 5-hour rule)
 REVIVE_COST = 200         # Cost to revive via command
 AUTO_REVIVE_HOURS = 5     # Dead users auto-revive after 5 hours
 
-# Other Rates
-TAX_RATE = 0.10
-CLAIM_BONUS = 2000
-RIDDLE_REWARD = 1000
-DIVORCE_COST = 2000
-WAIFU_PROPOSE_COST = 5000
-MIN_CLAIM_MEMBERS = 10
+# Other Rates & Group Claims
+TAX_RATE = 0.10           # 10% Transaction Tax
+MIN_CLAIM_MEMBERS = 100   # Min members required for /claim (Updated)
 
-# --- 🛒 SHOP ITEMS (Categorized for UI) ---
+# --- 🛒 SHOP ITEMS ---
 SHOP_ITEMS = [
     # ⚔️ WEAPONS
     {"id": "stick", "name": "🪵 Stick", "price": 500, "type": "weapon", "buff": 0.01},
