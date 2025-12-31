@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Economy Plugin - DM Daily Reward ($1000) Sync
+# Final Economy Plugin - DM Daily Reward ($1000) & Tax Sync
 
 import html
 from datetime import datetime, timedelta
@@ -15,11 +15,13 @@ from baka.database import users_collection
 
 # --- 💰 BALANCE COMMAND ---
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Checks wallet balance, rank, and combat stats."""
     target_db, error = await resolve_target(update, context)
     if not target_db: 
         target_db = ensure_user_exists(update.effective_user)
 
     bal = target_db.get('balance', 0)
+    # Calculate rank based on balance
     rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
     
     msg = (
@@ -33,6 +35,7 @@ async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- 🏆 MY RANK COMMAND ---
 async def my_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Quick check for user's global wealth position."""
     user_db = ensure_user_exists(update.effective_user)
     bal = user_db.get('balance', 0)
     rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
@@ -40,6 +43,7 @@ async def my_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- 🌍 TOP RICH COMMAND ---
 async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Displays top 10 richest players globally."""
     rich_users = users_collection.find().sort("balance", -1).limit(10)
     msg = f"🏆 <b>{stylize_text('GLOBAL TOP 10 RICHEST')}</b>\n"
     msg += "━━━━━━━━━━━━━━━━━━\n"
@@ -50,8 +54,9 @@ async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- ⚔️ TOP KILL COMMAND ---
 async def top_kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Displays top 10 deadliest players globally."""
     killers = users_collection.find().sort("kills", -1).limit(10)
-    msg = "⚔️ <b>GLOBAL TOP 10 KILLERS</b>\n"
+    msg = f"⚔️ <b>{stylize_text('GLOBAL TOP 10 KILLERS')}</b>\n"
     msg += "━━━━━━━━━━━━━━━━━━\n"
     for i, killer in enumerate(killers, 1):
         msg += f"<b>{i}.</b> {html.escape(killer.get('name', 'User'))} » <code>{killer.get('kills', 0)} Kills</code>\n"
@@ -60,33 +65,48 @@ async def top_kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- 🎁 GIVE COMMAND (10% Tax) ---
 async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Sends money to another user with a 10% transaction tax."""
     sender = ensure_user_exists(update.effective_user)
     if not update.message.reply_to_message or not context.args:
         return await update.message.reply_text("❗ <b>Usage:</b> Reply with <code>/give <amount></code>")
 
+    if not context.args[0].isdigit():
+        return await update.message.reply_text("❌ Please enter a valid number!")
+
     amount = int(context.args[0])
-    tax = int(amount * TAX_RATE)
-    total = amount + tax
+    tax = int(amount * TAX_RATE) # 10% tax
+    total_deduction = amount + tax
     
-    if sender.get('balance', 0) < total:
-        return await update.message.reply_text(f"❌ You need {format_money(total)} (including 10% tax).")
+    if sender.get('balance', 0) < total_deduction:
+        return await update.message.reply_text(f"❌ You need {format_money(total_deduction)} (including 10% tax) to send this.")
 
     target = update.message.reply_to_message.from_user
-    users_collection.update_one({"user_id": sender['user_id']}, {"$inc": {"balance": -total}})
+    if target.id == sender['user_id']:
+        return await update.message.reply_text("🙄 You cannot give money to yourself!")
+
+    # Update database
+    users_collection.update_one({"user_id": sender['user_id']}, {"$inc": {"balance": -total_deduction}})
     users_collection.update_one({"user_id": target.id}, {"$inc": {"balance": amount}})
-    await update.message.reply_text(f"💸 Sent {format_money(amount)} to {target.first_name}!")
+    
+    await update.message.reply_text(
+        f"💸 <b>Transaction Success!</b>\n"
+        f"Sent: <code>{format_money(amount)}</code>\n"
+        f"Tax Paid: <code>{format_money(tax)}</code>\n"
+        f"Receiver: {html.escape(target.first_name)}",
+        parse_mode=ParseMode.HTML
+    )
 
 # --- 📅 DAILY BONUS COMMAND ($1000 - DM ONLY) ---
 async def daily_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Claims $1000 reward for all players in DM only."""
+    """Claims $1000 reward for players. Restricted to Private DM."""
     user = update.effective_user
     chat = update.effective_chat
     
-    # Check if command is used in Group
+    # DM Restriction Check
     if chat.type != "private":
         return await update.message.reply_text(
             "❌ <b>DM Only!</b>\n"
-            "This command can only be used in my Private DM to prevent group spam.",
+            "To prevent group spam, <code>/daily</code> can only be used in my Private Chat.",
             parse_mode=ParseMode.HTML
         )
 
@@ -104,7 +124,7 @@ async def daily_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.HTML
         )
 
-    # Updated Reward to $1000
+    # Grant Updated Reward ($1000)
     DAILY_DM_REWARD = 1000
     users_collection.update_one(
         {"user_id": user.id}, 
