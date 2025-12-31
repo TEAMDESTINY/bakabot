@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - FULL ECONOMY & GIFTING SYNC
+# FINAL MASTER RYAN.PY - FULL ECONOMY, GIFTING & CLAIM SYNC
 
 import os
 import logging
@@ -48,6 +48,7 @@ async def post_init(application):
         ("toprich", "🏆 Rich Leaderboard"), 
         ("topkill", "⚔️ Kill Leaderboard"),
         ("daily", "📅 12h Reward"),
+        ("claim", "🎁 Group Reward"),
         ("kill", "🔪 Kill Someone"), 
         ("rob", "💰 Steal Money"),
         ("items", "🛒 Gift Shop"),
@@ -74,7 +75,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("economy", start.help_command))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_|return_start"))
 
-        # 2. 🔐 Admin & Sudo
+        # 2. 🔐 Admin & Sudo Registration
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
         app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
@@ -89,12 +90,12 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("toprich", economy.toprich))   
         app_bot.add_handler(CommandHandler("myrank", economy.my_rank))    
         app_bot.add_handler(CommandHandler("give", economy.give))
-        app_bot.add_handler(CommandHandler("topkill", economy.top_kill)) # Added
+        app_bot.add_handler(CommandHandler("topkill", economy.top_kill))
         
         # Shop & Items
-        app_bot.add_handler(CommandHandler("items", shop.items_list))   # Added
-        app_bot.add_handler(CommandHandler("item", shop.view_inventory)) # Added
-        app_bot.add_handler(CommandHandler("gift", shop.gift_item))      # Added
+        app_bot.add_handler(CommandHandler("items", shop.items_list))   
+        app_bot.add_handler(CommandHandler("item", shop.view_inventory)) 
+        app_bot.add_handler(CommandHandler("gift", shop.gift_item))      
 
         # 4. Game & Combat
         app_bot.add_handler(CommandHandler("kill", game.kill))
@@ -111,7 +112,8 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("dice", fun.dice))
         app_bot.add_handler(CommandHandler("slots", fun.slots))
 
-        # 6. Listeners
+        # 6. Listeners & Group Claims
+        app_bot.add_handler(CommandHandler("claim", events.claim_group)) # Added for rewards
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
 
