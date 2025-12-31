@@ -1,5 +1,6 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
 # Location: Bihar | All rights reserved.
+# Updated for Baka’s Economy System Sync
 
 import os
 import time
@@ -37,25 +38,31 @@ LOGGER_ID = get_env_id("LOGGER_ID")
 OWNER_ID = get_env_id("OWNER_ID")
 SUDO_IDS_STR = os.getenv("SUDO_IDS", "")
 
-# --- GAME CONSTANTS ---
+# --- 💰 UPDATED ECONOMY CONSTANTS ---
 BOT_NAME = "𝐁ᴀᴋᴀ 💗"
-REVIVE_COST = 500
-PROTECT_1D_COST = 1000
-PROTECT_2D_COST = 1800
-REGISTER_BONUS = 5000
+REGISTER_BONUS = 50       # Initial signup amount
+DAILY_BONUS = 50          # 12-hour bonus amount
+BONUS_COOLDOWN = 12       # Hours between bonus claims
+
+# Protection Prices
+PROTECT_1D_COST = 100     # 1-day protection = $100
+PROTECT_2D_COST = 500     # 2-day protection = $500
+
+# Death & Revive
+REVIVE_COST = 200         # Cost to revive via command
+AUTO_REVIVE_HOURS = 5     # Dead users auto-revive after 5 hours
+
+# Other Rates
+TAX_RATE = 0.10
 CLAIM_BONUS = 2000
 RIDDLE_REWARD = 1000
 DIVORCE_COST = 2000
 WAIFU_PROPOSE_COST = 5000
-TAX_RATE = 0.10
-MARRIED_TAX_RATE = 0.05
-AUTO_REVIVE_HOURS = 6
-AUTO_REVIVE_BONUS = 200
-MIN_CLAIM_MEMBERS = 100
+MIN_CLAIM_MEMBERS = 10
 
 # --- 🛒 SHOP ITEMS (Categorized for UI) ---
 SHOP_ITEMS = [
-    # ⚔️ WEAPONS (Attack Buffs)
+    # ⚔️ WEAPONS
     {"id": "stick", "name": "🪵 Stick", "price": 500, "type": "weapon", "buff": 0.01},
     {"id": "knife", "name": "🔪 Knife", "price": 3500, "type": "weapon", "buff": 0.05},
     {"id": "pistol", "name": "🔫 Pistol", "price": 25000, "type": "weapon", "buff": 0.20},
@@ -63,25 +70,18 @@ SHOP_ITEMS = [
     {"id": "rpg", "name": "🚀 RPG", "price": 300000, "type": "weapon", "buff": 0.55},
     {"id": "deathnote", "name": "📓 Death Note", "price": 5000000, "type": "weapon", "buff": 0.60},
 
-    # 🛡️ ARMOR (Defense Buffs)
+    # 🛡️ ARMOR
     {"id": "cloth", "name": "👕 Cloth", "price": 2500, "type": "armor", "buff": 0.05},
     {"id": "riot", "name": "🛡️ Riot Shield", "price": 40000, "type": "armor", "buff": 0.15},
     {"id": "iron", "name": "🦾 Iron Suit", "price": 100000, "type": "armor", "buff": 0.25},
     {"id": "vibranium", "name": "🛡️ Vibranium", "price": 1500000, "type": "armor", "buff": 0.50},
     {"id": "plot", "name": "🎬 Plot Armor", "price": 10000000, "type": "armor", "buff": 0.60},
 
-   # 💎 FLEX (Collection Items)
+   # 💎 FLEX
     {"id": "iphone", "name": "📱 iPhone 16 Pro", "price": 25000, "type": "flex", "buff": 0},
     {"id": "rolex", "name": "⌚ Rolex Platinum", "price": 150000, "type": "flex", "buff": 0},
     {"id": "lambo", "name": "🏎️ Lamborghini Revuelto", "price": 800000, "type": "flex", "buff": 0},
     {"id": "private_jet", "name": "🛩️ Private Jet", "price": 2500000, "type": "flex", "buff": 0},
     {"id": "mansion", "name": "🏰 Royal Mansion", "price": 5000000, "type": "flex", "buff": 0},
-    {"id": "taj_mahal", "name": "🕌 Taj Mahal", "price": 20000000, "type": "flex", "buff": 0},
-    {"id": "island", "name": "🏝️ Private Island", "price": 50000000, "type": "flex", "buff": 0},
-    {"id": "moon", "name": "🌑 The Moon", "price": 250000000, "type": "flex", "buff": 0},
-    {"id": "solar_system", "name": "☀️ Solar System", "price": 1000000000, "type": "flex", "buff": 0},
-    {"id": "galaxy", "name": "🌌 Milky Way", "price": 5000000000, "type": "flex", "buff": 0},
-    {"id": "blackhole", "name": "🕳️ Black Hole", "price": 9999999999, "type": "flex", "buff": 0},
-    {"id": "time_machine", "name": "⏳ Time Machine", "price": 50000000000, "type": "flex", "buff": 0},
-    {"id": "multiverse", "name": "🌀 The Multiverse", "price": 999999999999, "type": "flex", "buff": 0},
+    {"id": "island", "name": "🏝️ Private Island", "price": 50000000, "type": "flex", "buff": 0}
 ]
