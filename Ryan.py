@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - FULL ECONOMY, GIFTING & CLAIM SYNC
+# FINAL MASTER RYAN.PY - FULL ECONOMY, BOMB GAME & LIMITS SYNC
 
 import os
 import logging
@@ -24,7 +24,7 @@ try:
     from baka.utils import BOT_NAME
     from baka.plugins import (
         start, economy, game, admin, broadcast, fun, events, 
-        ping, chatbot, riddle, waifu, shop, couple 
+        ping, chatbot, riddle, waifu, shop, couple, bomb # Added bomb plugin
     )
 except ImportError as e:
     print(f"❌ Critical Import Error: {e}")
@@ -38,7 +38,7 @@ def health(): return "Destiny Engine Active! 🚀"
 def run_flask(): 
     app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False)
 
-# --- STARTUP MENU ---
+# --- STARTUP MENU SYNC ---
 async def post_init(application):
     """Syncs the full command list to the bot menu."""
     commands = [
@@ -47,7 +47,9 @@ async def post_init(application):
         ("bal", "👛 Wallet Balance"), 
         ("toprich", "🏆 Rich Leaderboard"), 
         ("topkill", "⚔️ Kill Leaderboard"),
-        ("daily", "📅 12h Reward"),
+        ("daily", "📅 Claim $1000 (DM Only)"),
+        ("bomb", "💣 Start Bomb Game"),
+        ("leaders", "🥇 Bomb Game Rankings"),
         ("claim", "🎁 Group Reward"),
         ("kill", "🔪 Kill Someone"), 
         ("rob", "💰 Steal Money"),
@@ -66,6 +68,7 @@ if __name__ == '__main__':
     if not TOKEN:
         print("CRITICAL: TOKEN MISSING!")
     else:
+        # Optimizing connection for high traffic
         t_request = HTTPXRequest(connection_pool_size=30, read_timeout=40.0)
         app_bot = ApplicationBuilder().token(TOKEN).request(t_request).post_init(post_init).build()
 
@@ -82,6 +85,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
+        app_bot.add_handler(CommandHandler("bombcancel", bomb.bomb_cancel)) # Admin only
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
         # 3. Economy & Gifting System
@@ -97,13 +101,20 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("item", shop.view_inventory)) 
         app_bot.add_handler(CommandHandler("gift", shop.gift_item))      
 
-        # 4. Game & Combat
+        # 4. Game & Combat (Limits & Anti-Spam Sync)
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob)) 
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
 
-        # 5. Chatbot, AI & Fun
+        # 5. 💣 Bomb Game Integration
+        app_bot.add_handler(CommandHandler("bomb", bomb.start_bomb))
+        app_bot.add_handler(CommandHandler("join", bomb.join_bomb))
+        app_bot.add_handler(CommandHandler("pass", bomb.pass_bomb))
+        app_bot.add_handler(CommandHandler("leaders", bomb.bomb_leaders)) # Bomb Leaderboard
+        app_bot.add_handler(CommandHandler("bombrank", bomb.bomb_myrank)) # Bomb Stats
+
+        # 6. Chatbot, AI & Fun
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
         app_bot.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), chatbot.ai_message_handler))
         app_bot.add_handler(CommandHandler("couple", couple.couple)) 
@@ -112,10 +123,10 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("dice", fun.dice))
         app_bot.add_handler(CommandHandler("slots", fun.slots))
 
-        # 6. Listeners & Group Claims
-        app_bot.add_handler(CommandHandler("claim", events.claim_group)) # Added for rewards
+        # 7. Listeners & Group Claims
+        app_bot.add_handler(CommandHandler("claim", events.claim_group))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
 
-        print(f"🚀 {BOT_NAME} IS FULLY SYNCED AND ONLINE!")
+        print(f"🚀 {BOT_NAME} MASTER ENGINE ONLINE!")
         app_bot.run_polling(drop_pending_updates=True)
