@@ -1,64 +1,75 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Events Plugin - Tracker | Claim System | Dual Owner Support
+# Final Events Plugin - Group Claim System (Member Based Tiers)
 
 import html
 from datetime import datetime
 from telegram import Update, ChatMember
 from telegram.ext import ContextTypes
-from baka.utils import get_mention, track_group, log_to_channel, stylize_text
-from baka.database import groups_collection
-from baka.config import OWNER_ID
+from baka.utils import get_mention, track_group, log_to_channel, stylize_text, format_money, ensure_user_exists
+from baka.database import groups_collection, users_collection
+from baka.config import OWNER_ID, MIN_CLAIM_MEMBERS
 
 # --- 🏰 GROUP CLAIM SYSTEM ---
 async def claim_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Allows a user or Super Owner to claim group ownership and earnings."""
+    """Claim a one-time reward for adding the bot to a large group."""
     chat = update.effective_chat
     user = update.effective_user
     
     if chat.type == "private":
-        return await update.message.reply_text("❌ Ye command sirf groups mein kaam karti hai!")
+        return await update.message.reply_text("❌ This command only works in Groups!")
 
-    # Database se check karna
+    # 1. Member Count Check (Eligibility)
+    members_count = await chat.get_member_count()
+    if members_count < MIN_CLAIM_MEMBERS:
+        return await update.message.reply_text(
+            f"⚠️ <b>Claim Failed!</b>\nYour group needs at least <b>{MIN_CLAIM_MEMBERS}</b> members to be eligible.",
+            parse_mode='HTML'
+        )
+
+    # 2. Check if already claimed in this group
     group_data = groups_collection.find_one({"chat_id": chat.id})
-    
-    # Check if already claimed
-    if group_data and group_data.get("claimed"):
-        current_owner = group_data.get("owner_id")
-        
-        # Super Owner (Aap) Bypass: Aap kisi se bhi group cheen sakte hain
-        if user.id == OWNER_ID:
-            pass # Force claim allowed
-        else:
-            return await update.message.reply_text(
-                f"🏰 <b>{stylize_text('ALREADY CLAIMED')}</b>\n"
-                f"Ye group pehle se claimed hai by ID: <code>{current_owner}</code>",
-                parse_mode='HTML'
-            )
+    if group_data and group_data.get("reward_claimed"):
+        return await update.message.reply_text("🚫 <b>One-Time Reward</b> has already been claimed in this group!", parse_mode='HTML')
 
-    # Claim Logic
+    # 3. Calculate Reward Tier
+    if 100 <= members_count <= 499:
+        reward = 10000
+    elif 500 <= members_count <= 999:
+        reward = 20000
+    elif members_count >= 1000:
+        reward = 30000
+    else:
+        return await update.message.reply_text("❌ Group size does not meet criteria.")
+
+    # 4. Process Reward & Mark DB
+    ensure_user_exists(user)
+    users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": reward}})
+    
     groups_collection.update_one(
         {"chat_id": chat.id},
         {"$set": {
-            "claimed": True, 
-            "owner_id": user.id, 
-            "owner_name": user.first_name,
+            "reward_claimed": True, 
+            "claimed_by": user.id, 
             "claim_date": datetime.utcnow(),
-            "active": True
+            "active": True,
+            "title": chat.title
         }},
         upsert=True
     )
 
-    text = (f"🏰 <b>{stylize_text('GROUP CLAIMED')}!</b>\n"
+    text = (f"🎉 <b>{stylize_text('GROUP REWARD CLAIMED')}!</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
-            f"👑 <b>New Owner:</b> {get_mention(user)}\n"
-            f"💰 <b>Status:</b> Ab is group ki <b>Treasury</b> aur <b>Tax</b> aapko milenge!\n"
-            f"━━━━━━━━━━━━━━━━━━")
+            f"👥 <b>Group Size:</b> {members_count} members\n"
+            f"💰 <b>Reward:</b> <code>{format_money(reward)}</code>\n"
+            f"👤 <b>Claimed By:</b> {user.first_name}\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"Note: This is a one-time reward for this group.")
     
     await update.message.reply_text(text, parse_mode='HTML')
 
 # --- 🛡️ BOT STATUS TRACKER ---
 async def chat_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Bot join/leave events handle karta hai."""
+    """Handles bot join/leave events."""
     if not update.my_chat_member: return
     
     new_member = update.my_chat_member.new_chat_member
@@ -66,41 +77,27 @@ async def chat_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE)
     chat = update.my_chat_member.chat
     user = update.my_chat_member.from_user
     
-    track_group(chat, user)
-
     # Case: Bot Added
     if new_member.status in [ChatMember.MEMBER, ChatMember.ADMINISTRATOR]:
         if old_member.status in [ChatMember.MEMBER, ChatMember.ADMINISTRATOR]: return 
 
-        link = "No Link"
-        if new_member.status == ChatMember.ADMINISTRATOR:
-            try: link = await context.bot.export_chat_invite_link(chat.id)
-            except: pass
-        
         groups_collection.update_one(
             {"chat_id": chat.id},
-            {"$set": {"title": chat.title, "active": True}, 
-             "$setOnInsert": {"claimed": False, "treasury": 0, "daily_activity": 0}},
+            {"$set": {"title": chat.title, "active": True}},
             upsert=True
         )
-
         await log_to_channel(context.bot, "join", {
-            "user": f"{get_mention(user)} (`{user.id}`)",
-            "chat": f"{chat.title} (`{chat.id}`)",
-            "link": link
+            "user": f"{user.first_name} (`{user.id}`)",
+            "chat": f"{chat.title} (`{chat.id}`)"
         })
     
     # Case: Bot Kicked
     elif new_member.status in [ChatMember.LEFT, ChatMember.BANNED]:
         groups_collection.update_one({"chat_id": chat.id}, {"$set": {"active": False}})
-        await log_to_channel(context.bot, "leave", {
-            "chat": f"{chat.title} (`{chat.id}`)",
-            "action": "Bot removed from chat"
-        })
 
 # --- 📈 ACTIVITY TRACKER ---
 async def group_tracker(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Har message par group ki activity aur treasury badhata hai."""
+    """Tracks group activity and title updates."""
     if not update.effective_chat or not update.effective_user: return
     if update.effective_chat.type == "private": return
 
@@ -109,11 +106,7 @@ async def group_tracker(update: Update, context: ContextTypes.DEFAULT_TYPE):
         {"chat_id": chat.id},
         {
             "$set": {"title": chat.title, "active": True},
-            "$inc": {
-                "daily_activity": 1,
-                "weekly_activity": 1,
-                "treasury": 10 # Har msg par group bank mein $10 deposit
-            }
+            "$inc": {"activity_score": 1}
         },
         upsert=True
     )
