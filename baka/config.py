@@ -38,7 +38,7 @@ OWNER_ID = get_env_id("OWNER_ID")
 SUDO_IDS_STR = os.getenv("SUDO_IDS", "")
 
 # --- GAME CONSTANTS ---
-BOT_NAME = "🦋⃟𝘿𝙚𝙨𝙩𝙞𝙣𝙮"
+BOT_NAME = "𝐁ᴀᴋᴀ 💗"
 REVIVE_COST = 500
 PROTECT_1D_COST = 1000
 PROTECT_2D_COST = 1800
