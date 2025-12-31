@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - FULL ECONOMY SYNC
+# FINAL MASTER RYAN.PY - FULL ECONOMY & GIFTING SYNC
 
 import os
 import logging
@@ -45,13 +45,15 @@ async def post_init(application):
         ("start", "🌸 Main Menu"), 
         ("help", "📖 Help Guide"),
         ("bal", "👛 Wallet Balance"), 
-        ("toprich", "🏆 Global Leaderboard"), 
+        ("toprich", "🏆 Rich Leaderboard"), 
+        ("topkill", "⚔️ Kill Leaderboard"),
         ("daily", "📅 12h Reward"),
         ("kill", "🔪 Kill Someone"), 
         ("rob", "💰 Steal Money"),
-        ("myrank", "🏆 My Global Rank"),
-        ("economy", "📖 Economy Guide"),
-        ("sudo", "🔐 Sudo Panel")
+        ("items", "🛒 Gift Shop"),
+        ("item", "📦 My Inventory"),
+        ("myrank", "🏆 Global Rank"),
+        ("economy", "📖 Economy Guide")
     ]
     await application.bot.set_my_commands(commands)
     print(f"✅ {BOT_NAME} Absolute Menu Synchronized!")
@@ -69,52 +71,49 @@ if __name__ == '__main__':
         # 1. Core & Help Callbacks
         app_bot.add_handler(CommandHandler("start", start.start))
         app_bot.add_handler(CommandHandler("help", start.help_command))
-        app_bot.add_handler(CommandHandler("economy", start.help_command)) # Link to economy guide
+        app_bot.add_handler(CommandHandler("economy", start.help_command))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_|return_start"))
 
-        # 2. 🔐 Full Admin & Sudo Registration
+        # 2. 🔐 Admin & Sudo
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
         app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
-        app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
-        app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
-        app_bot.add_handler(CommandHandler("sudolist", admin.sudolist))
         app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
-        app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
-        # 3. Economy & RPG (English Sync)
+        # 3. Economy & Gifting System
         app_bot.add_handler(CommandHandler("bal", economy.balance))
-        app_bot.add_handler(CommandHandler("daily", economy.daily_bonus)) # Linked to economy.py
-        app_bot.add_handler(CommandHandler("toprich", economy.toprich))   # Linked to economy.py
-        app_bot.add_handler(CommandHandler("myrank", economy.my_rank))    # New Command
+        app_bot.add_handler(CommandHandler("daily", economy.daily_bonus)) 
+        app_bot.add_handler(CommandHandler("toprich", economy.toprich))   
+        app_bot.add_handler(CommandHandler("myrank", economy.my_rank))    
         app_bot.add_handler(CommandHandler("give", economy.give))
+        app_bot.add_handler(CommandHandler("topkill", economy.top_kill)) # Added
+        
+        # Shop & Items
+        app_bot.add_handler(CommandHandler("items", shop.items_list))   # Added
+        app_bot.add_handler(CommandHandler("item", shop.view_inventory)) # Added
+        app_bot.add_handler(CommandHandler("gift", shop.gift_item))      # Added
+
+        # 4. Game & Combat
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob)) 
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
-        app_bot.add_handler(CommandHandler("shop", shop.shop_menu))
 
-        # 4. Chatbot & AI Integration
-        app_bot.add_handler(CommandHandler("chatbot", chatbot.chatbot_menu))
+        # 5. Chatbot, AI & Fun
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
-        app_bot.add_handler(CallbackQueryHandler(chatbot.chatbot_callback, pattern="^ai_"))
         app_bot.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), chatbot.ai_message_handler))
-
-        # 5. Fun, Social & Couple
         app_bot.add_handler(CommandHandler("couple", couple.couple)) 
         app_bot.add_handler(CommandHandler("waifu", waifu.waifu_cmd)) 
         app_bot.add_handler(CommandHandler("riddle", riddle.riddle))
         app_bot.add_handler(CommandHandler("dice", fun.dice))
         app_bot.add_handler(CommandHandler("slots", fun.slots))
 
-        # 6. Listeners & Tasks
-        app_bot.add_handler(CommandHandler("claim", events.claim_group))
+        # 6. Listeners
         app_bot.add_handler(CommandHandler("ping", ping.ping))
-        app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & (~filters.COMMAND), riddle.check_riddle_answer), group=1)
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
 
-        print(f"🚀 {BOT_NAME} ECONOMY SYSTEM IS ONLINE!")
+        print(f"🚀 {BOT_NAME} IS FULLY SYNCED AND ONLINE!")
         app_bot.run_polling(drop_pending_updates=True)
