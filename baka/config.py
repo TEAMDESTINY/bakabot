@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
 # Location: Bihar | All rights reserved.
-# Final Sync for Baka’s Economy & Group Claim System
+# FINAL FIX - All Constants Restored
 
 import os
 import time
@@ -44,17 +44,21 @@ REGISTER_BONUS = 50       # Initial signup amount
 DAILY_BONUS = 50          # 12-hour bonus amount
 BONUS_COOLDOWN = 12       # Hours between bonus claims (12h)
 
-# Protection Prices (New Rules)
-PROTECT_1D_COST = 100     # 1-day protection = $100
-PROTECT_2D_COST = 500     # 2-day protection = $500
+# Protection Prices
+PROTECT_1D_COST = 100     
+PROTECT_2D_COST = 500     
 
-# Death & Revive (Sync with 5-hour rule)
-REVIVE_COST = 200         # Cost to revive via command
-AUTO_REVIVE_HOURS = 5     # Dead users auto-revive after 5 hours
+# Death & Revive
+REVIVE_COST = 200         
+AUTO_REVIVE_HOURS = 5     
 
-# Other Rates & Group Claims
-TAX_RATE = 0.10           # 10% Transaction Tax
-MIN_CLAIM_MEMBERS = 100   # Min members required for /claim (Updated)
+# Other Rates & Rewards (CRITICAL FIXES)
+TAX_RATE = 0.10           
+MIN_CLAIM_MEMBERS = 100   
+RIDDLE_REWARD = 1000      # Error was here
+CLAIM_BONUS = 2000
+DIVORCE_COST = 2000
+WAIFU_PROPOSE_COST = 5000
 
 # --- 🛒 SHOP ITEMS ---
 SHOP_ITEMS = [
