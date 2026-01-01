@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Utils - Normal Font Fix | No More 'Code' Tags
+# Final Utils - Fixed Import Error & Normal Font
 
 import html
 import re
@@ -8,7 +8,11 @@ from datetime import datetime, timedelta
 from telegram import Bot, User, Chat
 from telegram.constants import ParseMode, ChatType
 from baka.database import users_collection, sudoers_collection, groups_collection
-from baka.config import OWNER_ID, SUDO_IDS_STR, LOGGER_ID
+from baka.config import OWNER_ID, SUDO_IDS_STR, LOGGER_ID, BOT_NAME # Yahan se import kar liya
+
+# --- 👑 IDENTITY ---
+# Ryan.py ko ye yahan chahiye, isliye hum ise export kar rahe hain
+BOT_NAME = BOT_NAME
 
 # --- 👑 SUDO SYSTEM ---
 SUDO_USERS = set()
@@ -30,15 +34,12 @@ reload_sudoers()
 
 # --- ✨ CLEAN TEXT ENGINE ---
 def stylize_text(text):
-    """
-    Ab ye normal text return karega taaki <code> tags ka kachra na dikhe.
-   
-    """
+    """Normal text return karega bina kisi <code> tag ke."""
     return str(text)
 
-# --- 👤 MENTION SYSTEM (Normal Clickable Names) ---
+# --- 👤 MENTION SYSTEM ---
 def get_mention(user_data, custom_name=None):
-    """Clickable HTML link banata hai bina kisi extra font ke."""
+    """Clickable HTML link."""
     if isinstance(user_data, (User, Chat)):
         uid = user_data.id
         name = user_data.first_name if hasattr(user_data, "first_name") else user_data.title
@@ -49,12 +50,10 @@ def get_mention(user_data, custom_name=None):
         return "Unknown"
     
     safe_name = html.escape(custom_name or name or "User")
-    # Bold rakha hai taaki naam alag se chamke
     return f'<a href="tg://user?id={uid}"><b>{safe_name}</b></a>'
 
 # --- 🌟 LOGGING SYSTEM ---
 async def log_to_channel(bot: Bot, event_type: str, details: dict):
-    """Log channel mein clean updates bhejta hai."""
     if not LOGGER_ID or LOGGER_ID == 0: return
     now = datetime.now().strftime("%I:%M:%S %p")
     
@@ -69,6 +68,17 @@ async def log_to_channel(bot: Bot, event_type: str, details: dict):
         await bot.send_message(chat_id=LOGGER_ID, text=text, parse_mode=ParseMode.HTML)
     except: 
         pass
+
+# --- 🏰 GROUP TRACKER ---
+def track_group(chat, user=None):
+    if chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
+        groups_collection.update_one(
+            {"chat_id": chat.id},
+            {"$set": {"title": chat.title}, "$setOnInsert": {"claimed": False}},
+            upsert=True
+        )
+        if user:
+            users_collection.update_one({"user_id": user.id}, {"$addToSet": {"seen_groups": chat.id}})
 
 # --- 🛡️ PROTECTION ENGINE ---
 def get_active_protection(user_data):
@@ -86,11 +96,9 @@ def is_protected(user_data):
 
 # --- 💰 ECONOMY UTILS ---
 def format_money(amount): 
-    # Normal font mein balance
     return f"${amount:,}"
 
 def ensure_user_exists(tg_user):
-    """User data ko MongoDB ke saath sync karta hai."""
     if not tg_user: return None
     user_doc = users_collection.find_one({"user_id": tg_user.id})
     un = tg_user.username.lower() if tg_user.username else None
@@ -105,7 +113,6 @@ def ensure_user_exists(tg_user):
     return user_doc
 
 async def resolve_target(update, context, specific_arg=None):
-    """Reply, ID ya Username se target dhundhta hai."""
     if update.message.reply_to_message:
         return ensure_user_exists(update.message.reply_to_message.from_user), None
     query = specific_arg or (context.args[0] if context.args else None)
@@ -116,3 +123,9 @@ async def resolve_target(update, context, specific_arg=None):
     clean_un = query.replace("@", "").lower()
     doc = users_collection.find_one({"username": clean_un})
     return (doc, None) if doc else (None, "User not found")
+
+async def notify_victim(bot, user_id, message_text):
+    try:
+        await bot.send_message(chat_id=user_id, text=message_text, parse_mode=ParseMode.HTML)
+    except:
+        pass
