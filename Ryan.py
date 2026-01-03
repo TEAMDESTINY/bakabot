@@ -1,5 +1,5 @@
-# Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - FULL ECONOMY, BOMB GAME & LIMITS SYNC
+# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
+# FINAL MASTER RYAN.PY - MONOSPACE ROSE MENU SYNC
 
 import os
 import logging
@@ -24,7 +24,7 @@ try:
     from baka.utils import BOT_NAME
     from baka.plugins import (
         start, economy, game, admin, broadcast, fun, events, 
-        ping, chatbot, riddle, waifu, shop, couple, bomb # Added bomb plugin
+        ping, chatbot, riddle, waifu, shop, couple, bomb 
     )
 except ImportError as e:
     print(f"❌ Critical Import Error: {e}")
@@ -38,28 +38,28 @@ def health(): return "Destiny Engine Active! 🚀"
 def run_flask(): 
     app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False)
 
-# --- STARTUP MENU SYNC ---
+# --- 🌹 STYLIZED STARTUP MENU SYNC ---
 async def post_init(application):
-    """Syncs the full command list to the bot menu."""
+    """Syncs the stylized command list to the bot menu button."""
     commands = [
-        ("start", "🌸 Main Menu"), 
-        ("help", "📖 Help Guide"),
-        ("bal", "👛 Wallet Balance"), 
-        ("toprich", "🏆 Rich Leaderboard"), 
-        ("topkill", "⚔️ Kill Leaderboard"),
-        ("daily", "📅 Claim $1000 (DM Only)"),
-        ("bomb", "💣 Start Bomb Game"),
-        ("leaders", "🥇 Bomb Game Rankings"),
-        ("claim", "🎁 Group Reward"),
-        ("kill", "🔪 Kill Someone"), 
-        ("rob", "💰 Steal Money"),
-        ("items", "🛒 Gift Shop"),
-        ("item", "📦 My Inventory"),
-        ("myrank", "🏆 Global Rank"),
-        ("economy", "📖 Economy Guide")
+        ("start", "🌹 𝚂𝚝𝚊𝚛𝚝 𝙼𝚊𝚒𝚗 𝙼𝚎𝚗𝚞"), 
+        ("help", "🌹 𝙷𝚎𝚕𝚙 𝙶𝚞𝚒𝚍𝚎 𝙳𝚒𝚊𝚛𝚢"),
+        ("bal", "🌹 𝚆𝚊𝚕𝚕𝚎𝚝 𝙱𝚊𝚕𝚊𝚗𝚌𝚎"), 
+        ("toprich", "🌹 𝚁𝚒𝚌𝚑 𝙻𝚎𝚊𝚍𝚎𝚛𝚋𝚘𝚊𝚛𝚍"), 
+        ("topkill", "🌹 𝙺𝚒𝚕𝚕 𝙻𝚎𝚊𝚍𝚎𝚛𝚋𝚘𝚊𝚛𝚍"),
+        ("daily", "🌹 𝙲𝚕𝚊𝚒𝚖 $𝟷𝟶𝟶𝟶 (𝙳𝚖 𝙾𝚗𝚕𝚢)"),
+        ("bomb", "🌹 𝚂𝚝𝚊𝚛𝚝 𝙱𝚘𝚖𝚋 𝙶𝚊𝚖𝚎"),
+        ("leaders", "🌹 𝙱𝚘𝚖𝚋 𝙶𝚊𝚖𝚎 𝚁𝚊𝚗𝚔𝚒𝚗𝚐𝚜"),
+        ("claim", "🌹 𝙶𝚛𝚘𝚞𝚙 𝚁𝚎𝚠𝚊𝚛𝚍 𝙲𝚕𝚊𝚒𝚖"),
+        ("kill", "🌹 𝙺𝚒𝚕𝚕 𝚂𝚘𝚖𝚎𝚘𝚗𝚎"), 
+        ("rob", "🌹 𝚂𝚝𝚎𝚊𝚕 𝙼𝚘𝚗𝚎𝚢 (𝙻𝚒𝚖𝚒𝚝)"),
+        ("items", "🌹 𝙶𝚒𝚏𝚝 𝚂𝚑𝚘𝚙 𝙸𝚝𝚎𝚖𝚜"),
+        ("item", "🌹 𝙼𝚢 𝙸𝚗𝚟𝚎𝚗𝚝𝚘𝚛𝚢"),
+        ("myrank", "🌹 𝙶𝚕𝚘𝚋𝚊𝚕 𝚁𝚊𝚗𝚔 𝚂𝚝𝚊𝚝𝚜"),
+        ("economy", "🌹 𝙴𝚌𝚘𝚗𝚘𝚖𝚢 𝙶𝚞𝚒𝚍𝚎 𝙱𝚘𝚘𝚔")
     ]
     await application.bot.set_my_commands(commands)
-    print(f"✅ {BOT_NAME} Absolute Menu Synchronized!")
+    print(f"✅ {BOT_NAME} Rose-Styled Menu Synchronized!")
 
 # --- MAIN ENGINE ---
 if __name__ == '__main__':
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
-        app_bot.add_handler(CommandHandler("bombcancel", bomb.bomb_cancel)) # Admin only
+        app_bot.add_handler(CommandHandler("bombcancel", bomb.bomb_cancel)) 
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
         # 3. Economy & Gifting System
@@ -101,7 +101,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("item", shop.view_inventory)) 
         app_bot.add_handler(CommandHandler("gift", shop.gift_item))      
 
-        # 4. Game & Combat (Limits & Anti-Spam Sync)
+        # 4. Game & Combat
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob)) 
         app_bot.add_handler(CommandHandler("revive", game.revive))
@@ -111,8 +111,8 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("bomb", bomb.start_bomb))
         app_bot.add_handler(CommandHandler("join", bomb.join_bomb))
         app_bot.add_handler(CommandHandler("pass", bomb.pass_bomb))
-        app_bot.add_handler(CommandHandler("leaders", bomb.bomb_leaders)) # Bomb Leaderboard
-        app_bot.add_handler(CommandHandler("bombrank", bomb.bomb_myrank)) # Bomb Stats
+        app_bot.add_handler(CommandHandler("leaders", bomb.bomb_leaders)) 
+        app_bot.add_handler(CommandHandler("bombrank", bomb.bomb_myrank)) 
 
         # 6. Chatbot, AI & Fun
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
