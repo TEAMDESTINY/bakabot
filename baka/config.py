@@ -21,9 +21,9 @@ UPSTREAM_REPO = os.getenv("UPSTREAM_REPO", "")
 GIT_TOKEN = os.getenv("GIT_TOKEN", "")
 
 # --- 🖼️ ASSETS & LINKS ---
-START_IMG_URL = os.getenv("START_IMG_URL", "https://files.catbox.moe/28no0e.jpg") 
-HELP_IMG_URL = os.getenv("HELP_IMG_URL", "https://files.catbox.moe/5g37fy.jpg") 
-WELCOME_IMG_URL = os.getenv("WELCOME_IMG_URL", "https://files.catbox.moe/28no0e.jpg") 
+START_IMG_URL = os.getenv("START_IMG_URL", "https://files.catbox.moe/5u4z5p.jpg") 
+HELP_IMG_URL = os.getenv("HELP_IMG_URL", "https://files.catbox.moe/5u4z5p.jpg") 
+WELCOME_IMG_URL = os.getenv("WELCOME_IMG_URL", "https://files.catbox.moe/5u4z5p.jpg") 
 
 SUPPORT_GROUP = os.getenv("SUPPORT_GROUP", "https://t.me/YourSupportGroup")
 SUPPORT_CHANNEL = os.getenv("SUPPORT_CHANNEL", "https://t.me/YourUpdateChannel")
