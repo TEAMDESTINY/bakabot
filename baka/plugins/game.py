@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Game Plugin - Anti-Bot, Anti-Spam & Daily Limits Fixed
+# Final Game Plugin - Anti-Bot, Anti-Channel, Anti-Anonymous & Anti-Spam
 
 import random
 import html
@@ -26,7 +26,11 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     attacker_db = ensure_user_exists(attacker)
     now = datetime.utcnow()
 
-    # 🚨 ANTI-SPAM COOLDOWN (1-3 Seconds)
+    # 🛑 SENDER VALIDATION: No Anonymous or Channel Attacker
+    if attacker.id == 1087968824 or update.message.sender_chat:
+        return await update.message.reply_text("❌ 𝙰𝚗𝚘𝚗𝚢𝚖𝚘𝚞𝚜 𝚢𝚊 𝙲𝚑𝚊𝚗𝚗𝚎𝚕 𝚜𝚎 𝚔𝚒𝚕𝚕 𝚗𝚊𝚑𝚒 𝚔𝚊𝚛 𝚜𝚊𝚔𝚝𝚎!")
+
+    # 🚨 ANTI-SPAM COOLDOWN
     last_kill_time = attacker_db.get("last_kill_timestamp", 0)
     if time.time() - last_kill_time < random.uniform(1, 3):
         return await update.message.reply_text("⏳ 𝚂𝚙𝚊𝚖 𝚖𝚊𝚝 𝚔𝚊𝚛𝚘 𝚋𝚑𝚊𝚒, 𝚝𝚑𝚘𝚍𝚊 𝚠𝚊𝚒𝚝 𝚔𝚊𝚛𝚘!")
@@ -34,20 +38,22 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Target Selection
     if update.message.reply_to_message:
         target_user = update.message.reply_to_message.from_user
+        target_msg = update.message.reply_to_message
         target_db = ensure_user_exists(target_user)
     else:
         target_db, err = await resolve_target(update, context)
         if not target_db: return await update.message.reply_text(err or "⚠️ 𝙺𝚒𝚜𝚎 𝚖𝚊𝚊𝚛𝚗𝚊 𝚑𝚊𝚒?")
         target_user = await context.bot.get_chat(target_db['user_id'])
+        target_msg = None
 
-    # 🛑 BOT & DELETED ACCOUNT PROTECTION
-    if target_user.is_bot:
-        return await update.message.reply_text("❌ 𝙱𝚘𝚝𝚜 𝚔𝚘 𝚔𝚒𝚕𝚕 𝚗𝚊𝚑𝚒 𝚔𝚊𝚛 𝚜𝚊𝚔𝚝𝚎 𝚋𝚊𝚋𝚢! 🙄")
+    # 🛑 TARGET VALIDATION: No Bots, Deleted Accounts, Anonymous, or Channels
+    if target_user.is_bot or target_user.id == 1087968824 or (target_msg and target_msg.sender_chat):
+        return await update.message.reply_text("🛡️ 𝙱𝚘𝚝𝚜, 𝙲𝚑𝚊𝚗𝚗𝚎𝚕𝚜 𝚢𝚊 𝙰𝚗𝚘𝚗𝚢𝚖𝚘𝚞𝚜 𝚔𝚘 𝚗𝚊𝚑𝚒 𝚖𝚊𝚊𝚛 𝚜𝚊𝚔𝚝𝚎!")
     
     if "Deleted Account" in target_user.first_name:
         return await update.message.reply_text("💀 𝙳𝚎𝚕𝚎𝚝𝚎𝚍 𝚊𝚌𝚌𝚘𝚞𝚗𝚝𝚜 𝚔𝚘 𝚖𝚊𝚊𝚛 𝚔𝚊𝚛 𝚔𝚢𝚊 𝚖𝚒𝚕𝚎𝚐𝚊?")
 
-    # 🚨 DAILY LIMIT CHECK
+    # 🚨 LIMITS & STATUS
     if attacker_db.get("daily_kills", 0) >= KILL_LIMIT_DAILY and attacker.id != OWNER_ID:
         return await update.message.reply_text(f"🚫 𝙳𝚊𝚒𝚕𝚢 𝙻𝚒𝚖𝚒𝚝 ({KILL_LIMIT_DAILY}) 𝚙𝚘𝚘𝚛𝚒 𝚑𝚘 𝚐𝚊𝚢𝚒!")
 
@@ -69,14 +75,19 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_db = ensure_user_exists(user)
     
+    # 🛑 SENDER VALIDATION
+    if user.id == 1087968824 or update.message.sender_chat:
+        return await update.message.reply_text("🕵️‍♂️ 𝙰𝚗𝚘𝚗𝚢𝚖𝚘𝚞𝚜 𝚢𝚊 𝙲𝚑𝚊𝚗𝚗𝚎𝚕 𝚜𝚎 𝚌𝚑𝚘𝚛𝚒 𝚗𝚊𝚑𝚒 𝚑𝚘𝚝𝚒!")
+
     if not update.message.reply_to_message or not context.args:
         return await update.message.reply_text("❗ Usage: Reply with <code>/rob <amount></code>", parse_mode=ParseMode.HTML)
 
-    target_user = update.message.reply_to_message.from_user
+    target_msg = update.message.reply_to_message
+    target_user = target_msg.from_user
     
-    # 🛑 ANTI-BOT ROB
-    if target_user.is_bot or target_user.id == context.bot.id:
-        return await update.message.reply_text("💰 𝙼𝚎𝚛𝚊 𝚙𝚊𝚒𝚜𝚊 𝚌𝚑𝚞𝚛𝚊𝚗𝚎 𝚔𝚒 𝚜𝚘𝚌𝚑𝚗𝚊 𝚋𝚑𝚒 𝚖𝚊𝚝! 👊")
+    # 🛑 TARGET VALIDATION
+    if target_user.is_bot or target_user.id == 1087968824 or target_msg.sender_chat:
+        return await update.message.reply_text("🏛️ 𝙸𝚜 𝚝𝚊𝚛𝚐𝚎𝚝 𝚔𝚊 𝚠𝚊𝚕𝚕𝚎𝚝 𝚗𝚊𝚑𝚒 𝚑𝚘𝚝𝚊, 𝚔𝚒𝚜𝚎 𝚕𝚘𝚘𝚝 𝚛𝚊𝚑𝚎 𝚑𝚘?")
 
     if "Deleted Account" in target_user.first_name:
         return await update.message.reply_text("📉 𝙳𝚎𝚕𝚎𝚝𝚎𝚍 𝚊𝚌𝚌𝚘𝚞𝚗𝚝 𝚔𝚎 𝚙𝚊𝚊𝚜 𝚔𝚞𝚌𝚑 𝚗𝚊𝚑𝚒 𝚑𝚊𝚒.")
