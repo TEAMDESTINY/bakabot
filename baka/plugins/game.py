@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Game Plugin - Strict Protection, Anti-Bot & Anti-Channel
+# Final Master Game Plugin - Multi-Identity Validation & Strict Protection
 
 import random
 import html
@@ -26,7 +26,7 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     attacker_db = ensure_user_exists(attacker)
     now = datetime.utcnow()
 
-    # 🛑 SENDER VALIDATION
+    # 🛑 SENDER VALIDATION: No Anonymous/Channel Attacker
     if attacker.id == 1087968824 or update.message.sender_chat:
         return await update.message.reply_text("❌ 𝙰𝚗𝚘𝚗𝚢𝚖𝚘𝚞𝚜 𝚢𝚊 𝙲𝚑𝚊𝚗𝚗𝚎𝚕 𝚜𝚎 𝚔𝚒𝚕𝚕 𝚗𝚊𝚑𝚒 𝚔𝚊𝚛 𝚜𝚊𝚔𝚝𝚎!")
 
@@ -58,7 +58,7 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.HTML
         )
 
-    # 🚨 LIMITS
+    # 🚨 DAILY LIMIT CHECK
     if attacker_db.get("daily_kills", 0) >= KILL_LIMIT_DAILY and attacker.id != OWNER_ID:
         return await update.message.reply_text(f"🚫 𝙳𝚊𝚒𝚕𝚢 𝙻𝚒𝚖𝚒𝚝 ({KILL_LIMIT_DAILY}) 𝚙𝚘𝚘𝚛𝚒 𝚑𝚘 𝚐𝚊𝚢𝚒!")
 
@@ -88,11 +88,9 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target_user = target_msg.from_user
     target_db = ensure_user_exists(target_user)
     
-    # 🛑 TARGET VALIDATION
-    if target_user.is_bot or target_user.id == 1087968824 or target_msg.sender_chat:
+    if not target_db or target_user.is_bot or target_user.id == 1087968824 or target_msg.sender_chat:
         return await update.message.reply_text("🏛️ 𝙸𝚜 𝚝𝚊𝚛𝚐𝚎𝚝 𝚔𝚊 𝚠𝚊𝚕𝚕𝚎𝚝 𝚗𝚊𝚑𝚒 𝚑𝚘𝚝𝚊!")
 
-    # 🛡️ STRICT PROTECTION CHECK
     if is_protected(target_db) and user.id != OWNER_ID:
         return await update.message.reply_text("🛡️ 𝚈𝚎 𝚞𝚜𝚎𝚛 𝚜𝚑𝚒𝚎𝚕𝚍 𝚔𝚎 𝚙𝚒𝚌𝚑𝚎 𝚑𝚊𝚒, 𝚕𝚘𝚘𝚝 𝚗𝚊𝚑𝚒 𝚜𝚊𝚔𝚝𝚎!")
 
@@ -108,23 +106,32 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"💰 <b>Success!</b> Looted <code>{format_money(rob_amount)}</code> from {html.escape(target_user.first_name)}!", parse_mode=ParseMode.HTML)
 
-# --- ❤️ REVIVE & 🛡️ PROTECT ---
+# --- ❤️ REVIVE COMMAND ---
 async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_db = ensure_user_exists(user)
-    target = update.message.reply_to_message.from_user if update.message.reply_to_message else user
-    target_db = ensure_user_exists(target)
+    
+    if update.message.reply_to_message:
+        target_user = update.message.reply_to_message.from_user
+        target_db = ensure_user_exists(target_user)
+    else:
+        target_db, err = await resolve_target(update, context)
+        if not target_db:
+            return await update.message.reply_text(err or "⚠️ 𝙺𝚒𝚜𝚎 𝚛𝚎𝚟𝚒𝚟𝚎 𝚔𝚊𝚛𝚗𝚊 𝚑𝚊𝚒?")
+        target_user = await context.bot.get_chat(target_db['user_id'])
 
+    # 🛑 SAFE CHECK: AttributeError Fix
     if target_db.get('status') == 'alive':
-        return await update.message.reply_text(f"✅ ~ {html.escape(target.first_name)} is already alive!")
+        return await update.message.reply_text(f"✅ ~ {html.escape(target_user.first_name)} is already alive!")
         
     if user_db.get('balance', 0) < REVIVE_COST: 
         return await update.message.reply_text(f"❌ Revive cost: {format_money(REVIVE_COST)}")
     
-    users_collection.update_one({"user_id": target.id}, {"$set": {"status": "alive", "death_time": None, "auto_revive_at": None}})
+    users_collection.update_one({"user_id": target_user.id}, {"$set": {"status": "alive", "death_time": None, "auto_revive_at": None}})
     users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": -REVIVE_COST}})
     await update.message.reply_text(f"❤️ <b>{stylize_text('REVIVED')}!</b>", parse_mode=ParseMode.HTML)
 
+# --- 🛡️ PROTECT COMMAND ---
 async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_db = ensure_user_exists(user)
