@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Master Game Plugin - Multi-Identity Validation & Strict Protection
+# Final Master Game Plugin - All Fixes Applied
 
 import random
 import html
@@ -16,7 +16,7 @@ from baka.config import (
 from baka.utils import (
     ensure_user_exists, resolve_target, format_money, 
     stylize_text, is_protected, notify_victim,
-    get_active_protection
+    get_active_protection, get_mention
 )
 from baka.database import users_collection
 
@@ -26,7 +26,7 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     attacker_db = ensure_user_exists(attacker)
     now = datetime.utcnow()
 
-    # 🛑 SENDER VALIDATION: No Anonymous/Channel Attacker
+    # 🛑 SENDER CHECK: No Anonymous/Channel (Fixes Identity Exploit)
     if attacker.id == 1087968824 or update.message.sender_chat:
         return await update.message.reply_text("❌ 𝙰𝚗𝚘𝚗𝚢𝚖𝚘𝚞𝚜 𝚢𝚊 𝙲𝚑𝚊𝚗𝚗𝚎𝚕 𝚜𝚎 𝚔𝚒𝚕𝚕 𝚗𝚊𝚑𝚒 𝚔𝚊𝚛 𝚜𝚊𝚔𝚝𝚎!")
 
@@ -38,27 +38,29 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.reply_to_message:
         target_user = update.message.reply_to_message.from_user
         target_msg = update.message.reply_to_message
-        target_db = ensure_user_exists(target_user)
     else:
-        target_db, err = await resolve_target(update, context)
-        if not target_db: return await update.message.reply_text(err or "⚠️ 𝙺𝚒𝚜𝚎 𝚖𝚊𝚊𝚛𝚗𝚊 𝚑𝚊𝚒?")
-        target_user = await context.bot.get_chat(target_db['user_id'])
+        target_db_raw, err = await resolve_target(update, context)
+        if not target_db_raw: return await update.message.reply_text(err or "⚠️ 𝙺𝚒𝚜𝚎 𝚖𝚊𝚊𝚛𝚗𝚊 𝚑𝚊𝚒?")
+        target_user = await context.bot.get_chat(target_db_raw['user_id'])
         target_msg = None
 
     # 🛑 TARGET VALIDATION
     if target_user.is_bot or target_user.id == 1087968824 or (target_msg and target_msg.sender_chat):
         return await update.message.reply_text("🛡️ 𝙱𝚘𝚝𝚜, 𝙲𝚑𝚊𝚗𝚗𝚎𝚕𝚜 𝚢𝚊 𝙰𝚗𝚘𝚗𝚢𝚖𝚘𝚞𝚜 𝚔𝚘 𝚗𝚊𝚑𝚒 𝚖𝚊𝚊𝚛 𝚜𝚊𝚔𝚝𝚎!")
 
-    # 🛡️ STRICT PROTECTION CHECK
+    # 🛡️ FRESH DB PROTECTION CHECK
+    target_db = users_collection.find_one({"user_id": target_user.id}) or ensure_user_exists(target_user)
+    
     if is_protected(target_db) and attacker.id != OWNER_ID:
         expiry = get_active_protection(target_db)
         remaining = expiry - now
+        hours, _ = divmod(remaining.seconds, 3600)
         return await update.message.reply_text(
-            f"🛡️ 𝚃𝚊𝚛𝚐𝚎𝚝 𝚙𝚛𝚘𝚝𝚎𝚌𝚝𝚎𝚍 𝚑𝚊𝚒!\n⏳ 𝚁𝚎𝚖𝚊𝚒𝚗𝚒𝚗𝚐: <code>{remaining.days}d {remaining.seconds // 3600}h</code>",
+            f"🛡️ 𝚃𝚊𝚛𝚐𝚎𝚝 𝚙𝚛𝚘𝚝𝚎𝚌𝚝𝚎𝚍 𝚑𝚊𝚒!\n⏳ 𝚁𝚎𝚖𝚊𝚒𝚗𝚒𝚗𝚐: <code>{remaining.days}d {hours}h</code>",
             parse_mode=ParseMode.HTML
         )
 
-    # 🚨 DAILY LIMIT CHECK
+    # 🚨 LIMITS & STATUS
     if attacker_db.get("daily_kills", 0) >= KILL_LIMIT_DAILY and attacker.id != OWNER_ID:
         return await update.message.reply_text(f"🚫 𝙳𝚊𝚒𝚕𝚢 𝙻𝚒𝚖𝚒𝚝 ({KILL_LIMIT_DAILY}) 𝚙𝚘𝚘𝚛𝚒 𝚑𝚘 𝚐𝚊𝚢𝚒!")
 
@@ -82,21 +84,22 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("🕵️‍♂️ 𝙰𝚗𝚘𝚗𝚢𝚖𝚘𝚞𝚜 𝚢𝚊 𝙲𝚑𝚊𝚗𝚗𝚎𝚕 𝚜𝚎 𝚌𝚑𝚘𝚛𝚒 𝚗𝚊𝚑𝚒 𝚑𝚘𝚝𝚒!")
 
     if not update.message.reply_to_message or not context.args:
-        return await update.message.reply_text("❗ Usage: Reply with <code>/rob <amount></code>", parse_mode=ParseMode.HTML)
+        return await update.message.reply_text("❗ Usage: Reply with <code>/rob <amount></code>")
 
     target_msg = update.message.reply_to_message
     target_user = target_msg.from_user
-    target_db = ensure_user_exists(target_user)
     
-    if not target_db or target_user.is_bot or target_user.id == 1087968824 or target_msg.sender_chat:
+    if target_user.is_bot or target_user.id == 1087968824 or target_msg.sender_chat:
         return await update.message.reply_text("🏛️ 𝙸𝚜 𝚝𝚊𝚛𝚐𝚎𝚝 𝚔𝚊 𝚠𝚊𝚕𝚕𝚎𝚝 𝚗𝚊𝚑𝚒 𝚑𝚘𝚝𝚊!")
 
+    target_db = users_collection.find_one({"user_id": target_user.id}) or ensure_user_exists(target_user)
+    
     if is_protected(target_db) and user.id != OWNER_ID:
-        return await update.message.reply_text("🛡️ 𝚈𝚎 𝚞𝚜𝚎𝚛 𝚜𝚑𝚒𝚎𝚕𝚍 𝚔𝚎 𝚙𝚒𝚌𝚑𝚎 𝚑𝚊𝚒, 𝚕𝚘𝚘𝚝 𝚗𝚊𝚑𝚒 𝚜𝚊𝚔𝚝𝚎!")
+        return await update.message.reply_text("🛡️ 𝚈𝚎 𝚞𝚜𝚎𝚛 𝚜𝚑𝚒𝚎𝚕𝚍 𝚔𝚎 𝚙𝚒𝚌𝚑𝚎 𝚑𝚊𝚒!")
 
     rob_amount = int(context.args[0]) if context.args[0].isdigit() else 0
     if rob_amount > ROB_MAX_AMOUNT and user.id != OWNER_ID:
-        return await update.message.reply_text(f"❌ 𝙼𝚊𝚡 𝚛𝚘𝚋 𝚕𝚒𝚖𝚒𝚝: <code>{format_money(ROB_MAX_AMOUNT)}</code>")
+        return await update.message.reply_text(f"❌ 𝙼𝚊𝚡 𝚛𝚘𝚋: <code>{format_money(ROB_MAX_AMOUNT)}</code>")
 
     if target_db.get('balance', 0) < rob_amount:
         return await update.message.reply_text("📉 𝚄𝚜𝚔𝚎 𝚙𝚊𝚊𝚜 𝚒𝚝𝚗𝚊 𝚙𝚊𝚒𝚜𝚊 𝚗𝚊𝚑𝚒 𝚑𝚊𝚒!")
@@ -104,48 +107,53 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users_collection.update_one({"user_id": target_user.id}, {"$inc": {"balance": -rob_amount}})
     users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": rob_amount, "daily_robs": 1}})
 
-    await update.message.reply_text(f"💰 <b>Success!</b> Looted <code>{format_money(rob_amount)}</code> from {html.escape(target_user.first_name)}!", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"💰 Looted <code>{format_money(rob_amount)}</code> from {html.escape(target_user.first_name)}!", parse_mode=ParseMode.HTML)
 
-# --- ❤️ REVIVE COMMAND ---
+# --- ❤️ REVIVE COMMAND (Fresh DB & No-Reply Support) ---
 async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_db = ensure_user_exists(user)
     
+    # Target dhundna: Reply > Args > Self
     if update.message.reply_to_message:
         target_user = update.message.reply_to_message.from_user
-        target_db = ensure_user_exists(target_user)
+    elif context.args:
+        target_db_raw, err = await resolve_target(update, context)
+        if not target_db_raw: return await update.message.reply_text(err or "⚠️ Target not found.")
+        target_user = await context.bot.get_chat(target_db_raw['user_id'])
     else:
-        target_db, err = await resolve_target(update, context)
-        if not target_db:
-            return await update.message.reply_text(err or "⚠️ 𝙺𝚒𝚜𝚎 𝚛𝚎𝚟𝚒𝚟𝚎 𝚔𝚊𝚛𝚗𝚊 𝚑𝚊𝚒?")
-        target_user = await context.bot.get_chat(target_db['user_id'])
+        target_user = user
 
-    # 🛑 SAFE CHECK: AttributeError Fix
+    # Latest DB fetch
+    target_db = users_collection.find_one({"user_id": target_user.id}) or ensure_user_exists(target_user)
+
     if target_db.get('status') == 'alive':
-        return await update.message.reply_text(f"✅ ~ {html.escape(target_user.first_name)} is already alive!")
+        return await update.message.reply_text(f"✅ {html.escape(target_user.first_name)} is already alive!")
         
     if user_db.get('balance', 0) < REVIVE_COST: 
         return await update.message.reply_text(f"❌ Revive cost: {format_money(REVIVE_COST)}")
     
+    # Process
     users_collection.update_one({"user_id": target_user.id}, {"$set": {"status": "alive", "death_time": None, "auto_revive_at": None}})
     users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": -REVIVE_COST}})
-    await update.message.reply_text(f"❤️ <b>{stylize_text('REVIVED')}!</b>", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"❤️ <b>{stylize_text('REVIVED')}!</b>\n👤 Target: {get_mention(target_user)}", parse_mode=ParseMode.HTML)
 
 # --- 🛡️ PROTECT COMMAND ---
 async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    user_db = ensure_user_exists(user)
+    user_db = users_collection.find_one({"user_id": user.id}) or ensure_user_exists(user)
+    
     if is_protected(user_db):
         expiry = get_active_protection(user_db)
         remaining = expiry - datetime.utcnow()
-        return await update.message.reply_text(f"🛡️ 𝙰𝚊𝚙 𝚙𝚎𝚑𝚕𝚎 𝚜𝚎 𝚙𝚛𝚘𝚝𝚎𝚌𝚝𝚎𝚍 𝚑𝚘!\n⏳ 𝚁𝚎𝚖𝚊𝚒𝚗𝚒𝚗𝚐: <code>{remaining.days}d {remaining.seconds // 3600}h</code>")
+        hours, _ = divmod(remaining.seconds, 3600)
+        return await update.message.reply_text(f"🛡️ Protected! Remaining: <code>{remaining.days}d {hours}h</code>")
     
     choice = context.args[0] if context.args else "1d"
-    cost = PROTECT_2D_COST if choice == "2d" else PROTECT_1D_COST
-    days = 2 if choice == "2d" else 1
+    cost, days = (PROTECT_2D_COST, 2) if choice == "2d" else (PROTECT_1D_COST, 1)
 
     if user_db.get('balance', 0) < cost: 
-        return await update.message.reply_text(f"❌ 𝙽𝚎𝚎𝚍𝚜 {format_money(cost)}.")
+        return await update.message.reply_text(f"❌ Needs {format_money(cost)}.")
     
     users_collection.update_one({"user_id": user.id}, {"$set": {"protection_expiry": datetime.utcnow() + timedelta(days=days)}, "$inc": {"balance": -cost}})
-    await update.message.reply_text(f"🛡️ 𝚂𝚑𝚒𝚎𝚕𝚍 𝙰𝚌𝚝𝚒𝚟𝚊𝚝𝚎𝚍 𝚏𝚘𝚛 {days} 𝚍𝚊𝚢(𝚜)!", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"🛡️ Shield Activated for {days} day(s)!", parse_mode=ParseMode.HTML)
