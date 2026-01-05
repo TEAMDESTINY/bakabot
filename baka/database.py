@@ -1,5 +1,5 @@
-# Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Database Logic - Destiny / Baka Bot (FIXED IMPORT ERRORS)
+# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
+# Final Database Logic - Sync with Game & Utils
 
 from pymongo import MongoClient, ASCENDING
 import certifi
@@ -25,7 +25,7 @@ users_collection.create_index([("user_id", ASCENDING)], unique=True)
 groups_collection.create_index([("chat_id", ASCENDING)], unique=True)
 
 # --------------------------------------------------
-# 👤 USER LOGIC
+# 👤 USER LOGIC (Fixed Field Names)
 # --------------------------------------------------
 
 def ensure_user(user):
@@ -37,10 +37,12 @@ def ensure_user(user):
                 "user_id": user.id,
                 "balance": 500,
                 "kills": 0,
+                "daily_kills": 0,
+                "daily_robs": 0,
                 "status": "alive",
                 "waifus": [],
                 "inventory": [],
-                "protection": None,
+                "protection_expiry": None, # Syncing with game.py
                 "created_at": datetime.utcnow()
             },
             "$set": {
@@ -82,33 +84,14 @@ def update_group_activity(chat_id, title=None):
     )
 
 # --------------------------------------------------
-# 🔄 RESET LOGIC (FIXED NAMES)
-# --------------------------------------------------
-
-def reset_daily_activity():
-    """Import fix: Resets daily activity and claims."""
-    result = groups_collection.update_many(
-        {},
-        {"$set": {"daily_activity": 0, "claimed": False}}
-    )
-    print(f"✨ Daily Stats Reset: {result.modified_count} groups")
-
-def reset_weekly_activity():
-    """Import fix: Resets weekly activity."""
-    result = groups_collection.update_many(
-        {},
-        {"$set": {"weekly_activity": 0}}
-    )
-    print(f"👑 Weekly Stats Reset: {result.modified_count} groups")
-
-# --------------------------------------------------
-# 🛡️ PROTECTION CLEANUP
+# 🛡️ PROTECTION CLEANUP (Fixed Field Name)
 # --------------------------------------------------
 
 def cleanup_expired_protection():
+    """Sync with protection_expiry field name."""
     now = datetime.utcnow()
     result = users_collection.update_many(
-        {"protection": {"$lte": now}},
-        {"$set": {"protection": None}}
+        {"protection_expiry": {"$lte": now}},
+        {"$set": {"protection_expiry": None}}
     )
     return result.modified_count
