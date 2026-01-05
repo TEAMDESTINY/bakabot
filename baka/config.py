@@ -1,5 +1,4 @@
-# Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Location: Bihar | All rights reserved.
+# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
 # FINAL SYNC - DM Daily $1000 & Game Limits Applied
 
 import os
@@ -29,36 +28,43 @@ SUPPORT_GROUP = os.getenv("SUPPORT_GROUP", "https://t.me/YourSupportGroup")
 SUPPORT_CHANNEL = os.getenv("SUPPORT_CHANNEL", "https://t.me/YourUpdateChannel")
 OWNER_LINK = os.getenv("OWNER_LINK", "https://t.me/YourOwnerUsername")
 
-# --- 🆔 IDENTITIES ---
+# --- 🆔 IDENTITIES (Fixed Logic) ---
 def get_env_id(var, default=0):
     val = os.getenv(var, str(default)).strip()
     return int(val) if val.replace('-', '').isdigit() else default
 
 LOGGER_ID = get_env_id("LOGGER_ID")
 OWNER_ID = get_env_id("OWNER_ID")
+
+# SUDO_IDS ko string se list mein badalna (Commands fix karne ke liye)
 SUDO_IDS_STR = os.getenv("SUDO_IDS", "")
+SUDO_IDS = [int(x.strip()) for x in SUDO_IDS_STR.split(",") if x.strip().isdigit()]
+
+# Owner ko default Sudo list mein add karna
+if OWNER_ID not in SUDO_IDS:
+    SUDO_IDS.append(OWNER_ID)
 
 # --- 💰 FINAL ECONOMY CONSTANTS ---
 BOT_NAME = "𝐁ᴀᴋᴀ 💗"
 REGISTER_BONUS = 50       
-DAILY_BONUS = 1000        # Updated to $1000 (DM Only)
-BONUS_COOLDOWN = 12       # 12-hour gap between claims
+DAILY_BONUS = 1000        # $1000 (DM Only)
+BONUS_COOLDOWN = 12       # 12-hour gap
 
 # --- ⚔️ GAME LIMITS & COOLDOWNS ---
-KILL_LIMIT_DAILY = 100    # Normal users limit
-ROB_LIMIT_DAILY = 200     # Normal users limit
-ROB_MAX_AMOUNT = 500000   # Max robbery amount 5 Lakh
-KILL_SPAM_COOLDOWN = 3    # Anti-spam interval (1-3s)
+KILL_LIMIT_DAILY = 100    
+ROB_LIMIT_DAILY = 200     
+ROB_MAX_AMOUNT = 500000   # Max robbery 5 Lakh
+KILL_SPAM_COOLDOWN = 3    
 
 # --- 🛡️ PROTECTION & DEATH ---
 PROTECT_1D_COST = 100     
 PROTECT_2D_COST = 500     
 REVIVE_COST = 200         
-AUTO_REVIVE_HOURS = 5     # Auto-revive timer
+AUTO_REVIVE_HOURS = 5     
 
 # --- 📊 OTHER RATES & REWARDS ---
-TAX_RATE = 0.10           # 10% Transaction Tax
-MIN_CLAIM_MEMBERS = 100   #
+TAX_RATE = 0.10           
+MIN_CLAIM_MEMBERS = 100   
 RIDDLE_REWARD = 1000      
 CLAIM_BONUS = 2000
 DIVORCE_COST = 2000
