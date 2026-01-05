@@ -57,6 +57,7 @@ def get_active_protection(user_data):
         return None
     try:
         now = datetime.utcnow()
+        # database.py ke naye field name 'protection_expiry' ke saath sync
         expiry = user_data.get("protection_expiry")
         # Strict Comparison: Agar expiry time bit chuka hai toh None bhejega
         if expiry and isinstance(expiry, datetime):
@@ -97,7 +98,7 @@ def ensure_user_exists(tg_user):
         new_user = {
             "user_id": tg_user.id, "name": tg_user.first_name, "username": un,
             "balance": 500, "status": "alive", "kills": 0, "daily_kills": 0, "daily_robs": 0,
-            "protection_expiry": None
+            "protection_expiry": None # Sync with database.py
         }
         users_collection.insert_one(new_user)
         return new_user
