@@ -75,15 +75,14 @@ if __name__ == '__main__':
         # 1. 🌹 Core & Welcome Handlers
         app_bot.add_handler(CommandHandler("start", start.start))
         
-        # ✅ FIX 1: PrefixHandler for .help and /help
+        # ✅ FIX 1: PrefixHandler for .help and /help support
         app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command))
         
-        # ✅ FIX 2: Register Game & Economy Guide Commands (From Screenshots)
+        # ✅ FIX 2: Register Game & Economy Guide Commands
         app_bot.add_handler(CommandHandler("game", start.game_guide))
         app_bot.add_handler(CommandHandler("economy", start.economy_guide))
         
-        # ✅ FIX 3: Register Callback for Buttons (Talk, Games, Back)
-        # Yeh line zaroori hai taaki buttons click karne par reaction ho
+        # ✅ FIX 3: Register Callback for Buttons
         app_bot.add_handler(CallbackQueryHandler(start.start_callback, pattern="^(talk_baka|game_features|return_start)$"))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_"))
         
@@ -140,6 +139,10 @@ if __name__ == '__main__':
         # 7. 📊 Listeners & Logs (Events)
         app_bot.add_handler(CommandHandler("claim", events.claim_group))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
+        
+        # ✅ NEW: Economy Toggle Handlers (/open and /close)
+        app_bot.add_handler(CommandHandler("open", events.open_economy))
+        app_bot.add_handler(CommandHandler("close", events.close_economy))
         
         # Tracking Group Activity
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
