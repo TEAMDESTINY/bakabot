@@ -1,6 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - MONOSPACE ROSE MENU & MULTI-HANDLER SYNC
-# Added PrefixHandler for .help support
+# FINAL MASTER RYAN.PY - ALL HANDLERS SYNCED & FIXED
 
 import os
 import logging
@@ -76,13 +75,19 @@ if __name__ == '__main__':
         # 1. 🌹 Core & Welcome Handlers
         app_bot.add_handler(CommandHandler("start", start.start))
         
-        # ✅ CHANGED: PrefixHandler for .help and /help support
+        # ✅ FIX 1: PrefixHandler for .help and /help
         app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command))
         
-        app_bot.add_handler(CommandHandler("welcome", welcome.welcome_command))
+        # ✅ FIX 2: Register Game & Economy Guide Commands (From Screenshots)
+        app_bot.add_handler(CommandHandler("game", start.game_guide))
+        app_bot.add_handler(CommandHandler("economy", start.economy_guide))
         
-        # Note: Ensure start.py has help_callback function to avoid AttributeError
-        app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_|return_start"))
+        # ✅ FIX 3: Register Callback for Buttons (Talk, Games, Back)
+        # Yeh line zaroori hai taaki buttons click karne par reaction ho
+        app_bot.add_handler(CallbackQueryHandler(start.start_callback, pattern="^(talk_baka|game_features|return_start)$"))
+        app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_"))
+        
+        app_bot.add_handler(CommandHandler("welcome", welcome.welcome_command))
         
         # New Member Welcome Message
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
