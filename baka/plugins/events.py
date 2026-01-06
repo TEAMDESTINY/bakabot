@@ -8,20 +8,65 @@ from baka.utils import get_mention, log_to_channel, format_money, ensure_user_ex
 from baka.database import groups_collection, users_collection
 from baka.config import MIN_CLAIM_MEMBERS
 
+# --- ⚙️ ECONOMY TOGGLE COMMANDS (.open / .close logic) ---
+
+async def open_economy(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Economy commands ko enable karne ke liye."""
+    chat = update.effective_chat
+    user = update.effective_user
+
+    # Screenshot check: Group only message
+    if chat.type == ChatType.PRIVATE:
+        return await update.message.reply_text("❌ You can use these commands in groups only.")
+
+    # Admin Check
+    member = await chat.get_member(user.id)
+    if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
+        return await update.message.reply_text("❌ Only admins can use this command.")
+
+    # Database Update
+    groups_collection.update_one(
+        {"chat_id": chat.id},
+        {"$set": {"economy_enabled": True}},
+        upsert=True
+    )
+    await update.message.reply_text("✅ All economy commands have been enabled.")
+
+async def close_economy(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Economy commands ko disable karne ke liye."""
+    chat = update.effective_chat
+    user = update.effective_user
+
+    # Screenshot check: Smiley style message for close
+    if chat.type == ChatType.PRIVATE:
+        return await update.message.reply_text(":) You can use these commands in groups only.")
+
+    # Admin Check
+    member = await chat.get_member(user.id)
+    if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
+        return await update.message.reply_text("❌ Only admins can use this command.")
+
+    # Database Update
+    groups_collection.update_one(
+        {"chat_id": chat.id},
+        {"$set": {"economy_enabled": False}},
+        upsert=True
+    )
+    await update.message.reply_text("✅ All economy commands have been disabled.")
+
+# --- 📥 EXISTING HANDLERS ---
+
 async def chat_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Log channel mein Join/Leave reporting (Silent)."""
     if not update.my_chat_member: return
     new, old = update.my_chat_member.new_chat_member, update.my_chat_member.old_chat_member
     chat, user = update.my_chat_member.chat, update.my_chat_member.from_user
     
-    # JOIN LOG
     if new.status in [ChatMember.MEMBER, ChatMember.ADMINISTRATOR] and old.status not in [ChatMember.MEMBER, ChatMember.ADMINISTRATOR]:
         groups_collection.update_one({"chat_id": chat.id}, {"$set": {"title": chat.title, "active": True}}, upsert=True)
         log_details = {"Action": "📥 Bot Joined Group", "Group": f"<b>{html.escape(chat.title)}</b>", "ID": f"<code>{chat.id}</code>", "By": f"{get_mention(user)}"}
         await log_to_channel(context.bot, "group_log", log_details)
     
-    # LEAVE LOG
-    elif new.status in [ChatMember.LEFT, ChatMember.BANNED, ChatMember.RESTRICTED]:
+    elif new.status in [ChatMember.LEFT, ChatMember.BANNED]:
         groups_collection.update_one({"chat_id": chat.id}, {"$set": {"active": False}})
         log_details = {"Action": "📤 Bot Left Group", "Group": f"<b>{html.escape(chat.title)}</b>", "ID": f"<code>{chat.id}</code>"}
         await log_to_channel(context.bot, "group_log", log_details)
