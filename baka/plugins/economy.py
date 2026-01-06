@@ -1,12 +1,12 @@
-# Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Final Economy Plugin - DM Daily Reward ($1000) & Tax Sync
+# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
+# Final Economy Plugin - Daily Reward (24h) & Safe Transactions
 
 import html
 from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
-from baka.config import BONUS_COOLDOWN, TAX_RATE
+from baka.config import TAX_RATE
 from baka.utils import (
     ensure_user_exists, format_money, 
     resolve_target, stylize_text
@@ -68,12 +68,17 @@ async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Sends money to another user with a 10% transaction tax."""
     sender = ensure_user_exists(update.effective_user)
     if not update.message.reply_to_message or not context.args:
-        return await update.message.reply_text("❗ <b>Usage:</b> Reply with <code>/give <amount></code>")
+        return await update.message.reply_text("❗ <b>Usage:</b> Reply with <code>/give <amount></code>", parse_mode=ParseMode.HTML)
 
     if not context.args[0].isdigit():
         return await update.message.reply_text("❌ Please enter a valid number!")
 
     amount = int(context.args[0])
+    
+    # Safety Check: Prevent negative/zero amounts
+    if amount <= 0:
+        return await update.message.reply_text("❌ Amount must be positive!")
+
     tax = int(amount * TAX_RATE) # 10% tax
     total_deduction = amount + tax
     
@@ -96,44 +101,48 @@ async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.HTML
     )
 
-# --- 📅 DAILY BONUS COMMAND ($1000 - DM ONLY) ---
+# --- 📅 DAILY BONUS COMMAND (24 HOURS) ---
 async def daily_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Claims $1000 reward for players. Restricted to Private DM."""
+    """
+    Gives $1000 every 24 hours. Matches Screenshot exact text.
+    """
     user = update.effective_user
-    chat = update.effective_chat
     
-    # DM Restriction Check
-    if chat.type != "private":
-        return await update.message.reply_text(
-            "❌ <b>DM Only!</b>\n"
-            "To prevent group spam, <code>/daily</code> can only be used in my Private Chat.",
-            parse_mode=ParseMode.HTML
-        )
-
+    # Ensure user exists
     user_db = ensure_user_exists(user)
-    last_claim = user_db.get("last_bonus_claim")
-    now = datetime.utcnow()
-
-    # Cooldown check (12 hours)
-    if last_claim and (now < last_claim + timedelta(hours=BONUS_COOLDOWN)):
-        wait = (last_claim + timedelta(hours=BONUS_COOLDOWN)) - now
-        hours, remainder = divmod(wait.seconds, 3600)
-        minutes, _ = divmod(remainder, 60)
-        return await update.message.reply_text(
-            f"⏳ <b>Wait!</b>\nYou can claim again in <code>{hours}h {minutes}m</code>.",
-            parse_mode=ParseMode.HTML
-        )
-
-    # Grant Updated Reward ($1000)
-    DAILY_DM_REWARD = 1000
-    users_collection.update_one(
-        {"user_id": user.id}, 
-        {"$inc": {"balance": DAILY_DM_REWARD}, "$set": {"last_bonus_claim": now}}
-    )
     
-    await update.message.reply_text(
-        f"🎁 <b>Daily Reward Claimed!</b>\n"
-        f"You received <code>{format_money(DAILY_DM_REWARD)}</code>.\n\n"
-        f"🛡️ Use this to <b>/protect</b> or <b>/revive</b> yourself!",
-        parse_mode=ParseMode.HTML
+    last_claim = user_db.get("last_daily_claim")
+    now = datetime.utcnow()
+    
+    # Fixed 24 Hour Cooldown
+    cooldown_period = timedelta(hours=24)
+
+    # Check Cooldown
+    if last_claim:
+        time_passed = now - last_claim
+        if time_passed < cooldown_period:
+            remaining = cooldown_period - time_passed
+            hours, remainder = divmod(remaining.seconds, 3600)
+            minutes, _ = divmod(remainder, 60)
+            
+            await update.message.reply_text(
+                f"⏳ You have already claimed today! Come back in {hours}h {minutes}m."
+            )
+            return
+
+    # Grant Reward ($1000)
+    REWARD = 1000
+    users_collection.update_one(
+        {"user_id": user.id},
+        {
+            "$inc": {"balance": REWARD},
+            "$set": {"last_daily_claim": now}
+        }
     )
+
+    # Exact Text from Screenshot
+    msg = (
+        f"✅ You received: ${REWARD} daily reward!\n"
+        f"💗 Upgrade to premium using /pay to get $2000 daily reward!"
+    )
+    await update.message.reply_text(msg)
