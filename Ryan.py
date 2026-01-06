@@ -1,5 +1,6 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
 # FINAL MASTER RYAN.PY - MONOSPACE ROSE MENU & MULTI-HANDLER SYNC
+# Added PrefixHandler for .help support
 
 import os
 import logging
@@ -7,7 +8,7 @@ from threading import Thread
 from flask import Flask
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, 
-    MessageHandler, ChatMemberHandler, filters
+    MessageHandler, ChatMemberHandler, filters, PrefixHandler
 )
 from telegram.request import HTTPXRequest
 
@@ -74,8 +75,13 @@ if __name__ == '__main__':
 
         # 1. 🌹 Core & Welcome Handlers
         app_bot.add_handler(CommandHandler("start", start.start))
-        app_bot.add_handler(CommandHandler("help", start.help_command))
+        
+        # ✅ CHANGED: PrefixHandler for .help and /help support
+        app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command))
+        
         app_bot.add_handler(CommandHandler("welcome", welcome.welcome_command))
+        
+        # Note: Ensure start.py has help_callback function to avoid AttributeError
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_|return_start"))
         
         # New Member Welcome Message
