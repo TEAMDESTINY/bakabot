@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - ALL HANDLERS SYNCED & FIXED
+# FINAL MASTER RYAN.PY - FULL HANDLER SYNC (ECONOMY, GAMES, ADMIN, & TOGGLES)
 
 import os
 import logging
@@ -75,20 +75,18 @@ if __name__ == '__main__':
         # 1. 🌹 Core & Welcome Handlers
         app_bot.add_handler(CommandHandler("start", start.start))
         
-        # ✅ FIX 1: PrefixHandler for .help and /help support
+        # ✅ PrefixHandler for .help and /help support
         app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command))
         
-        # ✅ FIX 2: Register Game & Economy Guide Commands
+        # ✅ Guides for Games & Economy
         app_bot.add_handler(CommandHandler("game", start.game_guide))
         app_bot.add_handler(CommandHandler("economy", start.economy_guide))
         
-        # ✅ FIX 3: Register Callback for Buttons
+        # ✅ Callback Handlers (Talk, Games, Back Button, Help)
         app_bot.add_handler(CallbackQueryHandler(start.start_callback, pattern="^(talk_baka|game_features|return_start)$"))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_"))
         
         app_bot.add_handler(CommandHandler("welcome", welcome.welcome_command))
-        
-        # New Member Welcome Message
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
 
         # 2. 🔐 Admin & Sudo Registration
@@ -101,7 +99,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("bombcancel", bomb.bomb_cancel)) 
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
-        # 3. 💰 Economy & Gifting System
+        # 3. 💰 Economy System
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("daily", economy.daily_bonus)) 
         app_bot.add_handler(CommandHandler("toprich", economy.toprich))   
@@ -109,7 +107,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("give", economy.give))
         app_bot.add_handler(CommandHandler("topkill", economy.top_kill))
         
-        # Shop & Items
+        # Shop
         app_bot.add_handler(CommandHandler("items", shop.items_list))   
         app_bot.add_handler(CommandHandler("item", shop.view_inventory)) 
         app_bot.add_handler(CommandHandler("gift", shop.gift_item))      
@@ -120,14 +118,14 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
 
-        # 5. 💣 Bomb Game Integration
+        # 5. 💣 Bomb Game Logic
         app_bot.add_handler(CommandHandler("bomb", bomb.start_bomb))
         app_bot.add_handler(CommandHandler("join", bomb.join_bomb))
         app_bot.add_handler(CommandHandler("pass", bomb.pass_bomb))
         app_bot.add_handler(CommandHandler("leaders", bomb.bomb_leaders)) 
         app_bot.add_handler(CommandHandler("bombrank", bomb.bomb_myrank)) 
 
-        # 6. 🧠 Chatbot, AI & Fun
+        # 6. 🧠 AI & Fun
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
         app_bot.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), chatbot.ai_message_handler))
         app_bot.add_handler(CommandHandler("couple", couple.couple)) 
@@ -136,18 +134,16 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("dice", fun.dice))
         app_bot.add_handler(CommandHandler("slots", fun.slots))
 
-        # 7. 📊 Listeners & Logs (Events)
+        # 7. 📈 Listeners & Economy Toggles
         app_bot.add_handler(CommandHandler("claim", events.claim_group))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         
-        # ✅ NEW: Economy Toggle Handlers (/open and /close)
+        # ✅ Economy Enable/Disable
         app_bot.add_handler(CommandHandler("open", events.open_economy))
         app_bot.add_handler(CommandHandler("close", events.close_economy))
         
-        # Tracking Group Activity
+        # Tracking & Logs
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
-        
-        # Master Log Handler (Join/Leave/Promote)
         app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
 
         print(f"🚀 {BOT_NAME} MASTER ENGINE ONLINE!")
