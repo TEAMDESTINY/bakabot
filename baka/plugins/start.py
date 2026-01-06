@@ -1,9 +1,9 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Integrated Code - Help, Games, Economy & Management
+# Final Integrated Code - Fixed Help Callback Error
 
 import html
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, PrefixHandler
 from telegram.constants import ParseMode
 from baka.config import BOT_NAME, START_IMG_URL, OWNER_LINK
 from baka.utils import ensure_user_exists, track_group
@@ -49,25 +49,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_photo(photo=START_IMG_URL, caption=caption, reply_markup=kb, parse_mode=ParseMode.HTML)
 
-# --- ❓ HELP COMMAND (/help) ---
+# --- ❓ HELP COMMAND (.help) ---
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Sahi Help Menu jo Management aur Games cover karta hai."""
+    """Updated Help Menu showing . commands"""
     help_text = (
         "📖 <b>Baka Help Menu</b>\n\n"
         "🛠 <b>Management:</b>\n"
-        "• /ban - User ko hamesha ke liye nikaalein\n"
-        "• /mute - User ko chup karayein\n"
-        "• /kick - User ko group se nikaalein\n"
-        "• /unban /unmute - Bandish hatayein\n\n"
+        "• .ban - User ko hamesha ke liye nikaalein\n"
+        "• .mute - User ko chup karayein\n"
+        "• .kick - User ko group se nikaalein\n\n"
         "💰 <b>Economy:</b>\n"
         "• /economy - Saari paise wali commands dekhein\n\n"
         "🎮 <b>Games:</b>\n"
         "• /game - Bomb game ke rules dekhein\n\n"
         "✨ Use commands by replying to a user!"
     )
-    await update.message.reply_text(text=help_text, parse_mode=ParseMode.HTML)
+    # Help menu me bhi Back button de diya hai
+    await update.message.reply_text(text=help_text, reply_markup=get_back_to_start(), parse_mode=ParseMode.HTML)
 
-# --- 💣 BOMB GAME COMMAND (/game) ---
+# --- 🛡 MANAGEMENT COMMANDS ---
+async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type == "private": return
+    await update.message.reply_text("🚫 <b>Banned!</b>", parse_mode=ParseMode.HTML)
+
+async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type == "private": return
+    await update.message.reply_text("🤐 <b>Muted!</b>", parse_mode=ParseMode.HTML)
+
+# --- 💣 GAME COMMAND ---
 async def game_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bomb_text = (
         "💣 <b>Bomb Game Rules</b>\n\n"
@@ -79,17 +88,23 @@ async def game_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(text=bomb_text, parse_mode=ParseMode.HTML)
 
-# --- 🛡 MANAGEMENT COMMANDS ---
-async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Short Logic: Admin check aur Ban
-    if update.effective_chat.type == "private": return
-    await update.message.reply_text("🚫 User has been banned successfully!")
+# --- 💰 ECONOMY COMMAND ---
+async def economy_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    eco_text = (
+        "💰 <b>Baka Economy System Guide</b>\n\n"
+        "💬 <b>How it works:</b>\n"
+        "Manage your virtual money and items in the group!\n\n"
+        "🔹 <b>Normal Users ( 👤 ):</b>\n"
+        "• /daily — Receive $1000 daily reward\n"
+        "• /bal — Check balance\n"
+        "• /rob (reply) &lt;amount&gt; — Max $10k\n"
+        "• /kill (reply) — Reward $100-200\n"
+        "• /revive (reply) — Revive friend\n"
+        "• /give (reply) &lt;amount&gt; — Gift money\n"
+    )
+    await update.message.reply_text(text=eco_text, parse_mode=ParseMode.HTML)
 
-async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type == "private": return
-    await update.message.reply_text("🤐 User has been muted!")
-
-# --- 🖱️ CALLBACK HANDLER ---
+# --- 🖱️ MAIN START CALLBACK HANDLER ---
 async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
@@ -101,3 +116,16 @@ async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "game_features":
         game_text = "🎮 <b>Game Features</b>\n\nTo know about <b>Lottery</b>, tap /game\nTo know about <b>Economy</b>, tap /economy\n\nLucky 🍀"
         await query.message.edit_caption(caption=game_text, reply_markup=get_back_to_start(), parse_mode=ParseMode.HTML)
+
+# --- 🆘 MISSING HELP CALLBACK (Yeh Function Add Kiya Hai) ---
+async def help_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles callbacks coming from Help menu or Ryan.py generic handler."""
+    query = update.callback_query
+    data = query.data
+
+    # Agar Ryan.py mein 'return_start' is function par bheja ja raha hai
+    if data == "return_start":
+        await start(update, context)
+    else:
+        # Koi aur help button dabaya ho toh
+        await query.answer()
