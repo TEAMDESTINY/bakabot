@@ -1,9 +1,9 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Integrated Code - Fixed Help Callback Error
+# Final Start Plugin - Matches All Screenshots Exactly
 
 import html
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ContextTypes, PrefixHandler
+from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from baka.config import BOT_NAME, START_IMG_URL, OWNER_LINK
 from baka.utils import ensure_user_exists, track_group
@@ -49,83 +49,115 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_photo(photo=START_IMG_URL, caption=caption, reply_markup=kb, parse_mode=ParseMode.HTML)
 
-# --- ❓ HELP COMMAND (.help) ---
+# --- 🛡 ADMIN HELP COMMAND (.help) ---
+# Yeh wahi menu hai jo aapke Screenshot 4 mein hai
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Updated Help Menu showing . commands"""
     help_text = (
-        "📖 <b>Baka Help Menu</b>\n\n"
-        "🛠 <b>Management:</b>\n"
-        "• .ban - User ko hamesha ke liye nikaalein\n"
-        "• .mute - User ko chup karayein\n"
-        "• .kick - User ko group se nikaalein\n\n"
-        "💰 <b>Economy:</b>\n"
-        "• /economy - Saari paise wali commands dekhein\n\n"
-        "🎮 <b>Games:</b>\n"
-        "• /game - Bomb game ke rules dekhein\n\n"
-        "✨ Use commands by replying to a user!"
+        "🛡 <b>Admin Commands (.prefix only):</b>\n"
+        ".warn [reply] - Warn a user (3 = ban)\n"
+        ".unwarn [reply] - Remove 1 warning\n"
+        ".mute [reply]/[user id] [time]- Mute temporarily/permanently\n"
+        ".unmute [reply]/[user id] - Unmute the user\n"
+        ".ban [reply]/[user id] - Ban user\n"
+        ".unban [reply]/[user id] - Unban user\n"
+        ".kick [reply]/[user id] - Kick from group\n"
+        ".promote [reply]/[user id] 1/2/3 - Promote replied user to admin\n"
+        ".demote [reply]/[user id]- Demote admin\n"
+        ".title [reply]/[user id] [tag] - Set custom title\n"
+        ".pin [reply] - Pin a message\n"
+        ".unpin - Unpin the current message\n"
+        ".d - delete a message\n"
+        ".help - Show this help"
     )
-    # Help menu me bhi Back button de diya hai
-    await update.message.reply_text(text=help_text, reply_markup=get_back_to_start(), parse_mode=ParseMode.HTML)
+    await update.message.reply_text(text=help_text, parse_mode=ParseMode.HTML)
 
-# --- 🛡 MANAGEMENT COMMANDS ---
-async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type == "private": return
-    await update.message.reply_text("🚫 <b>Banned!</b>", parse_mode=ParseMode.HTML)
-
-async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type == "private": return
-    await update.message.reply_text("🤐 <b>Muted!</b>", parse_mode=ParseMode.HTML)
-
-# --- 💣 GAME COMMAND ---
-async def game_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    bomb_text = (
-        "💣 <b>Bomb Game Rules</b>\n\n"
-        "1️⃣ /bomb &lt;amount&gt; - Start a bomb game\n"
-        "2️⃣ /join &lt;amount&gt; - Join the game\n"
-        "3️⃣ /pass - Pass the bomb\n"
-        "4️⃣ /myrank - Check rank\n\n"
-        "🎯 Be fast! Hold the bomb too long and BOOM 💥"
-    )
-    await update.message.reply_text(text=bomb_text, parse_mode=ParseMode.HTML)
-
-# --- 💰 ECONOMY COMMAND ---
+# --- 💰 ECONOMY COMMAND (/economy) ---
+# Matches Screenshot 1
 async def economy_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
     eco_text = (
         "💰 <b>Baka Economy System Guide</b>\n\n"
         "💬 <b>How it works:</b>\n"
-        "Manage your virtual money and items in the group!\n\n"
+        "Manage your virtual money and items in the group! Use commands below to earn, gift, buy, or interact with others.\n\n"
         "🔹 <b>Normal Users ( 👤 ):</b>\n"
         "• /daily — Receive $1000 daily reward\n"
-        "• /bal — Check balance\n"
-        "• /rob (reply) &lt;amount&gt; — Max $10k\n"
+        "• /claim — Add Baka in group to claim 10k+\n"
+        "• /bal — Check your/your friend's balance ( 👤 prefix)\n"
+        "• /rob (reply) <span class=\"tg-spoiler\">amount</span> — Max $10k\n"
         "• /kill (reply) — Reward $100-200\n"
-        "• /revive (reply) — Revive friend\n"
-        "• /give (reply) &lt;amount&gt; — Gift money\n"
+        "• /revive (reply or without reply) — Revive you or a friend\n"
+        "• /protect 1d — Buy protection\n"
+        "• /give (reply) <span class=\"tg-spoiler\">amount</span> — Gift money (10% fee)\n"
+        "• /toprich — See top 10 richest users ( 👤 normal)\n"
+        "• /topkill — See top 10 killers ( 👤 normal)\n\n"
+        "👤 Normal users can rob and kill 200 users ."
     )
+    # Note: Using HTML safely. Telegram text usually doesn't show colors unless coded, 
+    # but this structure matches your image structure.
     await update.message.reply_text(text=eco_text, parse_mode=ParseMode.HTML)
 
-# --- 🖱️ MAIN START CALLBACK HANDLER ---
+# --- 💣 GAME COMMAND (/game) ---
+# Matches Screenshot 3
+async def game_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    bomb_text = (
+        "💣 <b>Bomb Game Rules</b>\n\n"
+        "1️⃣ /bomb &lt;amount&gt; - Start a bomb game\n"
+        "with entry fee\n"
+        "2️⃣ /join &lt;amount&gt; - Join the game before it\n"
+        "starts\n"
+        "3️⃣ /pass - Pass the bomb when you have it\n"
+        "4️⃣ /myrank - Check your or your friend's rank\n"
+        "5️⃣ /leaders - Check bomb game leaderboard\n\n"
+        "⚡ <b>Rules</b>\n"
+        "• Minimum 2 players required\n"
+        "• Bomb explodes randomly every round\n"
+        "• Last player alive wins the pot\n\n"
+        "❗ <b>Admin Power</b>\n"
+        "• Admins can cancel game using /bombcancel\n"
+        "• Entry fees will be refunded\n\n"
+        "🎯 Be fast! Hold the bomb too long and BOOM\n"
+        "💥"
+    )
+    await update.message.reply_text(text=bomb_text, parse_mode=ParseMode.HTML)
+
+# --- 🖱️ CALLBACK HANDLER ---
 async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
     
     if data == "return_start":
         await start(update, context)
+        
     elif data == "talk_baka":
-        await query.message.edit_caption(caption="To talk to me, just send me any message 💬✨", reply_markup=get_back_to_start(), parse_mode=ParseMode.HTML)
+        # Matches Text response for Talk
+        talk_text = "To talk to me, just send me any message 💬✨"
+        try:
+            await query.message.edit_caption(
+                caption=talk_text, 
+                reply_markup=get_back_to_start(), 
+                parse_mode=ParseMode.HTML
+            )
+        except: pass
+        
     elif data == "game_features":
-        game_text = "🎮 <b>Game Features</b>\n\nTo know about <b>Lottery</b>, tap /game\nTo know about <b>Economy</b>, tap /economy\n\nLucky 🍀"
-        await query.message.edit_caption(caption=game_text, reply_markup=get_back_to_start(), parse_mode=ParseMode.HTML)
+        # Matches Screenshot 2
+        game_text = (
+            "🎮 <b>Game Features</b>\n\n"
+            "To know about the <b>Lottery System</b>, tap /game\n"
+            "To know about the <b>Economy System</b>, tap /economy\n\n"
+            "Have fun and be lucky 🍀"
+        )
+        try:
+            await query.message.edit_caption(
+                caption=game_text, 
+                reply_markup=get_back_to_start(), 
+                parse_mode=ParseMode.HTML
+            )
+        except: pass
 
-# --- 🆘 MISSING HELP CALLBACK (Yeh Function Add Kiya Hai) ---
+# --- 🆘 HELP CALLBACK (Fix for AttributeError) ---
 async def help_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handles callbacks coming from Help menu or Ryan.py generic handler."""
     query = update.callback_query
-    data = query.data
-
-    # Agar Ryan.py mein 'return_start' is function par bheja ja raha hai
-    if data == "return_start":
+    if query.data == "return_start":
         await start(update, context)
     else:
-        # Koi aur help button dabaya ho toh
         await query.answer()
