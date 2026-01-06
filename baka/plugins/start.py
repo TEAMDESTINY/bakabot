@@ -10,14 +10,13 @@ from baka.utils import ensure_user_exists, track_group
 
 # --- 💠 KEYBOARDS ---
 def get_start_keyboard(bot_username):
-    # Match with image_0cce46.png grid + Your Custom Name
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("💬 𝚃𝙰𝙻𝙺 𝚃𝙾 𝙱𝙰𝙺𝙰", callback_data="talk_baka"),
-            InlineKeyboardButton("⏤͟͞ 𝘽𝘼𝙆𝘼", url=OWNER_LINK) # Updated as requested
+            InlineKeyboardButton("⏤͟͞ 𝘽𝘼𝙆𝘼", url=OWNER_LINK)
         ],
         [
-            InlineKeyboardButton("🧸 𝙵𝚁𝙸𝙴𝙽𝙳𝚂", url="https://t.me/your_channel"),
+            InlineKeyboardButton("🧸 𝙵𝚁𝙸𝙴𝙽𝙳𝚂", url="https://t.me/hamaribaka"),
             InlineKeyboardButton("𝙶𝙰𝙼𝙴𝚂 🎮", callback_data="game_features")
         ],
         [
@@ -33,11 +32,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     chat = update.effective_chat
     
-    # Database Sync
     ensure_user_exists(user)
     track_group(chat, user)
     
-    # Styled Text as per image_0cce46.png
     caption = (
         f"✨ <b>𝙷𝚎𝚢 — {user.first_name} ~</b>\n"
         f"💌 𝚈𝚘𝚞'𝚛𝚎 𝚃𝚊𝚕𝚔𝚒𝚗𝚐 𝚃𝚘 𝙱𝙰𝙺𝙰, 𝙰 𝚂𝚊𝚜𝚜𝚢 𝙲𝚞𝚝𝚒𝚎 𝙶𝚒𝚛𝚕 💕\n\n"
@@ -63,8 +60,19 @@ async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "return_start":
         await start(update, context)
         
+    elif data == "talk_baka":
+        # Screenshot wala message yahan add kiya gaya hai
+        talk_text = "To talk to me, just send me any message 💬✨"
+        try:
+            await query.message.edit_caption(
+                caption=talk_text, 
+                reply_markup=get_back_to_start(), 
+                parse_mode=ParseMode.HTML
+            )
+        except:
+            pass
+        
     elif data == "game_features":
-        # Text exactly as per image_0cd208.png
         game_text = (
             "🎮 <b>Game Features</b>\n\n"
             "To know about the <b>Lottery System</b>, tap /game\n"
