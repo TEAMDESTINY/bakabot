@@ -14,15 +14,15 @@ from baka.config import OWNER_ID, SUDO_IDS, LOGGER_ID, BOT_NAME
 SUDO_USERS = set()
 
 def reload_sudoers():
-    """Sudo users ko database aur config se load karta hai."""
+    """Loads sudo users from both config and database."""
     try:
         SUDO_USERS.clear()
         SUDO_USERS.add(OWNER_ID)
-        # Config se list IDs load karna
+        # Load from Config
         if SUDO_IDS:
             for x in SUDO_IDS:
                 SUDO_USERS.add(int(x))
-        # Database se extra sudoers load karna
+        # Load from Database
         for doc in sudoers_collection.find({}):
             SUDO_USERS.add(doc["user_id"])
     except:
@@ -32,12 +32,12 @@ reload_sudoers()
 
 # --- ✨ CLEAN TEXT ENGINE ---
 def stylize_text(text):
-    """Normal text return karega."""
+    """Returns basic string representation of text."""
     return str(text)
 
 # --- 👤 MENTION SYSTEM ---
 def get_mention(user_data, custom_name=None):
-    """Clickable HTML link generator."""
+    """Generates a clickable HTML link for a user."""
     if isinstance(user_data, (User, Chat)):
         uid = user_data.id
         name = getattr(user_data, "first_name", getattr(user_data, "title", "User"))
@@ -52,15 +52,16 @@ def get_mention(user_data, custom_name=None):
 
 # --- 🛡️ PROTECTION ENGINE (STRICT CHECK) ---
 def get_active_protection(user_data):
-    """Check karta hai ki user abhi bhi protected hai ya nahi."""
+    """Checks if the user's protection is currently active."""
     if not user_data:
         return None
     try:
         now = datetime.utcnow()
-        # database.py ke naye field name 'protection_expiry' ke saath sync
+        # Matches 'protection_expiry' field used in economy.py and game.py
         expiry = user_data.get("protection_expiry")
-        # Strict Comparison: Agar expiry time bit chuka hai toh None bhejega
+        
         if expiry and isinstance(expiry, datetime):
+            # Strict Comparison: If current time is less than expiry, user is protected
             if expiry > now:
                 return expiry
         return None
@@ -68,15 +69,16 @@ def get_active_protection(user_data):
         return None
 
 def is_protected(user_data):
-    """Returns True agar protection active hai."""
+    """Returns True if the protection shield is active."""
     return get_active_protection(user_data) is not None
 
 # --- 🏰 GROUP TRACKER ---
 def track_group(chat, user=None):
+    """Tracks group activity and adds to database."""
     if chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
         groups_collection.update_one(
             {"chat_id": chat.id},
-            {"$set": {"title": chat.title}, "$setOnInsert": {"claimed": False}},
+            {"$set": {"title": chat.title}, "$setOnInsert": {"claimed": False, "economy_enabled": True}},
             upsert=True
         )
         if user:
@@ -84,10 +86,11 @@ def track_group(chat, user=None):
 
 # --- 💰 ECONOMY UTILS ---
 def format_money(amount): 
+    """Formats integer into currency string (e.g., $1,000)."""
     return f"${amount:,}"
 
 def ensure_user_exists(tg_user):
-    """User ko database mein ensure karta hai (Bots/Anon excluded)."""
+    """Ensures user exists in DB. Excludes bots and anonymous admins."""
     if not tg_user or tg_user.is_bot or tg_user.id == 1087968824:
         return None
         
@@ -96,16 +99,22 @@ def ensure_user_exists(tg_user):
     
     if not user_doc:
         new_user = {
-            "user_id": tg_user.id, "name": tg_user.first_name, "username": un,
-            "balance": 500, "status": "alive", "kills": 0, "daily_kills": 0, "daily_robs": 0,
-            "protection_expiry": None # Sync with database.py
+            "user_id": tg_user.id, 
+            "name": tg_user.first_name, 
+            "username": un,
+            "balance": 500, 
+            "status": "alive", 
+            "kills": 0, 
+            "daily_kills": 0, 
+            "daily_robs": 0,
+            "protection_expiry": None 
         }
         users_collection.insert_one(new_user)
         return new_user
     return user_doc
 
 async def resolve_target(update, context, specific_arg=None):
-    """Target user ko reply, ID ya username se dhundta hai."""
+    """Finds target user by reply, ID, or username."""
     if update.message.reply_to_message:
         target = update.message.reply_to_message.from_user
         if target.is_bot or target.id == 1087968824:
@@ -113,18 +122,19 @@ async def resolve_target(update, context, specific_arg=None):
         return ensure_user_exists(target), None
     
     query = specific_arg or (context.args[0] if context.args else None)
-    if not query: return None, "No target"
+    if not query: return None, "No target provided"
     
     if str(query).isdigit():
         doc = users_collection.find_one({"user_id": int(query)})
-        return (doc, None) if doc else (None, "ID not found")
+        return (doc, None) if doc else (None, "ID not found in database")
     
     clean_un = query.replace("@", "").lower()
     doc = users_collection.find_one({"username": clean_un})
-    return (doc, None) if doc else (None, "User not found")
+    return (doc, None) if doc else (None, "Username not found")
 
 # --- 🌟 LOGGING & NOTIFY ---
 async def log_to_channel(bot: Bot, event_type: str, details: dict):
+    """Sends stylized logs to the LOGGER_ID channel."""
     if not LOGGER_ID or LOGGER_ID == 0: return
     now = datetime.now().strftime("%I:%M:%S %p")
     text = f"📜 <b>{event_type.upper()}</b>\n━━━━━━━━━━━━━━━━━━\n"
@@ -136,6 +146,7 @@ async def log_to_channel(bot: Bot, event_type: str, details: dict):
     except: pass
 
 async def notify_victim(bot, user_id, message_text):
+    """Sends a private message to a user (e.g., when robbed or killed)."""
     try: 
         await bot.send_message(chat_id=user_id, text=message_text, parse_mode=ParseMode.HTML)
     except: pass
