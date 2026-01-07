@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Database Logic - Sync with Game & Utils
+# Final Database Logic - Sync with Game, Economy Toggle & Utils
 
 from pymongo import MongoClient, ASCENDING
 import certifi
@@ -20,16 +20,16 @@ sudoers_collection = db["sudoers"]
 chatbot_collection = db["chatbot"]
 riddles_collection = db["riddles"]
 
-# Indexes
+# Indexes for faster performance
 users_collection.create_index([("user_id", ASCENDING)], unique=True)
 groups_collection.create_index([("chat_id", ASCENDING)], unique=True)
 
 # --------------------------------------------------
-# 👤 USER LOGIC (Fixed Field Names)
+# 👤 USER LOGIC (Synchronized Fields)
 # --------------------------------------------------
 
 def ensure_user(user):
-    """Create or Sync user data atomically."""
+    """Create or Sync user data atomically. Includes protection fields."""
     users_collection.update_one(
         {"user_id": user.id},
         {
@@ -42,7 +42,8 @@ def ensure_user(user):
                 "status": "alive",
                 "waifus": [],
                 "inventory": [],
-                "protection_expiry": None, # Syncing with game.py
+                "protection_expiry": None, # Sync with utils.is_protected
+                "last_daily_claim": None,  # Sync with economy.daily_bonus
                 "created_at": datetime.utcnow()
             },
             "$set": {
@@ -55,10 +56,11 @@ def ensure_user(user):
     return users_collection.find_one({"user_id": user.id})
 
 # --------------------------------------------------
-# 🏰 GROUP LOGIC
+# 🏰 GROUP LOGIC (Economy Toggles Support)
 # --------------------------------------------------
 
 def get_group_data(chat_id, title=None):
+    """Retrieves group data. Default economy status is Enabled."""
     group = groups_collection.find_one({"chat_id": chat_id})
     if not group:
         group = {
@@ -66,6 +68,7 @@ def get_group_data(chat_id, title=None):
             "title": title or "Unknown Group",
             "treasury": 10000,
             "claimed": False,
+            "economy_enabled": True,  # Required for /open and /close
             "daily_activity": 0,
             "weekly_activity": 0,
             "last_active": int(time.time())
@@ -74,6 +77,7 @@ def get_group_data(chat_id, title=None):
     return group
 
 def update_group_activity(chat_id, title=None):
+    """Tracks messages and activity scores for groups."""
     groups_collection.update_one(
         {"chat_id": chat_id},
         {
@@ -84,12 +88,13 @@ def update_group_activity(chat_id, title=None):
     )
 
 # --------------------------------------------------
-# 🛡️ PROTECTION CLEANUP (Fixed Field Name)
+# 🛡️ PROTECTION CLEANUP
 # --------------------------------------------------
 
 def cleanup_expired_protection():
-    """Sync with protection_expiry field name."""
+    """Automatically resets expired protection shields to None."""
     now = datetime.utcnow()
+    # If the current time is greater than expiry, reset the shield
     result = users_collection.update_many(
         {"protection_expiry": {"$lte": now}},
         {"$set": {"protection_expiry": None}}
