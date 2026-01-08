@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - FULL HANDLER SYNC (ECONOMY, GAMES, ADMIN, & TOGGLES)
+# FINAL MASTER RYAN.PY - FULL HANDLER SYNC (ECONOMY, GAMES, ADMIN, TOGGLES & FLASH)
 
 import os
 import logging
@@ -24,7 +24,8 @@ try:
     from baka.utils import BOT_NAME
     from baka.plugins import (
         start, economy, game, admin, broadcast, fun, events, 
-        ping, chatbot, riddle, waifu, shop, couple, bomb, welcome
+        ping, chatbot, riddle, waifu, shop, couple, bomb, welcome,
+        flash_event  # New: Flash Event Plugin
     )
 except ImportError as e:
     print(f"❌ Critical Import Error: {e}")
@@ -56,7 +57,8 @@ async def post_init(application):
         ("items", "🌹 𝙶𝚒𝚏𝚝 𝚂𝚑𝚘𝚙 𝙸𝚝𝚎𝚖𝚜"),
         ("item", "🌹 𝙼𝚢 𝙸𝚗𝚟𝚎𝚗𝚝𝚘𝚛𝚢"),
         ("myrank", "🌹 𝙶𝚕𝚘𝚋𝚊𝚕 𝚁𝚊𝚗𝚔 𝚂𝚝𝚊𝚝𝚜"),
-        ("economy", "🌹 𝙴𝚌𝚘𝚗𝚘𝚖𝚢 𝙶𝚞𝚒𝚍𝚎 𝙱𝚘𝚘𝚔")
+        ("economy", "🌹 𝙴𝚌𝚘𝚗𝚘𝚖𝚢 𝙶𝚞𝚒𝚍𝚎 𝙱𝚘𝚘𝚔"),
+        ("collect", "🎁 𝙵𝚕𝚊𝚜𝚑 𝙲𝚘𝚕𝚕𝚎𝚌𝚝 𝙴𝚟𝚎𝚗𝚝") # New Menu Item
     ]
     await application.bot.set_my_commands(commands)
     print(f"✅ {BOT_NAME} Rose-Styled Menu Synchronized!")
@@ -74,15 +76,11 @@ if __name__ == '__main__':
 
         # 1. 🌹 Core & Welcome Handlers
         app_bot.add_handler(CommandHandler("start", start.start))
-        
-        # ✅ PrefixHandler for .help and /help support
         app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command))
-        
-        # ✅ Guides for Games & Economy
         app_bot.add_handler(CommandHandler("game", start.game_guide))
         app_bot.add_handler(CommandHandler("economy", start.economy_guide))
         
-        # ✅ Callback Handlers (Talk, Games, Back Button, Help)
+        # Callback Handlers
         app_bot.add_handler(CallbackQueryHandler(start.start_callback, pattern="^(talk_baka|game_features|return_start)$"))
         app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_"))
         
@@ -97,6 +95,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
         app_bot.add_handler(CommandHandler("bombcancel", bomb.bomb_cancel)) 
+        app_bot.add_handler(CommandHandler("setflash", flash_event.set_flash)) # Admin: Schedule 20s Event
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
         # 3. 💰 Economy System
@@ -125,9 +124,10 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("leaders", bomb.bomb_leaders)) 
         app_bot.add_handler(CommandHandler("bombrank", bomb.bomb_myrank)) 
 
-        # 6. 🧠 AI & Fun
+        # 6. 🧠 AI, Fun & Flash Event
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
         app_bot.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), chatbot.ai_message_handler))
+        app_bot.add_handler(CommandHandler("collect", flash_event.collect)) # New: 20s Flash Collect
         app_bot.add_handler(CommandHandler("couple", couple.couple)) 
         app_bot.add_handler(CommandHandler("waifu", waifu.waifu_cmd)) 
         app_bot.add_handler(CommandHandler("riddle", riddle.riddle))
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("claim", events.claim_group))
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         
-        # ✅ Economy Enable/Disable
+        # Economy Enable/Disable
         app_bot.add_handler(CommandHandler("open", events.open_economy))
         app_bot.add_handler(CommandHandler("close", events.close_economy))
         
