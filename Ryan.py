@@ -1,5 +1,3 @@
-# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - FULL HANDLER SYNC (ECONOMY, GAMES, ADMIN, TOGGLES & FLASH)
 
 import os
 import logging
