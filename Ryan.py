@@ -25,7 +25,7 @@ try:
     from baka.plugins import (
         start, economy, game, admin, broadcast, fun, events, 
         ping, chatbot, riddle, waifu, shop, couple, bomb, welcome,
-        flash_event  # New: Flash Event Plugin
+        flash_event  #
     )
 except ImportError as e:
     print(f"❌ Critical Import Error: {e}")
@@ -41,27 +41,27 @@ def run_flask():
 
 # --- 🌹 STYLIZED STARTUP MENU SYNC ---
 async def post_init(application):
-    """Syncs the stylized command list to the bot menu button."""
+    """Syncs the command list to the bot menu button with custom 𝐒ᴛʏʟɪᴢᴇᴅ font."""
     commands = [
-        ("start", "🌹 𝚂𝚝𝚊𝚛𝚝 𝙼𝚊𝚒𝚗 𝙼𝚎𝚗𝚞"), 
-        ("help", "🌹 𝙷𝚎𝚕𝚙 𝙶𝚞𝚒𝚍𝚎 𝙳𝚒𝚊𝚛𝚢"),
-        ("bal", "🌹 𝚆𝚊𝚕𝚕𝚎𝚝 𝙱𝚊𝚕𝚊𝚗𝚌𝚎"), 
-        ("toprich", "🌹 𝚁𝚒𝚌𝚑 𝙻𝚎𝚊𝚍𝚎𝚛𝚋𝚘𝚊𝚛𝚍"), 
-        ("topkill", "🌹 𝙺𝚒𝚕𝚕 𝙻𝚎𝚊𝚍𝚎𝚛𝚋𝚘𝚊𝚛𝚍"),
-        ("daily", "🌹 𝙲𝚕𝚊𝚒𝚖 $𝟷𝟶𝟶𝟶 (𝙳𝚖 𝙾𝚗𝚕𝚢)"),
-        ("bomb", "🌹 𝚂𝚝𝚊𝚛𝚝 𝙱𝚘𝚖𝚋 𝙶𝚊𝚖𝚎"),
-        ("leaders", "🌹 𝙱𝚘𝚖𝚋 𝙶𝚊𝚖𝚎 𝚁𝚊𝚗𝚔𝚒𝚗𝚐𝚜"),
-        ("claim", "🌹 𝙶𝚛𝚘𝚞𝚙 𝚁𝚎𝚠𝚊𝚛𝚍 𝙲𝚕𝚊𝚒𝚖"),
-        ("kill", "🌹 𝙺𝚒𝚕𝚕 𝚂𝚘𝚖𝚎𝚘𝚗𝚎"), 
-        ("rob", "🌹 𝚂𝚝𝚎𝚊𝚕 𝙼𝚘𝚗𝚎𝚢 (𝙻𝚒𝚖𝚒𝚝)"),
-        ("items", "🌹 𝙶𝚒𝚏𝚝 𝚂𝚑𝚘𝚙 𝙸𝚝𝚎𝚖𝚜"),
-        ("item", "🌹 𝙼𝚢 𝙸𝚗𝚟𝚎𝚗𝚝𝚘𝚛𝚢"),
-        ("myrank", "🌹 𝙶𝚕𝚘𝚋𝚊𝚕 𝚁𝚊𝚗𝚔 𝚂𝚝𝚊𝚝𝚜"),
-        ("economy", "🌹 𝙴𝚌𝚘𝚗𝚘𝚖𝚢 𝙶𝚞𝚒𝚍𝚎 𝙱𝚘𝚘𝚔"),
-        ("collect", "🎁 𝙵𝚕𝚊𝚜𝚑 𝙲𝚘𝚕𝚕𝚎𝚌𝚝 𝙴𝚟𝚎𝚗𝚝") # New Menu Item
+        ("start", "𝐒ᴛᴀʀᴛ ᴛʜᴇ 𝐒ʏꜱᴛᴇᴍ 🌹"), 
+        ("help", "𝐇ᴇʟ𝐩 𝐆ᴜɪᴅᴇ 𝐃ɪᴀʀ𝐲 🌹"),
+        ("bal", "𝐖ᴀ𝐋ʟᴇᴛ 𝐁ᴀ𝐋ᴀɴᴄᴇ 🌹"), 
+        ("toprich", "𝐑ɪ𝐂𝐡 𝐋ᴇᴀ𝐃ᴇʀ𝐁𝐨𝐚𝐑𝐝 🌹"), 
+        ("topkill", "𝐊ɪ𝐋ʟ 𝐋ᴇᴀ𝐃ᴇʀ𝐁𝐨𝐚𝐑𝐝 🌹"),
+        ("daily", "𝐂ʟᴀɪᴍ 𝐃ᴀɪ𝐋ʏ 𝐑ᴇ𝐖ᴀ𝐑𝐝 🌹"),
+        ("bomb", "𝐒ᴛᴀ𝐑ᴛ 𝐁𝐨𝐌𝐛 𝐆ᴀ𝐌ᴇ 🌹"),
+        ("leaders", "𝐁𝐨𝐌𝐛 𝐆ᴀ𝐌ᴇ 𝐑ᴀɴ𝐊𝐢ɴ𝐆𝐬 🌹"),
+        ("claim", "𝐆𝐫𝐨𝐔𝐩 𝐑ᴇ𝐖ᴀ𝐑𝐝 𝐂ʟᴀ𝐈𝐦 🌹"),
+        ("kill", "𝐊ɪ𝐋ʟ 𝐒𝐨𝐌ᴇ𝐨𝐍ᴇ 🌹"), 
+        ("rob", "𝐒ᴛᴇᴀ𝐋 𝐌𝐨𝐍ᴇ𝐘 🌹"),
+        ("items", "𝐆ɪ𝐅𝐭 𝐒𝐡𝐎𝐩 𝐈ᴛᴇ𝐌𝐬 🌹"),
+        ("item", "𝐌ʏ 𝐈ɴ𝐕ᴇ𝐍ᴛ𝐨𝐑𝐲 🌹"),
+        ("myrank", "𝐆𝐥𝐎𝐛𝐀𝐥 𝐑ᴀɴ𝐊 𝐒ᴛᴀ𝐓𝐬 🌹"),
+        ("economy", "𝐄𝐜𝐎ɴ𝐨𝐌ʏ 𝐆ᴜ𝐈𝐝𝐄 𝐁𝐨𝐎𝐤 🌹"),
+        ("collect", "𝐅𝐥𝐀𝐬𝐇 𝐂𝐨𝐋ʟᴇ𝐂𝐭 𝐄𝐯𝐄ɴᴛ 🌹") #
     ]
     await application.bot.set_my_commands(commands)
-    print(f"✅ {BOT_NAME} Rose-Styled Menu Synchronized!")
+    print(f"✅ {BOT_NAME} Stylized Command Menu Synchronized!") #
 
 # --- MAIN ENGINE ---
 if __name__ == '__main__':
@@ -74,9 +74,9 @@ if __name__ == '__main__':
         t_request = HTTPXRequest(connection_pool_size=30, read_timeout=40.0)
         app_bot = ApplicationBuilder().token(TOKEN).request(t_request).post_init(post_init).build()
 
-        # 1. 🌹 Core & Welcome Handlers
+        # 1. 🌹 Core Handlers
         app_bot.add_handler(CommandHandler("start", start.start))
-        app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command))
+        app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command)) #
         app_bot.add_handler(CommandHandler("game", start.game_guide))
         app_bot.add_handler(CommandHandler("economy", start.economy_guide))
         
@@ -95,12 +95,12 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
         app_bot.add_handler(CommandHandler("bombcancel", bomb.bomb_cancel)) 
-        app_bot.add_handler(CommandHandler("setflash", flash_event.set_flash)) # Admin: Schedule 20s Event
+        app_bot.add_handler(CommandHandler("setflash", flash_event.set_flash)) #
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
         # 3. 💰 Economy System
         app_bot.add_handler(CommandHandler("bal", economy.balance))
-        app_bot.add_handler(CommandHandler("daily", economy.daily_bonus)) 
+        app_bot.add_handler(CommandHandler("daily", economy.daily_bonus)) #
         app_bot.add_handler(CommandHandler("toprich", economy.toprich))   
         app_bot.add_handler(CommandHandler("myrank", economy.my_rank))    
         app_bot.add_handler(CommandHandler("give", economy.give))
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
         # 4. ⚔️ Game & Combat
         app_bot.add_handler(CommandHandler("kill", game.kill))
-        app_bot.add_handler(CommandHandler("rob", game.rob)) 
+        app_bot.add_handler(CommandHandler("rob", game.rob)) #
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
 
@@ -124,10 +124,10 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("leaders", bomb.bomb_leaders)) 
         app_bot.add_handler(CommandHandler("bombrank", bomb.bomb_myrank)) 
 
-        # 6. 🧠 AI, Fun & Flash Event
+        # 6. 🧠 AI & Flash Event
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
         app_bot.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), chatbot.ai_message_handler))
-        app_bot.add_handler(CommandHandler("collect", flash_event.collect)) # New: 20s Flash Collect
+        app_bot.add_handler(CommandHandler("collect", flash_event.collect)) #
         app_bot.add_handler(CommandHandler("couple", couple.couple)) 
         app_bot.add_handler(CommandHandler("waifu", waifu.waifu_cmd)) 
         app_bot.add_handler(CommandHandler("riddle", riddle.riddle))
@@ -139,8 +139,8 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         
         # Economy Enable/Disable
-        app_bot.add_handler(CommandHandler("open", events.open_economy))
-        app_bot.add_handler(CommandHandler("close", events.close_economy))
+        app_bot.add_handler(CommandHandler("open", events.open_economy)) #
+        app_bot.add_handler(CommandHandler("close", events.close_economy)) #
         
         # Tracking & Logs
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
