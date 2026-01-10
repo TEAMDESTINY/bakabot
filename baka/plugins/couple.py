@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Couple Plugin with Group Admin/Member Sync & Image Generation
+# Final Couple Plugin - PNG Support & Group Sync
 
 import os
 import random
@@ -12,12 +12,12 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode, ChatType
 
-from baka.utils import stylize_text
+from baka.utils import stylize_text, get_mention
 from baka.database import users_collection
 
 # --- Path Settings ---
 ASSETS = Path("baka/assets")
-BG_PATH = ASSETS / "couple.jpg"  # Ensure your background is named exactly couple.jpg
+BG_PATH = ASSETS / "couple.png"  # Fixed to .png as per your setup
 TEMP_DIR = Path("temp_couples")
 
 if not TEMP_DIR.exists():
@@ -41,7 +41,7 @@ async def get_circular_avatar(bot, user_id):
             path = TEMP_DIR / f"avatar_{user_id}.png"
             await file.download_to_drive(path)
             
-            # Processing the image to 486x486 circle
+            # Processing to 486x486 circle
             img = Image.open(path).convert("RGBA").resize((486, 486))
             mask = Image.new("L", (486, 486), 0)
             draw = ImageDraw.Draw(mask)
@@ -55,7 +55,7 @@ async def get_circular_avatar(bot, user_id):
             return output
     except Exception:
         pass
-    # Gray fallback circle if user has no photo
+    # Fallback default circle
     return Image.new("RGBA", (486, 486), (220, 220, 220, 255))
 
 async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -66,7 +66,7 @@ async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
     today = get_today_date()
     chat_id = chat.id
 
-    # 1. 24-Hour Cache Check (Selection stays same for the day)
+    # 1. 24-Hour Cache Check
     if chat_id in couple_cache and couple_cache[chat_id]['date'] == today:
         data = couple_cache[chat_id]
         return await update.message.reply_photo(
@@ -75,33 +75,30 @@ async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.HTML
         )
 
-    # 2. Get Group Members from DB
-    # We fetch users who have been seen in this specific group
+    # 2. Fetch Active Group Members from Database
     members = list(users_collection.find({"seen_groups": chat_id}))
     
     if len(members) < 2:
-        # Fallback if group tracking is fresh
         members = list(users_collection.find().limit(50))
 
     if len(members) < 2:
-        return await update.message.reply_text("⚠️ Not enough members found in my database for this group.")
+        return await update.message.reply_text("⚠️ Not enough members found in the database for this group.")
 
     # 3. Pick Two Random Distinct Members
     c1_db, c2_db = random.sample(members, 2)
     
     # 4. Generate Image
     if not BG_PATH.exists():
-        return await update.message.reply_text("❌ Background 'couple.jpg' missing in baka/assets/ folder!")
+        return await update.message.reply_text("❌ Background 'couple.png' missing in baka/assets/ folder!")
 
-    # Load Background
+    # Load Background with Alpha Support
     base = Image.open(BG_PATH).convert("RGBA")
     
-    # Download and process Avatars
+    # Process Avatars
     p1_img = await get_circular_avatar(context.bot, c1_db["user_id"])
     p2_img = await get_circular_avatar(context.bot, c2_db["user_id"])
 
-    # Paste Avatars onto the frame circles
-    # Coordinates (x, y) set to match the pink template circles
+    # Paste Avatars (Coordinates for your frame)
     base.paste(p1_img, (200, 315), p1_img) # Left circle
     base.paste(p2_img, (600, 315), p2_img) # Right circle
 
@@ -109,10 +106,8 @@ async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
     base.save(final_img_path)
 
     # 5. Formatting Mentions and Caption
-    m1_name = html.escape(c1_db.get("name", "User1"))
-    m2_name = html.escape(c2_db.get("name", "User2"))
-    m1 = f'<a href="tg://user?id={c1_db["user_id"]}">{m1_name}</a>'
-    m2 = f'<a href="tg://user?id={c2_db["user_id"]}">{m2_name}</a>'
+    m1 = get_mention(c1_db)
+    m2 = get_mention(c2_db)
     
     caption = (
         "<b>TODAY'S COUPLE OF THE DAY:</b>\n\n"
@@ -120,7 +115,7 @@ async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"<b>NEXT COUPLES WILL BE SELECTED ON {get_tomorrow_date()}!!</b>"
     )
 
-    # 6. Save to Cache and Send
+    # 6. Cache and Send
     couple_cache[chat_id] = {
         "date": today,
         "img_path": str(final_img_path),
