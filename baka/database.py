@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Database Logic - Sync with Economy, Protection & Flash Events
+# Final Database Logic - Sync with Economy, Protection, Flash & Broadcast
 
 from pymongo import MongoClient, ASCENDING
 import certifi
@@ -19,7 +19,8 @@ groups_collection   = db["groups"]
 sudoers_collection  = db["sudoers"]
 chatbot_collection  = db["chatbot"]
 riddles_collection  = db["riddles"]
-events_collection   = db["global_events"] # New: For Flash Events
+events_collection   = db["global_events"]
+broadcast_collection = db["broadcast_stats"] # New: For tracking broadcast history
 
 # Indexes for faster performance
 users_collection.create_index([("user_id", ASCENDING)], unique=True)
@@ -30,7 +31,7 @@ groups_collection.create_index([("chat_id", ASCENDING)], unique=True)
 # --------------------------------------------------
 
 def ensure_user(user):
-    """Create or Sync user data atomically."""
+    """Create or Sync user data atomically. Includes protection fields."""
     users_collection.update_one(
         {"user_id": user.id},
         {
@@ -46,7 +47,8 @@ def ensure_user(user):
                 "protection_expiry": None,      # Shield status
                 "last_daily_claim": None,       # 24h Daily tracker
                 "last_event_collected": None,   # Flash Event tracker
-                "created_at": datetime.utcnow()
+                "created_at": datetime.utcnow(),
+                "seen_groups": []               # To track which groups the user is in
             },
             "$set": {
                 "name": user.first_name,
@@ -110,6 +112,18 @@ def set_collect_event(event_date_time):
     """Sets the scheduled time for the 20-second flash event."""
     events_collection.update_one(
         {"event_name": "flash_collect"},
-        {"$set": {"start_at": event_date_time}},
+        {"$set": {"start_at": event_date_time}}, #
         upsert=True
     )
+
+# --------------------------------------------------
+# 📢 BROADCAST UTILS
+# --------------------------------------------------
+
+def get_all_chats():
+    """Returns list of all chat_ids for broadcasting."""
+    return [g["chat_id"] for g in groups_collection.find({}, {"chat_id": 1})]
+
+def get_all_users():
+    """Returns list of all user_ids for broadcasting."""
+    return [u["user_id"] for u in users_collection.find({}, {"user_id": 1})]
