@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Couple Plugin with Dynamic Image Generation (PIL)
+# Final Couple Plugin with Group Admin/Member Sync & Image Generation
 
 import os
 import random
@@ -17,30 +17,31 @@ from baka.database import users_collection
 
 # --- Path Settings ---
 ASSETS = Path("baka/assets")
-BG_PATH = ASSETS / "couple.png" # Place your couple.jpg/png here
+BG_PATH = ASSETS / "couple.jpg"  # Ensure your background is named exactly couple.jpg
 TEMP_DIR = Path("temp_couples")
 
 if not TEMP_DIR.exists():
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
-# Temporary storage for 5-minute lock
+# Cache to keep the same couple for 24 hours per group
 couple_cache = {}
 
-def get_today():
+def get_today_date():
     return datetime.now().strftime("%d/%m/%Y")
 
-def get_tomorrow():
+def get_tomorrow_date():
     return (datetime.now() + timedelta(days=1)).strftime("%d/%m/%Y")
 
-async def get_user_photo(bot, user_id):
-    """Downloads user profile photo and returns a circular PIL image."""
+async def get_circular_avatar(bot, user_id):
+    """Downloads user profile photo and converts it to a circular PIL image."""
     try:
         photos = await bot.get_user_profile_photos(user_id, limit=1)
         if photos.total_count > 0:
             file = await bot.get_file(photos.photos[0][-1].file_id)
-            path = TEMP_DIR / f"{user_id}.png"
+            path = TEMP_DIR / f"avatar_{user_id}.png"
             await file.download_to_drive(path)
             
+            # Processing the image to 486x486 circle
             img = Image.open(path).convert("RGBA").resize((486, 486))
             mask = Image.new("L", (486, 486), 0)
             draw = ImageDraw.Draw(mask)
@@ -54,82 +55,80 @@ async def get_user_photo(bot, user_id):
             return output
     except Exception:
         pass
-    # Fallback if no photo
-    return Image.new("RGBA", (486, 486), (200, 200, 200, 255))
+    # Gray fallback circle if user has no photo
+    return Image.new("RGBA", (486, 486), (220, 220, 220, 255))
 
 async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat.type == ChatType.PRIVATE:
-        return await update.message.reply_text("❌ Groups only!")
+        return await update.message.reply_text("❌ This command only works in groups.")
 
-    now = datetime.utcnow()
+    today = get_today_date()
     chat_id = chat.id
 
-    # 1. 5-Minute Cache Check
-    if chat_id in couple_cache:
+    # 1. 24-Hour Cache Check (Selection stays same for the day)
+    if chat_id in couple_cache and couple_cache[chat_id]['date'] == today:
         data = couple_cache[chat_id]
-        if now < data['expiry']:
-            rem = int((data['expiry'] - now).total_seconds())
-            msg = (
-                f"💞 <b>{stylize_text('Still Locked')}</b>\n\n"
-                f"{data['couple_str']}\n\n"
-                f"⏳ <i>New couple in {rem // 60}m {rem % 60}s!</i>"
-            )
-            return await update.message.reply_photo(photo=data['img_path'], caption=msg, parse_mode=ParseMode.HTML)
+        return await update.message.reply_photo(
+            photo=data['img_path'], 
+            caption=data['caption'], 
+            parse_mode=ParseMode.HTML
+        )
 
-    # 2. Pick Random Users from Database
-    all_users = list(users_collection.find({"chat_id": chat_id}).limit(100))
-    if len(all_users) < 2:
-        all_users = list(users_collection.find().limit(100))
-
-    if len(all_users) < 2:
-        return await update.message.reply_text("⚠️ Not enough user data in this group.")
-
-    c1, c2 = random.sample(all_users, 2)
+    # 2. Get Group Members from DB
+    # We fetch users who have been seen in this specific group
+    members = list(users_collection.find({"seen_groups": chat_id}))
     
-    # 3. Generate Image
+    if len(members) < 2:
+        # Fallback if group tracking is fresh
+        members = list(users_collection.find().limit(50))
+
+    if len(members) < 2:
+        return await update.message.reply_text("⚠️ Not enough members found in my database for this group.")
+
+    # 3. Pick Two Random Distinct Members
+    c1_db, c2_db = random.sample(members, 2)
+    
+    # 4. Generate Image
     if not BG_PATH.exists():
-        return await update.message.reply_text("❌ Background image missing in assets!")
+        return await update.message.reply_text("❌ Background 'couple.jpg' missing in baka/assets/ folder!")
 
+    # Load Background
     base = Image.open(BG_PATH).convert("RGBA")
-    p1 = await get_user_photo(context.bot, c1["user_id"])
-    p2 = await get_user_photo(context.bot, c2["user_id"])
-
-    # Coordinates based on your frame circles
-    base.paste(p1, (410, 500), p1)
-    base.paste(p2, (1395, 500), p2)
-
-    out_path = TEMP_DIR / f"final_{chat_id}.png"
-    base.save(out_path)
-
-    # 4. Create Mentions
-    m1_name = html.escape(c1.get("name", "User1"))
-    m2_name = html.escape(c2.get("name", "User2"))
-    m1 = f'<a href="tg://user?id={c1["user_id"]}">{m1_name}</a>'
-    m2 = f'<a href="tg://user?id={c2["user_id"]}">{m2_name}</a>'
     
-    couple_text = f"{m1} 💞 {m2}"
+    # Download and process Avatars
+    p1_img = await get_circular_avatar(context.bot, c1_db["user_id"])
+    p2_img = await get_circular_avatar(context.bot, c2_db["user_id"])
 
-    # 5. Cache Data
-    couple_cache[chat_id] = {
-        "couple_str": couple_text,
-        "img_path": str(out_path),
-        "expiry": now + timedelta(minutes=5)
-    }
+    # Paste Avatars onto the frame circles
+    # Coordinates (x, y) set to match the pink template circles
+    base.paste(p1_img, (200, 315), p1_img) # Left circle
+    base.paste(p2_img, (600, 315), p2_img) # Right circle
 
-    # 6. Final Caption
+    final_img_path = TEMP_DIR / f"couple_final_{chat_id}.png"
+    base.save(final_img_path)
+
+    # 5. Formatting Mentions and Caption
+    m1_name = html.escape(c1_db.get("name", "User1"))
+    m2_name = html.escape(c2_db.get("name", "User2"))
+    m1 = f'<a href="tg://user?id={c1_db["user_id"]}">{m1_name}</a>'
+    m2 = f'<a href="tg://user?id={c2_db["user_id"]}">{m2_name}</a>'
+    
     caption = (
-        f"👩‍❤️‍👨 <b>{stylize_text('COUPLE OF THE MOMENT')}</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"💌 <b>Today's Couple:</b>\n"
-        f"⤷ {couple_text}\n\n"
-        "━━━━━━━━━━━━━━━━━━━━\n"
-        f"📅 <b>Next Selection:</b> <code>{get_tomorrow()}</code>\n"
-        "💘 <i>Tag your crush — you might be next!</i>"
+        "<b>TODAY'S COUPLE OF THE DAY:</b>\n\n"
+        f"💞 {m1} + {m2} = ❤️\n\n"
+        f"<b>NEXT COUPLES WILL BE SELECTED ON {get_tomorrow_date()}!!</b>"
     )
 
+    # 6. Save to Cache and Send
+    couple_cache[chat_id] = {
+        "date": today,
+        "img_path": str(final_img_path),
+        "caption": caption
+    }
+
     await update.message.reply_photo(
-        photo=str(out_path),
+        photo=str(final_img_path),
         caption=caption,
         parse_mode=ParseMode.HTML
     )
