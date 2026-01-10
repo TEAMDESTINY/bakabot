@@ -1,167 +1,126 @@
-import os 
+# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
+# Integrated Couple Plugin for PTB Framework
+
+import os
 import random
-from datetime import datetime 
-from telegraph import upload_file
-from PIL import Image , ImageDraw
-from pyrogram import *
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from pyrogram.enums import *
+import html
+from datetime import datetime, timedelta
+from pathlib import Path
 
-#BOT FILE NAME
-from baka import app as app
-from baka.mongo.couples_db import _get_image, get_couple
+from PIL import Image, ImageDraw, ImageOps
+from telegram import Update
+from telegram.ext import ContextTypes
+from telegram.constants import ParseMode, ChatType
 
-POLICE = [
-    [
-        InlineKeyboardButton(
-            text="𝗦𝗨𝗣𝗣𝗢𝗥𝗧",
-            url=f"https://t.me/MASTIWITHFRIENDSXD",
-        ),
-    ],
-]
+from baka.utils import stylize_text, get_mention
+from baka.database import users_collection
 
+# --- Path Settings ---
+ASSETS = Path("baka/assets")
+BG_PATH = ASSETS / "couple.png" # Aapka background file
+TEMP_DIR = Path("temp_couples")
 
-def dt():
-    now = datetime.now()
-    dt_string = now.strftime("%d/%m/%Y %H:%M")
-    dt_list = dt_string.split(" ")
-    return dt_list
-    
+if not TEMP_DIR.exists():
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
-def dt_tom():
-    a = (
-        str(int(dt()[0].split("/")[0]) + 1)
-        + "/"
-        + dt()[0].split("/")[1]
-        + "/"
-        + dt()[0].split("/")[2]
-    )
-    return a
+# Cache to keep the same couple for 24 hours per group
+couple_cache = {}
 
-tomorrow = str(dt_tom())
-today = str(dt()[0])
+def get_today_date():
+    return datetime.now().strftime("%d/%m/%Y")
 
-@app.on_message(filters.command("couples"))
-async def ctest(_, message):
-    cid = message.chat.id
-    if message.chat.type == ChatType.PRIVATE:
-        return await message.reply_text("ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ᴏɴʟʏ ᴡᴏʀᴋs ɪɴ ɢʀᴏᴜᴘs.")
+def get_tomorrow_date():
+    return (datetime.now() + timedelta(days=1)).strftime("%d/%m/%Y")
+
+async def get_circular_avatar(bot, user_id):
+    """Downloads profile photo and crops it into a circle."""
     try:
-     #  is_selected = await get_couple(cid, today)
-     #  if not is_selected:
-         msg = await message.reply_text("ɢᴇɴᴇʀᴀᴛɪɴɢ ᴄᴏᴜᴘʟᴇs ɪᴍᴀɢᴇ...")
-         #GET LIST OF USERS
-         list_of_users = []
-
-         async for i in app.get_chat_members(message.chat.id, limit=50):
-             if not i.user.is_bot:
-               list_of_users.append(i.user.id)
-
-         c1_id = random.choice(list_of_users)
-         c2_id = random.choice(list_of_users)
-         while c1_id == c2_id:
-              c1_id = random.choice(list_of_users)
-
-
-         photo1 = (await app.get_chat(c1_id)).photo
-         photo2 = (await app.get_chat(c2_id)).photo
- 
-         N1 = (await app.get_users(c1_id)).mention 
-         N2 = (await app.get_users(c2_id)).mention
-         
-         try:
-            p1 = await app.download_media(photo1.big_file_id, file_name="pfp.png")
-         except Exception:
-            p1 = "baka/assets/upic.png"
-         try:
-            p2 = await app.download_media(photo2.big_file_id, file_name="pfp1.png")
-         except Exception:
-            p2 = "baka/assets/upic.png"
+        photos = await bot.get_user_profile_photos(user_id, limit=1)
+        if photos.total_count > 0:
+            file = await bot.get_file(photos.photos[0][-1].file_id)
+            path = TEMP_DIR / f"avatar_{user_id}.png"
+            await file.download_to_drive(path)
             
-         img1 = Image.open(f"{p1}")
-         img2 = Image.open(f"{p2}")
+            # Resizing to 437x437 as per your code
+            img = Image.open(path).convert("RGBA").resize((437, 437))
+            mask = Image.new("L", (437, 437), 0)
+            draw = ImageDraw.Draw(mask)
+            draw.ellipse((0, 0, 437, 437), fill=255)
+            
+            output = ImageOps.fit(img, mask.size, centering=(0.5, 0.5))
+            output.putalpha(mask)
+            
+            if path.exists(): os.remove(path)
+            return output
+    except: pass
+    return Image.new("RGBA", (437, 437), (220, 220, 220, 255))
 
-         img = Image.open("baka/assets/cppic.png")
+async def couple(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Main command handler for /couples."""
+    chat = update.effective_chat
+    if chat.type == ChatType.PRIVATE:
+        return await update.message.reply_text("ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ᴏɴʟʏ ᴡᴏʀᴋs ɪɴ ɢʀᴏᴜᴘs.")
 
-         img1 = img1.resize((437,437))
-         img2 = img2.resize((437,437))
+    today = get_today_date()
+    chat_id = chat.id
 
-         mask = Image.new('L', img1.size, 0)
-         draw = ImageDraw.Draw(mask) 
-         draw.ellipse((0, 0) + img1.size, fill=255)
+    # 1. Selection stays same for 24 hours per group
+    if chat_id in couple_cache and couple_cache[chat_id]['date'] == today:
+        data = couple_cache[chat_id]
+        return await update.message.reply_photo(
+            photo=data['img_path'], 
+            caption=data['caption'], 
+            parse_mode=ParseMode.HTML
+        )
 
-         mask1 = Image.new('L', img2.size, 0)
-         draw = ImageDraw.Draw(mask1) 
-         draw.ellipse((0, 0) + img2.size, fill=255)
+    msg = await update.message.reply_text("ɢᴇɴᴇʀᴀᴛɪɴɢ ᴄᴏᴜᴘʟᴇs ɪᴍᴀɢᴇ...")
 
-
-         img1.putalpha(mask)
-         img2.putalpha(mask1)
-
-         draw = ImageDraw.Draw(img)
-
-         img.paste(img1, (116, 160), img1)
-         img.paste(img2, (789, 160), img2)
-
-         img.save(f'test_{cid}.png')
+    # 2. Filter users seen in this specific group
+    members = list(users_collection.find({"seen_groups": chat_id}))
     
-         TXT = f"""
-**ᴛᴏᴅᴀʏ's ᴄᴏᴜᴘʟᴇ ᴏғ ᴛʜᴇ ᴅᴀʏ :
+    if len(members) < 2:
+        await msg.delete()
+        return await update.message.reply_text("⚠️ Not enough active members tracked in this group.")
 
-{N1} + {N2} = 💚
-
-ɴᴇxᴛ ᴄᴏᴜᴘʟᴇs ᴡɪʟʟ ʙᴇ sᴇʟᴇᴄᴛᴇᴅ ᴏɴ {tomorrow} !!**
-"""
+    # 3. Pick Two Random Members
+    c1_db, c2_db = random.sample(members, 2)
     
-         await message.reply_photo(f"test_{cid}.png", caption=TXT, reply_markup=InlineKeyboardMarkup(POLICE),
+    # 4. Generate Image
+    if not BG_PATH.exists():
+        await msg.delete()
+        return await update.message.reply_text("❌ Background 'couple.png' missing in baka/assets/ folder!")
+
+    base = Image.open(BG_PATH).convert("RGBA")
+    p1_img = await get_circular_avatar(context.bot, c1_db["user_id"])
+    p2_img = await get_circular_avatar(context.bot, c2_db["user_id"])
+
+    # Paste Avatars (Coordinates adjusted for your frame circles)
+    base.paste(p1_img, (116, 160), p1_img) # Left circle
+    base.paste(p2_img, (789, 160), p2_img) # Right circle
+
+    final_img_path = TEMP_DIR / f"couple_final_{chat_id}.png"
+    base.save(final_img_path)
+
+    # 5. Caption Formatting
+    m1 = get_mention(c1_db)
+    m2 = get_mention(c2_db)
+    
+    caption = (
+        f"**ᴛᴏᴅᴀʏ's ᴄᴏᴜᴘʟᴇ ᴏғ ᴛʜᴇ ᴅᴀʏ :**\n\n"
+        f"{m1} + {m2} = ❤️\n\n"
+        f"**ɴᴇxᴛ ᴄᴏᴜᴘʟᴇs ᴡɪʟʟ ʙᴇ sᴇʟᴇᴄᴛᴇᴅ ᴏɴ {get_tomorrow_date()} !!**"
     )
-         await msg.delete()
-         a = upload_file(f"test_{cid}.png")
-         for x in a:
-           img = "https://graph.org/" + x
-           couple = {"c1_id": c1_id, "c2_id": c2_id}
-          # await save_couple(cid, today, couple, img)
-    
-         
-      # elif is_selected:
-      #   msg = await message.reply_text("𝐆ᴇᴛᴛɪɴɢ 𝐓ᴏᴅᴀʏs 𝐂ᴏᴜᴘʟᴇs 𝐈ᴍᴀɢᴇ...")
-      #   b = await _get_image(cid)
-       #  c1_id = int(is_selected["c1_id"])
-       #  c2_id = int(is_selected["c2_id"])
-       #  c1_name = (await app.get_users(c1_id)).first_name
-        # c2_name = (await app.get_users(c2_id)).first_name
-         
-      #   TXT = f"""
-#**𝐓ᴏᴅᴀʏ's 𝐒ᴇʟᴇᴄᴛᴇᴅ 𝐂ᴏᴜᴘʟᴇs 🎉 :
-#➖➖➖➖➖➖➖➖➖➖➖➖
-#[{c1_name}](tg://openmessage?user_id={c1_id}) + [{c2_name}](tg://openmessage?user_id={c2_id}) = ❣️
-#➖➖➖➖➖➖➖➖➖➖➖➖
-#𝐍ᴇxᴛ 𝐂ᴏᴜᴘʟᴇs 𝐖ɪʟʟ 𝐁ᴇ 𝐒ᴇʟᴇᴄᴛᴇᴅ 𝐎ɴ {tomorrow} !!**
-#"""
- #        await message.reply_photo(b, caption=TXT)
-        # await msg.delete()
-    except Exception as e:
-        print(str(e))
-    try:
-      os.remove(f"./downloads/pfp1.png")
-      os.remove(f"./downloads/pfp2.png")
-      os.remove(f"test_{cid}.png")
-    except Exception:
-       pass
-         
 
-__mod__ = "COUPLES"
-__help__ = """
-**» /couples** - Get Todays Couples Of The Group In Interactive View
-"""
+    # 6. Cache and Send
+    couple_cache[chat_id] = {
+        "date": today,
+        "img_path": str(final_img_path),
+        "caption": caption
+    }
 
-
-
-
-
-    
-
-
-
-
-    
+    await update.message.reply_photo(
+        photo=str(final_img_path),
+        caption=caption,
+        parse_mode=ParseMode.HTML
+    )
+    await msg.delete()
