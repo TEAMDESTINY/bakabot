@@ -126,7 +126,7 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
         app_bot.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), chatbot.ai_message_handler))
         app_bot.add_handler(CommandHandler("collect", flash_event.collect)) #
-        app_bot.add_handler(CommandHandler("couple", couple.couple)) 
+        app_bot.add_handler(CommandHandler("couples", couple.couple)) 
         app_bot.add_handler(CommandHandler("waifu", waifu.waifu_cmd)) 
         app_bot.add_handler(CommandHandler("riddle", riddle.riddle))
         app_bot.add_handler(CommandHandler("dice", fun.dice))
