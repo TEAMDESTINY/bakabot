@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
+# FINAL MASTER RYAN.PY - FULL HANDLER SYNC (ECONOMY, GAMES, ADMIN, TOGGLES & FLASH)
 
 import os
 import logging
@@ -23,7 +25,7 @@ try:
     from baka.plugins import (
         start, economy, game, admin, broadcast, fun, events, 
         ping, chatbot, riddle, waifu, shop, couple, bomb, welcome,
-        flash_event  #
+        flash_event 
     )
 except ImportError as e:
     print(f"❌ Critical Import Error: {e}")
@@ -42,7 +44,7 @@ async def post_init(application):
     """Syncs the command list to the bot menu button with custom 𝐒ᴛʏʟɪᴢᴇᴅ font."""
     commands = [
         ("start", "𝐒ᴛᴀʀᴛ ᴛʜᴇ 𝐒ʏꜱᴛᴇᴍ 🌹"), 
-        ("help", "𝐇ᴇʟ𝐩 𝐆ᴜɪᴅᴇ 𝐃ɪᴀʀ𝐲 🌹"),
+        ("help", "𝐇ᴇ𝐋ᴘ 𝐆ᴜ𝐈𝐝𝐄 𝐃ɪ𝐀ʀ𝐘 🌹"),
         ("bal", "𝐖ᴀ𝐋ʟᴇᴛ 𝐁ᴀ𝐋ᴀɴᴄᴇ 🌹"), 
         ("toprich", "𝐑ɪ𝐂𝐡 𝐋ᴇᴀ𝐃ᴇʀ𝐁𝐨𝐚𝐑𝐝 🌹"), 
         ("topkill", "𝐊ɪ𝐋ʟ 𝐋ᴇᴀ𝐃ᴇʀ𝐁𝐨𝐚𝐑𝐝 🌹"),
@@ -53,13 +55,14 @@ async def post_init(application):
         ("kill", "𝐊ɪ𝐋ʟ 𝐒𝐨𝐌ᴇ𝐨𝐍ᴇ 🌹"), 
         ("rob", "𝐒ᴛᴇᴀ𝐋 𝐌𝐨𝐍ᴇ𝐘 🌹"),
         ("items", "𝐆ɪ𝐅𝐭 𝐒𝐡𝐎𝐩 𝐈ᴛᴇ𝐌𝐬 🌹"),
-        ("item", "𝐌ʏ 𝐈ɴ𝐕ᴇ𝐍ᴛ𝐨𝐑𝐲 🌹"),
+        ("item", "𝐌ʏ 𝐈ɴＶᴇＮᴛ𝐨Ｒ𝐲 🌹"),
         ("myrank", "𝐆𝐥𝐎𝐛𝐀𝐥 𝐑ᴀɴ𝐊 𝐒ᴛᴀ𝐓𝐬 🌹"),
-        ("economy", "𝐄𝐜𝐎ɴ𝐨𝐌ʏ 𝐆ᴜ𝐈𝐝𝐄 𝐁𝐨𝐎𝐤 🌹"),
-        ("collect", "𝐅𝐥𝐀𝐬𝐇 𝐂𝐨𝐋ʟᴇ𝐂𝐭 𝐄𝐯𝐄ɴᴛ 🌹") #
+        ("economy", "𝐄𝐜𝐎ɴ𝐨𝐌ʏ 𝐆ᴜ𝐈𝐝𝐄 𝐁𝐨Ｏ𝐤 🌹"),
+        ("collect", "𝐅𝐥Ａ𝐬Ｈ 𝐂𝐨𝐋ʟᴇ𝐂𝐭 𝐄𝐯𝐄ɴᴛ 🌹"),
+        ("couples", "💞 𝐂𝐨𝐔ᴘ𝐋ᴇ 𝐎ғ 𝐓ʜ𝐄 𝐃ᴀ𝐘") # Added couples menu
     ]
     await application.bot.set_my_commands(commands)
-    print(f"✅ {BOT_NAME} Stylized Command Menu Synchronized!") #
+    print(f"✅ {BOT_NAME} Stylized Command Menu Synchronized!")
 
 # --- MAIN ENGINE ---
 if __name__ == '__main__':
@@ -74,7 +77,7 @@ if __name__ == '__main__':
 
         # 1. 🌹 Core Handlers
         app_bot.add_handler(CommandHandler("start", start.start))
-        app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command)) #
+        app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command))
         app_bot.add_handler(CommandHandler("game", start.game_guide))
         app_bot.add_handler(CommandHandler("economy", start.economy_guide))
         
@@ -93,12 +96,12 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
         app_bot.add_handler(CommandHandler("bombcancel", bomb.bomb_cancel)) 
-        app_bot.add_handler(CommandHandler("setflash", flash_event.set_flash)) #
+        app_bot.add_handler(CommandHandler("setflash", flash_event.set_flash)) 
         app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
         # 3. 💰 Economy System
         app_bot.add_handler(CommandHandler("bal", economy.balance))
-        app_bot.add_handler(CommandHandler("daily", economy.daily_bonus)) #
+        app_bot.add_handler(CommandHandler("daily", economy.daily_bonus)) 
         app_bot.add_handler(CommandHandler("toprich", economy.toprich))   
         app_bot.add_handler(CommandHandler("myrank", economy.my_rank))    
         app_bot.add_handler(CommandHandler("give", economy.give))
@@ -111,7 +114,7 @@ if __name__ == '__main__':
 
         # 4. ⚔️ Game & Combat
         app_bot.add_handler(CommandHandler("kill", game.kill))
-        app_bot.add_handler(CommandHandler("rob", game.rob)) #
+        app_bot.add_handler(CommandHandler("rob", game.rob)) 
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
 
@@ -125,8 +128,8 @@ if __name__ == '__main__':
         # 6. 🧠 AI & Flash Event
         app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
         app_bot.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), chatbot.ai_message_handler))
-        app_bot.add_handler(CommandHandler("collect", flash_event.collect)) #
-        app_bot.add_handler(CommandHandler("couples", couple.couple)) 
+        app_bot.add_handler(CommandHandler("collect", flash_event.collect)) 
+        app_bot.add_handler(CommandHandler("couples", couple.couple)) # Integrated Couple Command
         app_bot.add_handler(CommandHandler("waifu", waifu.waifu_cmd)) 
         app_bot.add_handler(CommandHandler("riddle", riddle.riddle))
         app_bot.add_handler(CommandHandler("dice", fun.dice))
@@ -137,8 +140,8 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         
         # Economy Enable/Disable
-        app_bot.add_handler(CommandHandler("open", events.open_economy)) #
-        app_bot.add_handler(CommandHandler("close", events.close_economy)) #
+        app_bot.add_handler(CommandHandler("open", events.open_economy)) 
+        app_bot.add_handler(CommandHandler("close", events.close_economy)) 
         
         # Tracking & Logs
         app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
