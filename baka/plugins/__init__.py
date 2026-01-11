@@ -1,5 +1,5 @@
-# Copyright (c) 2025 Telegram:- @WTF_Phantom <DevixOP>
-# Plugins Initializer - Cleaned and Fixed
+# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
+# Plugins Initializer - Final Fixed for Couple, Flash & Economy
 
 __all__ = [
     "start",
@@ -17,8 +17,9 @@ __all__ = [
     "ai_media",
     "waifu",
     "collection",
-    "shop"
-    # "daily" aur "leaderboard" yahan se hata diye hain kyunki wo ab economy.py mein hain.
+    "shop",
+    "couple",       # ✅ Added: For Couple of the Day
+    "flash_event"   # ✅ Added: For Flash Event Logic
 ]
 
 from baka.plugins import *
