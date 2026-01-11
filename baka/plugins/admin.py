@@ -11,11 +11,14 @@ from baka.database import users_collection, sudoers_collection, groups_collectio
 
 # --- 🔐 AUTHORIZATION CHECK ---
 def is_authorized(user_id):
+    """Checks if the user is the Bot Owner or in the Sudo list."""
     return user_id == OWNER_ID or user_id in SUDO_IDS
 
 # --- 📋 SUDO HELP PANEL ---
 async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_authorized(update.effective_user.id): return
+    if not is_authorized(update.effective_user.id):
+        return
+    
     msg = (
         f"🔐 <b>{stylize_text('Sudo Panel')}</b>\n\n"
         f"<b>💰 Economy:</b>\n"
@@ -36,20 +39,26 @@ async def addcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(context.args) < 1:
         return await update.message.reply_text("❌ Usage: <code>/addcoins 1000 @user</code>", parse_mode=ParseMode.HTML)
     
-    amount = int(context.args[0])
-    target, err = await resolve_target(update, context)
-    if target: 
-        await ask(update, f"Add {format_money(amount)} to {get_mention(target)}?", "addcoins", f"{target['user_id']}|{amount}")
+    try:
+        amount = int(context.args[0])
+        target, err = await resolve_target(update, context)
+        if target: 
+            await ask(update, f"Add {format_money(amount)} to {get_mention(target)}?", "addcoins", f"{target['user_id']}|{amount}")
+    except ValueError:
+        await update.message.reply_text("❌ Amount must be a number.")
 
 async def rmcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id): return
     if len(context.args) < 1:
         return await update.message.reply_text("❌ Usage: <code>/rmcoins 1000 @user</code>", parse_mode=ParseMode.HTML)
     
-    amount = int(context.args[0])
-    target, err = await resolve_target(update, context)
-    if target: 
-        await ask(update, f"Remove {format_money(amount)} from {get_mention(target)}?", "rmcoins", f"{target['user_id']}|{amount}")
+    try:
+        amount = int(context.args[0])
+        target, err = await resolve_target(update, context)
+        if target: 
+            await ask(update, f"Remove {format_money(amount)} from {get_mention(target)}?", "rmcoins", f"{target['user_id']}|{amount}")
+    except ValueError:
+        await update.message.reply_text("❌ Amount must be a number.")
 
 # --- 🛡️ SYSTEM ACTIONS ---
 async def freerevive(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -65,19 +74,31 @@ async def unprotect(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await ask(update, f"Remove shield from {get_mention(target)}?", "unprotect", str(target['user_id']))
 
 async def cleandb(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID: return
+    if update.effective_user.id != OWNER_ID: 
+        return await update.message.reply_text("❌ Owner Only command.")
     await ask(update, "<b>WIPE DATABASE?</b> 🗑️\nThis will delete all users/groups!", "cleandb", "confirm")
 
 # --- 👑 SUDO MGMT ---
 async def addsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     target, err = await resolve_target(update, context)
-    if target: await ask(update, f"Make {get_mention(target)} a Sudoer?", "addsudo", str(target['user_id']))
+    if target: 
+        await ask(update, f"Make {get_mention(target)} a Sudoer?", "addsudo", str(target['user_id']))
 
 async def rmsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     target, err = await resolve_target(update, context)
-    if target: await ask(update, f"Remove {get_mention(target)} from Sudoers?", "rmsudo", str(target['user_id']))
+    if target: 
+        await ask(update, f"Remove {get_mention(target)} from Sudoers?", "rmsudo", str(target['user_id']))
+
+async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update.effective_user.id): return
+    sudos = list(sudoers_collection.find())
+    msg = f"🛡️ <b><u>{stylize_text('Sudoers List')}</u></b>\n\n"
+    msg += f"👑 <b>Owner:</b> <code>{OWNER_ID}</code>\n"
+    for s in sudos:
+        msg += f"✨ <b>Sudo:</b> <code>{s['user_id']}</code>\n"
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 # --- 🛠️ UTILS ---
 async def ask(update, text, act, arg):
@@ -96,21 +117,22 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = q.data.split("|")
     act = data[1]
     
-    if act == "cancel": return await q.message.edit_text("❌ Action Cancelled.")
+    if act == "cancel": 
+        return await q.message.edit_text("❌ <b>Action Cancelled.</b>", parse_mode=ParseMode.HTML)
 
     try:
-        # 💰 Economy
+        # 💰 Economy Logic
         if act == "addcoins":
             uid, amt = int(data[2]), int(data[3])
             users_collection.update_one({"user_id": uid}, {"$inc": {"balance": amt}})
-            await q.message.edit_text(f"✅ Success: Added <b>{format_money(amt)}</b> to {uid}.")
+            await q.message.edit_text(f"✅ <b>Success:</b> Added {format_money(amt)} to <code>{uid}</code>.")
 
         elif act == "rmcoins":
             uid, amt = int(data[2]), int(data[3])
             users_collection.update_one({"user_id": uid}, {"$inc": {"balance": -amt}})
-            await q.message.edit_text(f"✅ Success: Removed <b>{format_money(amt)}</b> from {uid}.")
+            await q.message.edit_text(f"✅ <b>Success:</b> Removed {format_money(amt)} from <code>{uid}</code>.")
 
-        # 🛡️ System
+        # 🛡️ System Logic
         elif act == "freerevive":
             uid = int(data[2])
             users_collection.update_one({"user_id": uid}, {"$set": {"status": "alive", "death_time": None}})
@@ -121,12 +143,18 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             users_collection.update_one({"user_id": uid}, {"$set": {"protection_expiry": None}})
             await q.message.edit_text(f"🛡️ Shield removed for <code>{uid}</code>.")
 
-        # 👑 Sudo
+        # 👑 Sudo Logic
         elif act == "addsudo":
             uid = int(data[2])
             sudoers_collection.update_one({"user_id": uid}, {"$set": {"user_id": uid}}, upsert=True)
             if uid not in SUDO_IDS: SUDO_IDS.append(uid)
             await q.message.edit_text(f"✅ <code>{uid}</code> is now a Sudoer.")
+
+        elif act == "rmsudo":
+            uid = int(data[2])
+            sudoers_collection.delete_one({"user_id": uid})
+            if uid in SUDO_IDS: SUDO_IDS.remove(uid)
+            await q.message.edit_text(f"🗑️ <code>{uid}</code> removed from Sudoers.")
 
         elif act == "cleandb":
             users_collection.delete_many({})
@@ -134,4 +162,4 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await q.message.edit_text("🗑️ <b>DATABASE WIPED SUCCESSFULLY!</b>")
 
     except Exception as e:
-        await q.message.edit_text(f"❌ Error during execution: {e}")
+        await q.message.edit_text(f"❌ <b>Error:</b> <code>{e}</code>")
