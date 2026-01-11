@@ -1,6 +1,7 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Plugins Initializer - Final Fixed for Couple, Flash & Economy
+# Plugins Initializer - Circular Import Fixed
 
+# Sabhi plugins ki list define karein
 __all__ = [
     "start",
     "economy",
@@ -13,13 +14,12 @@ __all__ = [
     "ping",
     "chatbot",
     "riddle",
-    "social",
-    "ai_media",
     "waifu",
-    "collection",
     "shop",
-    "couple",       # ✅ Added: For Couple of the Day
-    "flash_event"   # ✅ Added: For Flash Event Logic
+    "couple",
+    "flash_event",
+    "bomb"
 ]
 
-from baka.plugins import *
+# Explicit imports taaki circular dependency na ho
+from . import start, economy, game, admin, broadcast, fun, events, welcome, ping, chatbot, riddle, waifu, shop, couple, flash_event, bomb
