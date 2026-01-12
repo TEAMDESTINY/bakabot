@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Economy Plugin - Matches Screenshots Exactly & Fixes AttributeError
+# Final Economy Plugin - Full Sync with Chatbot & Robot Logic
 
 import html
 import random
@@ -26,7 +26,7 @@ async def check_economy(update: Update):
         return False
     return True
 
-# --- 🏆 MY RANK COMMAND (Fixes Startup Crash) ---
+# --- 🏆 MY RANK COMMAND ---
 async def my_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Calculates and shows the user's global ranking."""
     if not await check_economy(update): return
@@ -64,7 +64,7 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if robber['user_id'] == target['user_id']:
             return await update.message.reply_text("❌ You cannot rob yourself!")
 
-        # Target Balance Validation
+        # 📉 Target Balance Validation
         target_bal = target.get('balance', 0)
         if target_bal < amount:
             return await update.message.reply_text(
@@ -88,6 +88,7 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- 📅 DAILY BONUS COMMAND (DM ONLY) ---
 async def daily_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Daily bonus claim restricted to Private Messages."""
     if not await check_economy(update): return
     
     user = update.effective_user
@@ -124,7 +125,7 @@ async def daily_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.HTML
     )
 
-# --- 💰 BALANCE & TOP RICH ---
+# --- 💰 BALANCE & RANKING ---
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_economy(update): return
     target_db, error = await resolve_target(update, context)
