@@ -28,7 +28,7 @@ from telegram.constants import ParseMode, ChatAction, ChatType
 from telegram.error import BadRequest
 from baka.config import MISTRAL_API_KEY, GROQ_API_KEY, CODESTRAL_API_KEY, BOT_NAME, OWNER_LINK
 from baka.database import chatbot_collection
-from baka.utils import stylize_text  # Import back for output only
+from baka.utils import stylize_text
 
 # --- 🎨 BAKA PERSONALITY CONFIG ---
 BAKA_NAME = "BAKA"
