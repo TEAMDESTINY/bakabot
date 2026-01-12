@@ -572,4 +572,4 @@ async def ask_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
         styled_response = stylize_text(response)
         await msg.reply_text(styled_response)
 
-final do final issi me add krkw  ye code 600 lines ka h 
+
