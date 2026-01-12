@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Economy Plugin - Matches Screenshots Exactly, DM Daily & Fixed Rob Logic
+# Final Economy Plugin - Matches Screenshots Exactly & Fixes AttributeError
 
 import html
 import random
@@ -26,7 +26,24 @@ async def check_economy(update: Update):
         return False
     return True
 
-# --- ⚔️ ROB COMMAND (Synced with image_ae8648.png) ---
+# --- 🏆 MY RANK COMMAND (Fixes Startup Crash) ---
+async def my_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Calculates and shows the user's global ranking."""
+    if not await check_economy(update): return
+    
+    user_db = ensure_user_exists(update.effective_user)
+    bal = user_db.get('balance', 0)
+    
+    # Global Rank Calculation
+    rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
+    
+    await update.message.reply_text(
+        f"🏆 <b>Your Global Rank:</b> {rank}\n"
+        f"💰 <b>Current Balance:</b> <code>{format_money(bal)}</code>",
+        parse_mode=ParseMode.HTML
+    )
+
+# --- ⚔️ ROB COMMAND (Synced with Screenshots) ---
 async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Attempts to rob a user with balance validation."""
     if not await check_economy(update): return
@@ -47,7 +64,7 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if robber['user_id'] == target['user_id']:
             return await update.message.reply_text("❌ You cannot rob yourself!")
 
-        # 📉 Target Balance Validation
+        # Target Balance Validation
         target_bal = target.get('balance', 0)
         if target_bal < amount:
             return await update.message.reply_text(
@@ -76,7 +93,6 @@ async def daily_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     chat = update.effective_chat
     
-    # Redirect to DM
     if chat.type != ChatType.PRIVATE:
         bot_username = (await context.bot.get_me()).username
         return await update.message.reply_text(
@@ -108,7 +124,7 @@ async def daily_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.HTML
     )
 
-# --- 💰 BALANCE & RANKING ---
+# --- 💰 BALANCE & TOP RICH ---
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_economy(update): return
     target_db, error = await resolve_target(update, context)
