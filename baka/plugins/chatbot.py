@@ -10,7 +10,7 @@ from baka.database import chatbot_collection
 from baka.utils import stylize_text  # Import back for output only
 
 # --- 🎨 baka PERSONALITY CONFIG ---
-BAKA_NAME = "baka"
+BAKA_NAME = "BAKA"
 
 # Rotating emoji pools (fresh every response)
 EMOJI_POOL = ["✨", "💖", "🌸", "😊", "🥰", "💕", "🎀", "🌺", "💫", "🦋", "🌼", "💗", "🎨", "🍓", "☺️", "😌", "🌟", "💝"]
