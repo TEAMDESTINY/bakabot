@@ -16,7 +16,6 @@ from baka.database import users_collection, groups_collection
 
 # --- 🛠️ HELPER: ECONOMY STATUS CHECK ---
 async def check_economy(update: Update):
-    """Checks if economy is enabled. Sends alert if disabled."""
     if update.effective_chat.type == ChatType.PRIVATE:
         return True
     
@@ -26,15 +25,13 @@ async def check_economy(update: Update):
         return False
     return True
 
-# --- 🏆 MY RANK COMMAND ---
+# --- 🏆 MY RANK ---
 async def my_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Calculates and shows the user's global ranking."""
-    if not await check_economy(update): return
+    if not await check_economy(update): 
+        return
     
     user_db = ensure_user_exists(update.effective_user)
     bal = user_db.get('balance', 0)
-    
-    # Global Rank Calculation
     rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
     
     await update.message.reply_text(
@@ -43,10 +40,10 @@ async def my_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.HTML
     )
 
-# --- ⚔️ ROB COMMAND (Synced with Screenshots) ---
+# --- ⚔️ ROB ---
 async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Attempts to rob a user with balance validation."""
-    if not await check_economy(update): return
+    if not await check_economy(update): 
+        return
 
     if not update.message.reply_to_message or not context.args:
         return await update.message.reply_text(
@@ -56,7 +53,8 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         amount = int(context.args[0])
-        if amount <= 0: return await update.message.reply_text("❌ Amount must be positive.")
+        if amount <= 0:
+            return await update.message.reply_text("❌ Amount must be positive.")
         
         robber = ensure_user_exists(update.effective_user)
         target = ensure_user_exists(update.message.reply_to_message.from_user)
@@ -64,7 +62,6 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if robber['user_id'] == target['user_id']:
             return await update.message.reply_text("❌ You cannot rob yourself!")
 
-        # 📉 Target Balance Validation
         target_bal = target.get('balance', 0)
         if target_bal < amount:
             return await update.message.reply_text(
@@ -73,28 +70,30 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode=ParseMode.HTML
             )
 
-        # Rob Success/Fail Logic
-        if random.choice([True, False]): # 50% Success rate
+        if random.choice([True, False]):
             users_collection.update_one({"user_id": target['user_id']}, {"$inc": {"balance": -amount}})
             users_collection.update_one({"user_id": robber['user_id']}, {"$inc": {"balance": amount}})
-            await update.message.reply_text(f"⚔️ <b>Success!</b> You robbed <code>{format_money(amount)}</code> from {target['name']}!")
+            await update.message.reply_text(
+                f"⚔️ <b>Success!</b> You robbed <code>{format_money(amount)}</code> from {target['name']}!",
+                parse_mode=ParseMode.HTML
+            )
         else:
             penalty = int(amount * 0.3)
             users_collection.update_one({"user_id": robber['user_id']}, {"$inc": {"balance": -penalty}})
-            await update.message.reply_text(f"👮 <b>Caught!</b> You failed and paid a fine of <code>{format_money(penalty)}</code>.")
+            await update.message.reply_text(
+                f"👮 <b>Caught!</b> You failed and paid a fine of <code>{format_money(penalty)}</code>.",
+                parse_mode=ParseMode.HTML
+            )
 
     except ValueError:
         await update.message.reply_text("❌ Please enter a valid numeric amount.")
 
-# --- 📅 DAILY BONUS COMMAND (DM ONLY) ---
+# --- 📅 DAILY BONUS ---
 async def daily_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Daily bonus claim restricted to Private Messages."""
-    if not await check_economy(update): return
+    if not await check_economy(update): 
+        return
     
-    user = update.effective_user
-    chat = update.effective_chat
-    
-    if chat.type != ChatType.PRIVATE:
+    if update.effective_chat.type != ChatType.PRIVATE:
         bot_username = (await context.bot.get_me()).username
         return await update.message.reply_text(
             f"❌ <b>Daily Bonus sirf mere DM mein claim kiya ja sakta hai!</b>\n\n"
@@ -103,48 +102,94 @@ async def daily_bonus(update: Update, context: ContextTypes.DEFAULT_TYPE):
             disable_web_page_preview=True
         )
 
-    user_db = ensure_user_exists(user)
+    user_db = ensure_user_exists(update.effective_user)
     last_claim = user_db.get("last_daily_claim")
     now = datetime.utcnow()
     
     if last_claim and (now - last_claim < timedelta(hours=24)):
         wait = timedelta(hours=24) - (now - last_claim)
-        hours, remainder = divmod(wait.seconds, 3600)
-        minutes, _ = divmod(remainder, 60)
-        return await update.message.reply_text(f"⏳ Come back in <b>{hours}h {minutes}m</b>.", parse_mode=ParseMode.HTML)
+        hours, rem = divmod(wait.seconds, 3600)
+        minutes, _ = divmod(rem, 60)
+        return await update.message.reply_text(
+            f"⏳ Come back in <b>{hours}h {minutes}m</b>.",
+            parse_mode=ParseMode.HTML
+        )
 
-    reward = DAILY_BONUS 
     users_collection.update_one(
-        {"user_id": user.id}, 
-        {"$inc": {"balance": reward}, "$set": {"last_daily_claim": now}}
+        {"user_id": update.effective_user.id},
+        {"$inc": {"balance": DAILY_BONUS}, "$set": {"last_daily_claim": now}}
     )
-    
+
     await update.message.reply_text(
-        f"✅ <b>You received: ${reward} daily reward!</b>\n"
+        f"✅ <b>You received: ${DAILY_BONUS} daily reward!</b>\n"
         f"💗 Upgrade to premium using /pay to get $2000 daily reward!",
         parse_mode=ParseMode.HTML
     )
 
-# --- 💰 BALANCE & RANKING ---
+# --- 💰 BALANCE ---
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await check_economy(update): return
-    target_db, error = await resolve_target(update, context)
-    if not target_db: target_db = ensure_user_exists(update.effective_user)
+    if not await check_economy(update): 
+        return
+    
+    target_db, _ = await resolve_target(update, context)
+    if not target_db:
+        target_db = ensure_user_exists(update.effective_user)
     
     bal = target_db.get('balance', 0)
     rank = users_collection.count_documents({"balance": {"$gt": bal}}) + 1
     
-    msg = (
+    await update.message.reply_text(
         f"👤 <b>Name:</b> {html.escape(target_db.get('name', 'User'))}\n"
         f"💰 <b>Total Balance:</b> <code>{format_money(bal)}</code>\n"
-        f"🏆 <b>Global Rank:</b> {rank}\n"
+        f"🏆 <b>Global Rank:</b> {rank}",
+        parse_mode=ParseMode.HTML
     )
-    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
+# --- 🏆 TOP RICH ---
 async def toprich(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await check_economy(update): return
+    if not await check_economy(update): 
+        return
+    
     rich_users = users_collection.find().sort("balance", -1).limit(10)
     msg = f"🏆 <b>{stylize_text('GLOBAL TOP 10 RICHEST')}</b>\n━━━━━━━━━━━━━━━━━━\n"
+    
     for i, user in enumerate(rich_users, 1):
-        msg += f"<b>{i}.</b> {html.escape(user.get('name', 'User'))} » <code>{format_money(user.get('balance', 0))}</code>\n"
+        msg += (
+            f"<b>{i}.</b> {html.escape(user.get('name', 'User'))} » "
+            f"<code>{format_money(user.get('balance', 0))}</code>\n"
+        )
+    
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+# --- 🎁 GIVE (FIXED ERROR) ---
+async def give(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await check_economy(update):
+        return
+
+    if not update.message.reply_to_message or not context.args:
+        return await update.message.reply_text(
+            "❗ Usage: Reply with <code>/give <amount></code>",
+            parse_mode=ParseMode.HTML
+        )
+
+    try:
+        amount = int(context.args[0])
+        if amount <= 0:
+            return await update.message.reply_text("❌ Amount must be positive.")
+
+        sender = ensure_user_exists(update.effective_user)
+        receiver = ensure_user_exists(update.message.reply_to_message.from_user)
+
+        if sender['balance'] < amount:
+            return await update.message.reply_text("❌ You don't have enough balance.")
+
+        users_collection.update_one({"user_id": sender['user_id']}, {"$inc": {"balance": -amount}})
+        users_collection.update_one({"user_id": receiver['user_id']}, {"$inc": {"balance": amount}})
+
+        await update.message.reply_text(
+            f"🎁 <b>Success!</b> You gave <code>{format_money(amount)}</code> to {receiver['name']}.",
+            parse_mode=ParseMode.HTML
+        )
+
+    except ValueError:
+        await update.message.reply_text("❌ Please enter a valid numeric amount.")
