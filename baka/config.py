@@ -49,6 +49,7 @@ if OWNER_ID and OWNER_ID not in SUDO_IDS:
 
 # --- 💰 ECONOMY CONSTANTS ---
 BOT_NAME = "𝐁ᴀᴋᴀ 💗"
+REVIVE_COST = 500
 REGISTER_BONUS = 50       
 DAILY_BONUS = 1000        # $1000 (DM Only)
 BONUS_COOLDOWN = 12        # 12-hour gap
