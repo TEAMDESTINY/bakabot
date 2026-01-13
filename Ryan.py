@@ -83,7 +83,6 @@ if __name__ == '__main__':
         app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
-        app_bot.add_handler(CommandHandler("unfree", admin.unfree)) # Fixed attribute registration
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
 
         # 3. 💰 ECONOMY (Synced)
