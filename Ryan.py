@@ -18,12 +18,11 @@ os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# --- INTERNAL IMPORTS (DIRECT TO PREVENT CIRCULAR ERRORS) ---
+# --- INTERNAL IMPORTS ---
 try:
     from baka.config import TOKEN, PORT
     from baka.utils import BOT_NAME
     
-    # Direct module imports
     import baka.plugins.start as start
     import baka.plugins.economy as economy
     import baka.plugins.game as game
@@ -53,23 +52,22 @@ def health(): return "Destiny Engine Active! 🚀"
 def run_flask(): 
     app.run(host='0.0.0.0', port=PORT, debug=False, use_reloader=False)
 
-# --- 🌹 STYLIZED STARTUP MENU SYNC ---
+# --- STYLIZED STARTUP MENU SYNC ---
 async def post_init(application):
-    """Syncs the command list to the bot menu button."""
     commands = [
-        ("start", "𝐒ᴛᴀʀᴛ ᴛʜᴇ 𝐒ʏꜱᴛᴇᴍ 🌹"), 
-        ("help", "𝐇ᴇ𝐋ᴘ 𝐆ᴜ𝐈𝐝𝐄 𝐃ɪ𝐀ʀ𝐘 🌹"),
-        ("bal", "𝐖ᴀ𝐋ʟᴇᴛ 𝐁ᴀ𝐋ᴀɴᴄᴇ 🌹"), 
-        ("toprich", "𝐑ɪ𝐂𝐡 𝐋ᴇᴀ𝐃ᴇʀ𝐁𝐨𝐚𝐑𝐝 🌹"), 
-        ("daily", "𝐂ʟᴀɪᴍ 𝐃ᴀɪ𝐋ʏ 𝐑ᴇ𝐖ᴀ𝐑𝐝 🌹"),
-        ("bomb", "𝐒ᴛᴀ𝐑ᴛ 𝐁𝐨𝐌𝐛 𝐆ᴀ𝐌ᴇ 🌹"),
-        ("kill", "𝐊ɪ𝐋ʟ 𝐒𝐨ＭᴇｏＮᴇ 🌹"), 
-        ("rob", "𝐒ᴛᴇᴀ𝐋 𝐌ｏＮᴇＹ 🌹"),
-        ("couples", "💞 𝐂ｏ𝐔ᴘＬᴇ 𝐎ғ 𝐓ʜᴇ 𝐃ᴀＹ"),
-        ("sudo", "🔐 𝐒ᴜᴅᴏ 𝐏ᴀɴᴇʟ (Admins)")
+        ("start", "Start the System 🌹"), 
+        ("help", "Help Guide Diary 🌹"),
+        ("bal", "Wallet Balance 🌹"), 
+        ("toprich", "Rich Leaderboard 🌹"), 
+        ("daily", "Claim Daily Reward 🌹"),
+        ("kill", "Kill Someone 🌹"), 
+        ("rob", "Steal Money 🌹"),
+        ("brain", "Check IQ Level 🧠"),
+        ("id", "Get User/Group ID 🆔"),
+        ("sudo", "Sudo Panel 🔐")
     ]
     await application.bot.set_my_commands(commands)
-    print(f"✅ {BOT_NAME} Stylized Command Menu Synchronized!")
+    print(f"✅ {BOT_NAME} Command Menu Synchronized!")
 
 # --- MAIN ENGINE ---
 if __name__ == '__main__':
@@ -81,69 +79,46 @@ if __name__ == '__main__':
         t_request = HTTPXRequest(connection_pool_size=30, read_timeout=40.0)
         app_bot = ApplicationBuilder().token(TOKEN).request(t_request).post_init(post_init).build()
 
-        # 1. 🌹 Core & Welcome
+        # 1. Core & Welcome
         app_bot.add_handler(CommandHandler("start", start.start))
         app_bot.add_handler(PrefixHandler(["/", "."], "help", start.help_command))
-        app_bot.add_handler(CommandHandler("game", start.game_guide))
-        app_bot.add_handler(CommandHandler("economy", start.economy_guide))
-        app_bot.add_handler(CallbackQueryHandler(start.start_callback, pattern="^(talk_baka|game_features|return_start)$"))
-        app_bot.add_handler(CallbackQueryHandler(start.help_callback, pattern="^help_"))
         app_bot.add_handler(CommandHandler("welcome", welcome.welcome_command))
         app_bot.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
 
-        # 2. 🔐 Admin, Sudo & Broadcast (FULLY SYNCED)
+        # 2. Admin, Sudo & Broadcast
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
-        app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
-        app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
-        app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
-        app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
-        app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
+        app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
         app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
         app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
-        app_bot.add_handler(CommandHandler("sudolist", admin.sudolist))
-        app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
-        app_bot.add_handler(CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|"))
 
-        # 3. 💰 Economy & Shop
+        # 3. Economy & Shop (Synced with economy.py)
         app_bot.add_handler(CommandHandler("bal", economy.balance))
         app_bot.add_handler(CommandHandler("daily", economy.daily_bonus)) 
         app_bot.add_handler(CommandHandler("toprich", economy.toprich))   
         app_bot.add_handler(CommandHandler("myrank", economy.my_rank))    
         app_bot.add_handler(CommandHandler("give", economy.give))
         app_bot.add_handler(CommandHandler("topkill", economy.top_kill))
-        app_bot.add_handler(CommandHandler("items", shop.items_list))   
-        app_bot.add_handler(CommandHandler("item", shop.view_inventory)) 
-        app_bot.add_handler(CommandHandler("gift", shop.gift_item))      
 
-        # 4. ⚔️ Combat & Bomb Game
+        # 4. Combat & Bomb Game (Synced with game.py)
         app_bot.add_handler(CommandHandler("kill", game.kill))
         app_bot.add_handler(CommandHandler("rob", game.rob)) 
         app_bot.add_handler(CommandHandler("revive", game.revive))
         app_bot.add_handler(CommandHandler("protect", game.protect))
-        app_bot.add_handler(CommandHandler("bomb", bomb.start_bomb))
-        app_bot.add_handler(CommandHandler("join", bomb.join_bomb))
-        app_bot.add_handler(CommandHandler("pass", bomb.pass_bomb))
-        app_bot.add_handler(CommandHandler("leaders", bomb.bomb_leaders)) 
-        app_bot.add_handler(CommandHandler("bombcancel", bomb.bomb_cancel)) 
 
-        # 5. 🧠 AI, Couples & Events
-        app_bot.add_handler(CommandHandler("ask", chatbot.ask_ai))
-        app_bot.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), chatbot.ai_message_handler))
-        app_bot.add_handler(CommandHandler("collect", flash_event.collect)) 
-        app_bot.add_handler(CommandHandler("setflash", flash_event.set_flash)) 
-        app_bot.add_handler(CommandHandler("couples", couple.couple)) 
-        app_bot.add_handler(CommandHandler("waifu", waifu.waifu_cmd)) 
-        app_bot.add_handler(CommandHandler("riddle", riddle.riddle))
+        # 5. Fun & Info (REGISTERED: /brain, /id, /dice, /slots)
+        app_bot.add_handler(CommandHandler("brain", fun.brain)) #
+        app_bot.add_handler(CommandHandler("id", fun.get_id)) #
         app_bot.add_handler(CommandHandler("dice", fun.dice))
         app_bot.add_handler(CommandHandler("slots", fun.slots))
+        app_bot.add_handler(CommandHandler("slap", fun.slap))
+        app_bot.add_handler(CommandHandler("punch", fun.punch))
+        app_bot.add_handler(CommandHandler("hug", fun.hug))
+        app_bot.add_handler(CommandHandler("kiss", fun.kiss))
 
-        # 6. 📈 System Listeners & Toggles
-        app_bot.add_handler(CommandHandler("claim", events.claim_group))
+        # 6. System Listeners
         app_bot.add_handler(CommandHandler("ping", ping.ping))
         app_bot.add_handler(CommandHandler("open", events.open_economy)) 
         app_bot.add_handler(CommandHandler("close", events.close_economy)) 
-        app_bot.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
-        app_bot.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
 
         print(f"🚀 {BOT_NAME} MASTER ENGINE ONLINE!")
         app_bot.run_polling(drop_pending_updates=True)
