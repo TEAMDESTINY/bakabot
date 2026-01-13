@@ -83,9 +83,17 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
         users_collection.update_one({"user_id": target['user_id']}, {"$inc": {"balance": -amount}})
         users_collection.update_one({"user_id": robber['user_id']}, {"$inc": {"balance": amount}})
 
-        await update.message.reply_text(f"<b>💰 Success! Looted {format_money(amount)}!</b>", parse_mode=ParseMode.HTML)
+      await update.message.reply_text(
+            f"<b>💰 {user.first_name} robbed {target_user.first_name}!</b>\n"
+            f"<b>Looted: {format_money(amount)}</b>", 
+            parse_mode=ParseMode.HTML
+        )
     except ValueError:
-        await update.message.reply_text("<b>❌ Enter a valid numeric amount.</b>", parse_mode=ParseMode.HTML)
+        # Error Output
+        await update.message.reply_text(
+            "<b>❌ Enter a valid numeric amount.</b>", 
+            parse_mode=ParseMode.HTML
+        )
 
 # --- ❤️ 3. REVIVE COMMAND (Fixed: Target Revive Included) ---
 async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
