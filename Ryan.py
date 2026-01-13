@@ -79,6 +79,7 @@ if __name__ == '__main__':
 
         # 2. 🔐 ADMIN COMMANDS (FULL LIST REGISTERED)
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
+         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
         app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
