@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Game Plugin - Clean HTML (No Tap-to-Copy) & Fixed Revive Logic
+# Final Master Game Plugin - HTML Format (No Tap-to-Copy)
 
 import random
 import html
@@ -65,25 +65,29 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- 💰 2. ROB COMMAND ---
 async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_economy(update): return
+    user = update.effective_user
+    
     if not update.message.reply_to_message or not context.args:
         return await update.message.reply_text("<b>❗ Usage: Reply with /rob &lt;amount&gt;</b>", parse_mode=ParseMode.HTML)
 
     try:
         amount = int(context.args[0])
-        robber = ensure_user_exists(update.effective_user)
-        target = ensure_user_exists(update.message.reply_to_message.from_user)
+        robber = ensure_user_exists(user)
+        target_user = update.message.reply_to_message.from_user
+        target_db = ensure_user_exists(target_user)
 
-        if target.get('balance', 0) < amount:
+        if target_db.get('balance', 0) < amount:
             return await update.message.reply_text(
                 f"<b>📉 Target doesn't have enough money!</b>\n"
-                f"<b>Only {format_money(target.get('balance', 0))} available.</b>",
+                f"<b>Only {format_money(target_db.get('balance', 0))} available.</b>",
                 parse_mode=ParseMode.HTML
             )
 
-        users_collection.update_one({"user_id": target['user_id']}, {"$inc": {"balance": -amount}})
+        users_collection.update_one({"user_id": target_db['user_id']}, {"$inc": {"balance": -amount}})
         users_collection.update_one({"user_id": robber['user_id']}, {"$inc": {"balance": amount}})
 
-      await update.message.reply_text(
+        # Success Output
+        await update.message.reply_text(
             f"<b>💰 {user.first_name} robbed {target_user.first_name}!</b>\n"
             f"<b>Looted: {format_money(amount)}</b>", 
             parse_mode=ParseMode.HTML
@@ -95,15 +99,12 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode=ParseMode.HTML
         )
 
-# --- ❤️ 3. REVIVE COMMAND (Fixed: Target Revive Included) ---
+# --- ❤️ 3. REVIVE COMMAND ---
 async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """User can revive themselves or others by reply."""
     if not await check_economy(update): return
-    
     user = update.effective_user
     user_db = ensure_user_exists(user)
     
-    # Check if reviving someone else via reply
     if update.message.reply_to_message:
         target_user = update.message.reply_to_message.from_user
     else:
@@ -117,7 +118,6 @@ async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_db.get('balance', 0) < REVIVE_COST: 
         return await update.message.reply_text(f"<b>❌ Revive costs: {format_money(REVIVE_COST)}</b>", parse_mode=ParseMode.HTML)
 
-    # Deduct from sender, revive target
     users_collection.update_one({"user_id": target_user.id}, {"$set": {"status": "alive", "death_time": None}})
     users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": -REVIVE_COST}})
     
