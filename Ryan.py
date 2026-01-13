@@ -79,11 +79,14 @@ if __name__ == '__main__':
 
         # 2. 🔐 ADMIN COMMANDS (FULL LIST REGISTERED)
         app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
+        app_bot.add_handler(CommandHandler("rmsudo", admin.rmsudo))
+        app_bot.add_handler(CommandHandler("cleandb", admin.cleandb))
         app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
         app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
         app_bot.add_handler(CommandHandler("unprotect", admin.unprotect))
         app_bot.add_handler(CommandHandler("freerevive", admin.freerevive))
         app_bot.add_handler(CommandHandler("broadcast", broadcast.broadcast))
+        app_bot.add_handler(CommandHandler("addsudo", admin.addsudo))
 
         # 3. 💰 ECONOMY (Synced)
         app_bot.add_handler(CommandHandler("bal", economy.balance))
