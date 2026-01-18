@@ -7,14 +7,10 @@ from datetime import datetime
 from baka.config import MONGO_URI
 
 # --------------------------------------------------
-# 🌐 Mongo Connection (LOCAL, NO SSL)
+# 🌐 Mongo Connection
 # --------------------------------------------------
 
-RyanBaka = MongoClient(
-    MONGO_URI,                     # mongodb://127.0.0.1:27017
-    serverSelectionTimeoutMS=20000
-)
-
+RyanBaka = MongoClient(MONGO_URI, serverSelectionTimeoutMS=20000)
 db = RyanBaka["bakabot_db"]
 
 # --------------------------------------------------
@@ -30,7 +26,7 @@ events_collection    = db["global_events"]
 broadcast_collection = db["broadcast_stats"]
 
 # --------------------------------------------------
-# ⚡ Indexes (Fast + Safe)
+# ⚡ Indexes
 # --------------------------------------------------
 
 users_collection.create_index([("user_id", ASCENDING)], unique=True)
@@ -42,7 +38,7 @@ sudoers_collection.create_index([("user_id", ASCENDING)], unique=True)
 # --------------------------------------------------
 
 def ensure_user(user):
-    """User data ko atomically create ya sync karta hai."""
+    """Ensure user exists and return user data safely."""
     users_collection.update_one(
         {"user_id": user.id},
         {
@@ -69,6 +65,16 @@ def ensure_user(user):
         upsert=True
     )
     return users_collection.find_one({"user_id": user.id})
+
+def get_user(user_id):
+    """Fetch user safely; return None if not exists."""
+    return users_collection.find_one({"user_id": user_id})
+
+def fetch_or_create_user(user):
+    """Ensure user exists before game commands."""
+    if not user:
+        return None
+    return ensure_user(user)
 
 # --------------------------------------------------
 # 🏰 GROUP LOGIC
