@@ -13,10 +13,10 @@ def get_start_keyboard(bot_username):
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("💬 𝚃𝙰𝙻𝙺 𝚃𝙾 𝙱𝙰𝙺𝙰", callback_data="talk_baka"),
-            InlineKeyboardButton("⏤͟͞ 𝘽𝘼𝙆𝘼", url=OWNER_LINK)
+            InlineKeyboardButton("⏤͟͞ 𝘽𝘼𝙺𝘼", url=OWNER_LINK)
         ],
         [
-            InlineKeyboardButton("🧸 𝙵𝚁𝙸𝙴𝙽𝙳𝚂", url="https://t.me/hamaribaka"),
+            InlineKeyboardButton("🧸 𝙵𝚁𝙸𝙴𝙽𝙳𝚂", url="https://t.me/codebotnetwork"),
             InlineKeyboardButton("𝙶𝙰𝙼𝙴𝚂 🎮", callback_data="game_features")
         ],
         [
@@ -36,7 +36,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     caption = (
         f"✨ <b>𝙷𝚎𝚢 — {user.first_name} ~</b>\n"
-        f"💌 𝚈𝚘𝚞'𝚛𝚎 𝚃𝚊𝚕𝚔𝚒𝚗𝚐 𝚃𝚘 𝙱𝙰𝙺𝙰, 𝙰 𝚂𝚊𝚜𝚜𝚢 𝙲𝚞𝚝𝚒𝚎 𝙶𝚒𝚛𝚕 💕\n\n"
+        f"💌 𝚈𝚘𝚞'𝚛𝚎 𝚃𝚊𝚕𝚔𝚒𝚗𝚐 𝚃𝚘 𝙱𝙰𝙺𝙰, 𝙰 𝚂𝚊𝚜𝚜𝚢 𝙲𝚞𝚝𝚒𝚎 💕\n\n"
         f"➬ 𝙲𝚑𝚘𝚘𝚜𝚎 𝙰𝚗 𝙾𝚙𝚝𝚒𝚘𝚗 𝙱𝚎𝚕𝚘𝚠:"
     )
     kb = get_start_keyboard(context.bot.username)
@@ -50,7 +50,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_photo(photo=START_IMG_URL, caption=caption, reply_markup=kb, parse_mode=ParseMode.HTML)
 
 # --- 🛡 ADMIN HELP COMMAND (.help) ---
-# Yeh wahi menu hai jo aapke Screenshot 4 mein hai
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "🛡 <b>Admin Commands (.prefix only):</b>\n"
@@ -72,7 +71,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text=help_text, parse_mode=ParseMode.HTML)
 
 # --- 💰 ECONOMY COMMAND (/economy) ---
-# Matches Screenshot 1
 async def economy_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
     eco_text = (
         "💰 <b>Baka Economy System Guide</b>\n\n"
@@ -91,19 +89,14 @@ async def economy_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• /topkill — See top 10 killers ( 👤 normal)\n\n"
         "👤 Normal users can rob and kill 200 users ."
     )
-    # Note: Using HTML safely. Telegram text usually doesn't show colors unless coded, 
-    # but this structure matches your image structure.
     await update.message.reply_text(text=eco_text, parse_mode=ParseMode.HTML)
 
 # --- 💣 GAME COMMAND (/game) ---
-# Matches Screenshot 3
 async def game_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bomb_text = (
         "💣 <b>Bomb Game Rules</b>\n\n"
-        "1️⃣ /bomb &lt;amount&gt; - Start a bomb game\n"
-        "with entry fee\n"
-        "2️⃣ /join &lt;amount&gt; - Join the game before it\n"
-        "starts\n"
+        "1️⃣ /bomb &lt;amount&gt; - Start a bomb game with entry fee\n"
+        "2️⃣ /join &lt;amount&gt; - Join the game before it starts\n"
         "3️⃣ /pass - Pass the bomb when you have it\n"
         "4️⃣ /myrank - Check your or your friend's rank\n"
         "5️⃣ /leaders - Check bomb game leaderboard\n\n"
@@ -114,8 +107,7 @@ async def game_guide(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "❗ <b>Admin Power</b>\n"
         "• Admins can cancel game using /bombcancel\n"
         "• Entry fees will be refunded\n\n"
-        "🎯 Be fast! Hold the bomb too long and BOOM\n"
-        "💥"
+        "🎯 Be fast! Hold the bomb too long and BOOM 💥"
     )
     await update.message.reply_text(text=bomb_text, parse_mode=ParseMode.HTML)
 
@@ -128,7 +120,6 @@ async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start(update, context)
         
     elif data == "talk_baka":
-        # Matches Text response for Talk
         talk_text = "To talk to me, just send me any message 💬✨"
         try:
             await query.message.edit_caption(
@@ -139,7 +130,6 @@ async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except: pass
         
     elif data == "game_features":
-        # Matches Screenshot 2
         game_text = (
             "🎮 <b>Game Features</b>\n\n"
             "To know about the <b>Lottery System</b>, tap /game\n"
@@ -154,7 +144,7 @@ async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         except: pass
 
-# --- 🆘 HELP CALLBACK (Fix for AttributeError) ---
+# --- 🆘 HELP CALLBACK ---
 async def help_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     if query.data == "return_start":
