@@ -1,6 +1,7 @@
-import logging
-from pytz import UTC
+# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
+# FINAL MASTER RYAN.PY - FULL VPS READY (FLASK REMOVED, TIMEZONE FIX)
 
+import logging
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -17,9 +18,7 @@ logger = logging.getLogger(__name__)
 
 # --- INTERNAL IMPORTS ---
 try:
-    from baka.config import TOKEN
-    from baka.utils import BOT_NAME
-
+    from baka.config import TOKEN, BOT_NAME
     import baka.plugins.start as start
     import baka.plugins.economy as economy
     import baka.plugins.game as game
@@ -34,12 +33,14 @@ except ImportError as e:
     print(f"CRITICAL IMPORT ERROR: {e}")
     raise SystemExit(1)
 
-# --- BOT COMMAND MENU ---
+# --- BOT COMMAND MENU (POST INIT) ---
 async def post_init(application):
     commands = [
+        # Core & Welcome
         ("start", "Start the bot"),
         ("welcome", "Welcome message setup"),
 
+        # Admin & Sudo
         ("sudo", "Sudo control panel"),
         ("addcoins", "Add coins to user"),
         ("rmcoins", "Remove coins from user"),
@@ -51,6 +52,7 @@ async def post_init(application):
         ("cleandb", "Clean database"),
         ("broadcast", "Broadcast message"),
 
+        # Economy
         ("bal", "Check wallet balance"),
         ("daily", "Daily bonus"),
         ("toprich", "Top richest users"),
@@ -58,11 +60,13 @@ async def post_init(application):
         ("topkill", "Top killers"),
         ("give", "Give coins to user"),
 
+        # Game
         ("kill", "Kill a user"),
         ("rob", "Rob a user"),
         ("revive", "Revive yourself"),
         ("protect", "Enable protection"),
 
+        # Fun & Info
         ("brain", "Check IQ level"),
         ("id", "Get user/chat ID"),
         ("dice", "Roll dice"),
@@ -72,6 +76,7 @@ async def post_init(application):
         ("hug", "Hug someone"),
         ("kiss", "Kiss someone"),
 
+        # System
         ("ping", "Check bot ping"),
         ("open", "Open economy"),
         ("close", "Close economy"),
@@ -82,7 +87,7 @@ async def post_init(application):
 # --- MAIN ---
 if __name__ == "__main__":
     if not TOKEN:
-        raise RuntimeError("BOT TOKEN IS MISSING")
+        raise RuntimeError("TOKEN is missing in environment variables")
 
     request = HTTPXRequest(
         connection_pool_size=30,
@@ -93,16 +98,16 @@ if __name__ == "__main__":
         ApplicationBuilder()
         .token(TOKEN)
         .request(request)
-        .timezone(UTC)          # ✅ FIX FOR APSCHEDULER ERROR
         .post_init(post_init)
         .build()
     )
 
+    # --- HANDLERS ---
     # Core & Welcome
     app_bot.add_handler(CommandHandler("start", start.start))
     app_bot.add_handler(CommandHandler("welcome", welcome.welcome_command))
 
-    # Admin
+    # Admin & Sudo
     app_bot.add_handler(CommandHandler("sudo", admin.sudo_help))
     app_bot.add_handler(CommandHandler("addcoins", admin.addcoins))
     app_bot.add_handler(CommandHandler("rmcoins", admin.rmcoins))
@@ -131,7 +136,7 @@ if __name__ == "__main__":
     app_bot.add_handler(CommandHandler("revive", game.revive))
     app_bot.add_handler(CommandHandler("protect", game.protect))
 
-    # Fun
+    # Fun & Info
     app_bot.add_handler(CommandHandler("brain", fun.brain))
     app_bot.add_handler(CommandHandler("id", fun.get_id))
     app_bot.add_handler(CommandHandler("dice", fun.dice))
