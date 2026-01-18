@@ -1,31 +1,41 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Database Logic - Sync with Economy, Protection, Flash, Couple & Broadcast
+# Final Database Logic - VPS Ready (Local MongoDB, NO SSL)
 
 from pymongo import MongoClient, ASCENDING
-import certifi
 import time
 from datetime import datetime
 from baka.config import MONGO_URI
 
 # --------------------------------------------------
-# 🌐 Mongo Connection
+# 🌐 Mongo Connection (LOCAL, NO SSL)
 # --------------------------------------------------
-# SSL verification ke liye certifi ka use kiya gaya hai
-RyanBaka = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+
+RyanBaka = MongoClient(
+    MONGO_URI,                     # mongodb://127.0.0.1:27017
+    serverSelectionTimeoutMS=20000
+)
+
 db = RyanBaka["bakabot_db"]
 
-# Collections mapping
+# --------------------------------------------------
+# 📦 Collections
+# --------------------------------------------------
+
 users_collection     = db["users"]
 groups_collection    = db["groups"]
 sudoers_collection   = db["sudoers"]
 chatbot_collection   = db["chatbot"]
 riddles_collection   = db["riddles"]
 events_collection    = db["global_events"]
-broadcast_collection = db["broadcast_stats"] # Broadcast history track karne ke liye
+broadcast_collection = db["broadcast_stats"]
 
-# Fast performance ke liye unique indexes
+# --------------------------------------------------
+# ⚡ Indexes (Fast + Safe)
+# --------------------------------------------------
+
 users_collection.create_index([("user_id", ASCENDING)], unique=True)
 groups_collection.create_index([("chat_id", ASCENDING)], unique=True)
+sudoers_collection.create_index([("user_id", ASCENDING)], unique=True)
 
 # --------------------------------------------------
 # 👤 USER LOGIC
@@ -45,11 +55,11 @@ def ensure_user(user):
                 "status": "alive",
                 "waifus": [],
                 "inventory": [],
-                "protection_expiry": None,      # Shield status
-                "last_daily_claim": None,       # 24h Daily tracker
-                "last_event_collected": None,   # Flash Event tracker
+                "protection_expiry": None,
+                "last_daily_claim": None,
+                "last_event_collected": None,
                 "created_at": datetime.utcnow(),
-                "seen_groups": []               # Couple generation filter ke liye
+                "seen_groups": []
             },
             "$set": {
                 "name": user.first_name,
@@ -65,7 +75,6 @@ def ensure_user(user):
 # --------------------------------------------------
 
 def get_group_data(chat_id, title=None):
-    """Group data retrieve karta hai Economy Toggle (Open/Close) support ke saath."""
     group = groups_collection.find_one({"chat_id": chat_id})
     if not group:
         group = {
@@ -73,7 +82,7 @@ def get_group_data(chat_id, title=None):
             "title": title or "Unknown Group",
             "treasury": 10000,
             "claimed": False,
-            "economy_enabled": True,  # /open aur /close ke liye
+            "economy_enabled": True,
             "daily_activity": 0,
             "weekly_activity": 0,
             "last_active": int(time.time())
@@ -82,13 +91,16 @@ def get_group_data(chat_id, title=None):
     return group
 
 def update_group_activity(chat_id, title=None):
-    """Groups ke activity scores aur message count track karta hai."""
+    update = {
+        "$inc": {"daily_activity": 1, "weekly_activity": 1, "treasury": 10},
+        "$set": {"last_active": int(time.time())}
+    }
+    if title:
+        update["$set"]["title"] = title
+
     groups_collection.update_one(
         {"chat_id": chat_id},
-        {
-            "$inc": {"daily_activity": 1, "weekly_activity": 1, "treasury": 10},
-            "$set": {"last_active": int(time.time()), "title": title} if title else {"$set": {"last_active": int(time.time())}}
-        },
+        update,
         upsert=True
     )
 
@@ -97,19 +109,17 @@ def update_group_activity(chat_id, title=None):
 # --------------------------------------------------
 
 def cleanup_expired_protection():
-    """Expired protection shields ko automically hatata hai."""
     now = datetime.utcnow()
     result = users_collection.update_many(
-        {"protection_expiry": {"$lte": now}}, 
-        {"$set": {"protection_expiry": None}} 
+        {"protection_expiry": {"$lte": now}},
+        {"$set": {"protection_expiry": None}}
     )
     return result.modified_count
 
 def set_collect_event(event_date_time):
-    """20-second flash event ka time schedule karta hai."""
     events_collection.update_one(
         {"event_name": "flash_collect"},
-        {"$set": {"start_at": event_date_time}}, 
+        {"$set": {"start_at": event_date_time}},
         upsert=True
     )
 
@@ -118,9 +128,7 @@ def set_collect_event(event_date_time):
 # --------------------------------------------------
 
 def get_all_chats():
-    """Sabhie groups ki chat_id return karta hai."""
     return [g["chat_id"] for g in groups_collection.find({}, {"chat_id": 1})]
 
 def get_all_users():
-    """Sabhie users ki user_id return karta hai."""
     return [u["user_id"] for u in users_collection.find({}, {"user_id": 1})]
