@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL ADMIN PLUGIN - 7 COMMANDS - NEZUKO MONOSPACE STYLE
+# FINAL ADMIN PLUGIN - ALL 7 COMMANDS INCLUDED - STABLE
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
@@ -9,7 +9,7 @@ from baka.config import OWNER_ID, SUDO_IDS
 from baka.utils import resolve_target, format_money
 from baka.database import users_collection, sudoers_collection, groups_collection
 
-# --- 🎨 NEZUKO FONT HELPER (FIXED FOR REAL MONOSPACE) ---
+# --- 🎨 NEZUKO FONT HELPER ---
 def nezuko(text):
     """Converts text to Small Caps and wraps in Monospace."""
     clean_text = str(text).replace("<", "").replace(">", "")
@@ -40,23 +40,27 @@ async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
-# --- 💰 2. ADD COINS (FIXED UNPACKING & REPLY) ---
+# --- 🛡️ 2. UNPROTECT (FIXED & ADDED) ---
+async def unprotect(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Removes protection shield from a user."""
+    if not is_authorized(update.effective_user.id): return
+    resolved = await resolve_target(update, context)
+    target = resolved[0] if isinstance(resolved, tuple) else resolved
+    if target:
+        await ask(update, f"{nezuko('remove shield from')} {target['name']}?", "unprotect", str(target["user_id"]))
+
+# --- 💰 3. ADD COINS ---
 async def addcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id): return
     try:
-        if not context.args:
-            return await update.message.reply_text(nezuko("❌ usage: /addcoins 1000"), parse_mode=ParseMode.HTML)
         amount = int(context.args[0])
         resolved = await resolve_target(update, context)
         target = resolved[0] if isinstance(resolved, tuple) else resolved
         if target:
             await ask(update, f"{nezuko('add')} {format_money(amount)} {nezuko('to')} {target['name']}?", "addcoins", f"{target['user_id']}|{amount}")
-        else:
-            await update.message.reply_text(nezuko("❌ reply to a user !"), parse_mode=ParseMode.HTML)
-    except Exception as e:
-        await update.message.reply_text(nezuko(f"❌ error: {e}"), parse_mode=ParseMode.HTML)
+    except: await update.message.reply_text(nezuko("❌ usage: /addcoins 1000"))
 
-# --- 💰 3. REMOVE COINS ---
+# --- 💰 4. REMOVE COINS ---
 async def rmcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id): return
     try:
@@ -67,29 +71,28 @@ async def rmcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await ask(update, f"{nezuko('remove')} {format_money(amount)} {nezuko('from')} {target['name']}?", "rmcoins", f"{target['user_id']}|{amount}")
     except: pass
 
-# --- 🛡️ 4. FREE REVIVE ---
-async def freerevive(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_authorized(update.effective_user.id): return
-    resolved = await resolve_target(update, context)
-    target = resolved[0] if isinstance(resolved, tuple) else resolved
-    if target:
-        await ask(update, f"{nezuko('free revive')} {target['name']}?", "freerevive", str(target["user_id"]))
-
-# --- 🛡️ 5. UNPROTECT ---
-async def unprotect(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_authorized(update.effective_user.id): return
-    resolved = await resolve_target(update, context)
-    target = resolved[0] if isinstance(resolved, tuple) else resolved
-    if target:
-        await ask(update, f"{nezuko('remove shield from')} {target['name']}?", "unprotect", str(target["user_id"]))
-
-# --- 👑 6. ADD SUDO (OWNER ONLY) ---
+# --- 👑 5. ADD/REMOVE SUDO ---
 async def addsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     resolved = await resolve_target(update, context)
     target = resolved[0] if isinstance(resolved, tuple) else resolved
     if target:
         await ask(update, f"{nezuko('make')} {target['name']} {nezuko('a sudo')}?", "addsudo", str(target["user_id"]))
+
+async def rmsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    resolved = await resolve_target(update, context)
+    target = resolved[0] if isinstance(resolved, tuple) else resolved
+    if target:
+        await ask(update, f"{nezuko('remove')} {target['name']} {nezuko('from sudo')}?", "rmsudo", str(target["user_id"]))
+
+# --- 🛡️ 6. FREE REVIVE ---
+async def freerevive(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update.effective_user.id): return
+    resolved = await resolve_target(update, context)
+    target = resolved[0] if isinstance(resolved, tuple) else resolved
+    if target:
+        await ask(update, f"{nezuko('free revive')} {target['name']}?", "freerevive", str(target["user_id"]))
 
 # --- 👑 7. CLEAN DATABASE ---
 async def cleandb(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -111,20 +114,27 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         data = q.data.split("|")
         act, arg = data[1], data[2]
-        if act == "cancel": return await q.message.edit_text(nezuko("❌ cancelled."), parse_mode=ParseMode.HTML)
+        if act == "cancel": return await q.message.edit_text(nezuko("❌ cancelled."))
         
-        if act == "addcoins":
+        if act == "unprotect":
+            users_collection.update_one({"user_id": int(arg)}, {"$set": {"protection_expiry": None}})
+            await q.message.edit_text(nezuko("🛡️ protection removed."))
+        elif act == "addcoins":
             uid, amt = map(int, arg.split("|"))
             users_collection.update_one({"user_id": uid}, {"$inc": {"balance": amt}})
-            await q.message.edit_text(nezuko(f"✅ added {amt} coins."), parse_mode=ParseMode.HTML)
+            await q.message.edit_text(nezuko(f"✅ added {amt} coins."))
+        elif act == "rmsudo":
+            uid = int(arg)
+            sudoers_collection.delete_one({"user_id": uid})
+            await q.message.edit_text(nezuko(f"❌ {uid} removed from sudo."))
         elif act == "addsudo":
             uid = int(arg)
             sudoers_collection.update_one({"user_id": uid}, {"$set": {"user_id": uid}}, upsert=True)
-            await q.message.edit_text(nezuko(f"✅ {uid} added as sudo."), parse_mode=ParseMode.HTML)
+            await q.message.edit_text(nezuko(f"✅ {uid} added as sudo."))
         elif act == "freerevive":
             users_collection.update_one({"user_id": int(arg)}, {"$set": {"status": "alive"}})
-            await q.message.edit_text(nezuko("💖 user revived."), parse_mode=ParseMode.HTML)
+            await q.message.edit_text(nezuko("💖 user revived."))
         elif act == "cleandb":
             users_collection.delete_many({}); groups_collection.delete_many({})
-            await q.message.edit_text(nezuko("💥 database wiped."), parse_mode=ParseMode.HTML)
-    except Exception as e: await q.message.edit_text(f"❌ {nezuko('error')}: {e}", parse_mode=ParseMode.HTML)
+            await q.message.edit_text(nezuko("💥 database wiped."))
+    except Exception as e: await q.message.edit_text(f"❌ {nezuko('error')}: {e}")
