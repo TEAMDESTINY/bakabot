@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# BAKA ADMIN PLUGIN - ALL COMMANDS FINALIZED
+# FINAL ADMIN PLUGIN - FULL COMMANDS (ADDSUDO/RMSUDO INCLUDED)
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
@@ -11,11 +11,14 @@ from baka.database import users_collection, sudoers_collection, groups_collectio
 
 # --- 🎨 NEZUKO FONT HELPER ---
 def nezuko(text):
-    """Converts text to Small Caps and Monospace."""
-    mapping = str.maketrans("abcdefghijklmnopqrstuvwxyz", "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ")
+    """Converts text to Small Caps and wraps in Monospace."""
+    mapping = str.maketrans(
+        "abcdefghijklmnopqrstuvwxyz",
+        "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ"
+    )
     return f"<code>{text.lower().translate(mapping)}</code>"
 
-# --- 🔐 AUTH CHECK (DB SYNCED) ---
+# --- 🔐 AUTH CHECK ---
 def is_authorized(user_id: int) -> bool:
     """Checks if user is Owner or in DB Sudoers."""
     db_sudos = [s['user_id'] for s in sudoers_collection.find()]
@@ -38,38 +41,37 @@ async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
-# --- 👑 SUDO MANAGEMENT (OWNER ONLY) ---
+# --- 👑 SUDO MANAGEMENT (FIXED FOR BAKA) ---
 async def addsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Adds a user to sudo list."""
     if update.effective_user.id != OWNER_ID: return
-    target, _ = await resolve_target(update, context)
+    resolved = await resolve_target(update, context)
+    target = resolved[0] if isinstance(resolved, tuple) else resolved
     if target:
-        uid = target['user_id']
-        sudoers_collection.update_one({"user_id": uid}, {"$set": {"user_id": uid}}, upsert=True)
-        if uid not in SUDO_IDS: SUDO_IDS.append(uid)
-        await update.message.reply_text(nezuko(f"✅ {target['name']} added as sudo."))
+        await ask(update, nezuko(f"make {target['name']} a sudo?"), "addsudo", str(target["user_id"]))
 
 async def rmsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Removes a user from sudo list."""
     if update.effective_user.id != OWNER_ID: return
-    target, _ = await resolve_target(update, context)
+    resolved = await resolve_target(update, context)
+    target = resolved[0] if isinstance(resolved, tuple) else resolved
     if target:
-        uid = target['user_id']
-        sudoers_collection.delete_one({"user_id": uid})
-        if uid in SUDO_IDS: SUDO_IDS.remove(uid)
-        await update.message.reply_text(nezuko(f"❌ {uid} removed from sudo."))
+        await ask(update, nezuko(f"remove {target['name']} from sudo?"), "rmsudo", str(target["user_id"]))
 
 async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id): return
-    sudos = list(sudoers_collection.find())
     msg = f"🛡️ {nezuko('Sudoers List')}\n\n👑 ᴏᴡɴᴇʀ: <code>{OWNER_ID}</code>\n"
-    for s in sudos: msg += f"• <code>{s['user_id']}</code>\n"
+    for s in sudoers_collection.find():
+        msg += f"• <code>{s['user_id']}</code>\n"
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
-# --- 💰 ECONOMY ---
+# --- 💰 ECONOMY ACTIONS ---
 async def addcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id): return
     try:
         amount = int(context.args[0])
-        target, _ = await resolve_target(update, context)
+        resolved = await resolve_target(update, context)
+        target = resolved[0] if isinstance(resolved, tuple) else resolved
         if target:
             await ask(update, nezuko(f"add {format_money(amount)} to {target['name']}?"), "addcoins", f"{target['user_id']}|{amount}")
     except: await update.message.reply_text(nezuko("❌ usage: /addcoins 1000 @user"))
@@ -78,21 +80,24 @@ async def rmcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id): return
     try:
         amount = int(context.args[0])
-        target, _ = await resolve_target(update, context)
+        resolved = await resolve_target(update, context)
+        target = resolved[0] if isinstance(resolved, tuple) else resolved
         if target:
             await ask(update, nezuko(f"remove {format_money(amount)} from {target['name']}?"), "rmcoins", f"{target['user_id']}|{amount}")
     except: await update.message.reply_text(nezuko("❌ usage: /rmcoins 1000 @user"))
 
-# --- 🛡️ SYSTEM ---
+# --- 🛡️ SYSTEM ACTIONS ---
 async def freerevive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id): return
-    target, _ = await resolve_target(update, context)
+    resolved = await resolve_target(update, context)
+    target = resolved[0] if isinstance(resolved, tuple) else resolved
     if target:
         await ask(update, nezuko(f"free revive {target['name']}?"), "freerevive", str(target["user_id"]))
 
 async def unprotect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id): return
-    target, _ = await resolve_target(update, context)
+    resolved = await resolve_target(update, context)
+    target = resolved[0] if isinstance(resolved, tuple) else resolved
     if target:
         await ask(update, nezuko(f"remove shield from {target['name']}?"), "unprotect", str(target["user_id"]))
 
@@ -112,12 +117,21 @@ async def confirm_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     if not is_authorized(q.from_user.id): return
+
     try:
         data = q.data.split("|")
         act, arg = data[1], data[2]
         if act == "cancel": return await q.message.edit_text(nezuko("❌ cancelled."))
         
-        if act == "addcoins":
+        if act == "addsudo":
+            uid = int(arg)
+            sudoers_collection.update_one({"user_id": uid}, {"$set": {"user_id": uid}}, upsert=True)
+            await q.message.edit_text(nezuko(f"✅ {uid} added as sudo."))
+        elif act == "rmsudo":
+            uid = int(arg)
+            sudoers_collection.delete_one({"user_id": uid})
+            await q.message.edit_text(nezuko(f"❌ {uid} removed from sudo."))
+        elif act == "addcoins":
             uid, amt = map(int, arg.split("|"))
             users_collection.update_one({"user_id": uid}, {"$inc": {"balance": amt}})
             await q.message.edit_text(nezuko(f"✅ added {amt} coins."))
