@@ -1,4 +1,6 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
+# Final Events Plugin - Fixed Claim Logic + Nezuko Style Monospace
+
 import html
 from datetime import datetime
 from telegram import Update, ChatMember
@@ -8,53 +10,86 @@ from baka.utils import get_mention, log_to_channel, format_money, ensure_user_ex
 from baka.database import groups_collection, users_collection
 from baka.config import MIN_CLAIM_MEMBERS
 
-# --- ⚙️ ECONOMY TOGGLE COMMANDS (.open / .close logic) ---
+# --- 🎨 NEZUKO FONT CONVERTER ---
+def nezuko_style(text):
+    """Converts normal text to Small Caps and wraps in Monospace."""
+    lowered = text.lower()
+    mapping = str.maketrans(
+        "abcdefghijklmnopqrstuvwxyz",
+        "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ"
+    )
+    small_caps = lowered.translate(mapping)
+    return f"<code>{small_caps}</code>"
+
+# --- ⚙️ ECONOMY TOGGLE COMMANDS ---
 
 async def open_economy(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Economy commands ko enable karne ke liye."""
-    chat = update.effective_chat
-    user = update.effective_user
-
-    # Screenshot check: Group only message
+    chat, user = update.effective_chat, update.effective_user
     if chat.type == ChatType.PRIVATE:
-        return await update.message.reply_text("❌ You can use these commands in groups only.")
+        return await update.message.reply_text(nezuko_style("❌ ᴜsᴇ ɪɴ ɢʀᴏᴜᴘs ᴏɴʟʏ."))
 
-    # Admin Check
     member = await chat.get_member(user.id)
     if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
-        return await update.message.reply_text("❌ Only admins can use this command.")
+        return await update.message.reply_text(nezuko_style("❌ ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs."))
 
-    # Database Update
-    groups_collection.update_one(
-        {"chat_id": chat.id},
-        {"$set": {"economy_enabled": True}},
-        upsert=True
-    )
-    await update.message.reply_text("✅ All economy commands have been enabled.")
+    groups_collection.update_one({"chat_id": chat.id}, {"$set": {"economy_enabled": True}}, upsert=True)
+    await update.message.reply_text(nezuko_style("✅ ᴇᴄᴏɴᴏᴍʏ ᴄᴏᴍᴍᴀɴᴅs ᴇɴᴀʙʟᴇᴅ."))
 
 async def close_economy(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Economy commands ko disable karne ke liye."""
-    chat = update.effective_chat
-    user = update.effective_user
-
-    # Screenshot check: Smiley style message for close
+    chat, user = update.effective_chat, update.effective_user
     if chat.type == ChatType.PRIVATE:
-        return await update.message.reply_text(":) You can use these commands in groups only.")
+        return await update.message.reply_text(nezuko_style(":) ᴜsᴇ ɪɴ ɢʀᴏᴜᴘs ᴏɴʟʏ."))
 
-    # Admin Check
     member = await chat.get_member(user.id)
     if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
-        return await update.message.reply_text("❌ Only admins can use this command.")
+        return await update.message.reply_text(nezuko_style("❌ ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs."))
 
-    # Database Update
+    groups_collection.update_one({"chat_id": chat.id}, {"$set": {"economy_enabled": False}}, upsert=True)
+    await update.message.reply_text(nezuko_style("✅ ᴇᴄᴏɴᴏᴍʏ ᴄᴏᴍᴍᴀɴᴅs ᴅɪsᴀʙʟᴇᴅ."))
+
+# --- 📥 CLAIM GROUP (FIXED LOGIC) ---
+
+async def claim_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Allows group owners to claim a one-time reward for the bot joining."""
+    chat, user = update.effective_chat, update.effective_user
+    if chat.type == ChatType.PRIVATE: 
+        return await update.message.reply_text(nezuko_style("❌ ᴄʟᴀɪᴍ ɪɴ ɢʀᴏᴜᴘs ᴏɴʟʏ."))
+    
+    # Member count logic fix
+    members_count = await context.bot.get_chat_member_count(chat.id)
+    if members_count < MIN_CLAIM_MEMBERS:
+        return await update.message.reply_text(nezuko_style(f"⚠️ ɴᴇᴇᴅ {MIN_CLAIM_MEMBERS} ᴍᴇᴍʙᴇʀs ᴛᴏ ᴄʟᴀɪᴍ!"))
+
+    group_data = groups_collection.find_one({"chat_id": chat.id})
+    if group_data and group_data.get("reward_claimed"):
+        return await update.message.reply_text(nezuko_style("🚫 ʀᴇᴡᴀʀᴅ ᴀʟʀᴇᴀᴅʏ ᴄʟᴀɪᴍᴇᴅ ʜᴇʀᴇ!"))
+
+    # Admin check for the person claiming
+    member = await chat.get_member(user.id)
+    if member.status not in [ChatMember.ADMINISTRATOR, ChatMember.OWNER]:
+        return await update.message.reply_text(nezuko_style("❌ ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴄʟᴀɪᴍ ᴛʜɪs."))
+
+    reward = 10000 if members_count < 500 else 25000
+    ensure_user_exists(user)
+    
+    # Update Database
+    users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": reward}})
+    groups_collection.update_one({"chat_id": chat.id}, {"$set": {"reward_claimed": True}}, upsert=True)
+    
+    await update.message.reply_text(
+        nezuko_style(f"🎉 ʀᴇᴡᴀʀᴅ ᴄʟᴀɪᴍᴇᴅ: {format_money(reward)} 🌹"), 
+        parse_mode=ParseMode.HTML
+    )
+
+# --- 📊 TRACKERS ---
+
+async def group_tracker(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_chat or update.effective_chat.type == ChatType.PRIVATE: return
     groups_collection.update_one(
-        {"chat_id": chat.id},
-        {"$set": {"economy_enabled": False}},
+        {"chat_id": update.effective_chat.id}, 
+        {"$set": {"title": update.effective_chat.title, "active": True}, "$inc": {"activity_score": 1}}, 
         upsert=True
     )
-    await update.message.reply_text("✅ All economy commands have been disabled.")
-
-# --- 📥 EXISTING HANDLERS ---
 
 async def chat_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.my_chat_member: return
@@ -63,32 +98,5 @@ async def chat_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     if new.status in [ChatMember.MEMBER, ChatMember.ADMINISTRATOR] and old.status not in [ChatMember.MEMBER, ChatMember.ADMINISTRATOR]:
         groups_collection.update_one({"chat_id": chat.id}, {"$set": {"title": chat.title, "active": True}}, upsert=True)
-        log_details = {"Action": "📥 Bot Joined Group", "Group": f"<b>{html.escape(chat.title)}</b>", "ID": f"<code>{chat.id}</code>", "By": f"{get_mention(user)}"}
-        await log_to_channel(context.bot, "group_log", log_details)
-    
     elif new.status in [ChatMember.LEFT, ChatMember.BANNED]:
         groups_collection.update_one({"chat_id": chat.id}, {"$set": {"active": False}})
-        log_details = {"Action": "📤 Bot Left Group", "Group": f"<b>{html.escape(chat.title)}</b>", "ID": f"<code>{chat.id}</code>"}
-        await log_to_channel(context.bot, "group_log", log_details)
-
-async def claim_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat, user = update.effective_chat, update.effective_user
-    if chat.type == ChatType.PRIVATE: return
-    
-    members_count = await chat.get_member_count()
-    if members_count < MIN_CLAIM_MEMBERS:
-        return await update.message.reply_text(f"⚠️ Need {MIN_CLAIM_MEMBERS} members!")
-
-    group_data = groups_collection.find_one({"chat_id": chat.id})
-    if group_data and group_data.get("reward_claimed"):
-        return await update.message.reply_text("🚫 Reward already claimed here!")
-
-    reward = 10000 if members_count < 500 else 25000
-    ensure_user_exists(user)
-    users_collection.update_one({"user_id": user.id}, {"$inc": {"balance": reward}})
-    groups_collection.update_one({"chat_id": chat.id}, {"$set": {"reward_claimed": True}}, upsert=True)
-    await update.message.reply_text(f"🎉 <b>Reward Claimed:</b> <code>{format_money(reward)}</code> 🌹", parse_mode=ParseMode.HTML)
-
-async def group_tracker(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.effective_chat or update.effective_chat.type == ChatType.PRIVATE: return
-    groups_collection.update_one({"chat_id": update.effective_chat.id}, {"$set": {"title": update.effective_chat.title, "active": True}, "$inc": {"activity_score": 1}}, upsert=True)
