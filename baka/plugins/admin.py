@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL ADMIN.PY — DIRECT ACTIONS (NO CONFIRM HANDLER)
+# FINAL ADMIN.PY — STABLE (NO CONFIRM HANDLER, NO CRASH)
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -10,23 +10,31 @@ from baka.utils import resolve_target, format_money
 from baka.database import users_collection, sudoers_collection, groups_collection
 
 
-# ─── 🎨 NEZUKO FONT ────────────────────────────────────────────────────────────
+# ─── NEZUKO FONT ──────────────────────────────────────────────────────────────
 def nezuko(text):
-    clean_text = str(text).replace("<", "").replace(">", "")
+    clean = str(text).replace("<", "").replace(">", "")
     mapping = str.maketrans(
         "abcdefghijklmnopqrstuvwxyz",
         "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ"
     )
-    return f"<code>{clean_text.lower().translate(mapping)}</code>"
+    return f"<code>{clean.lower().translate(mapping)}</code>"
 
 
-# ─── 🔐 AUTH CHECK ─────────────────────────────────────────────────────────────
+# ─── AUTH CHECK ───────────────────────────────────────────────────────────────
 def is_authorized(user_id: int) -> bool:
-    db_sudos = [s["user_id"] for s in sudoers_collection.find({}, {"_id": 0, "user_id": 1})]
+    db_sudos = [s["user_id"] for s in sudoers_collection.find()]
     return user_id == OWNER_ID or user_id in SUDO_IDS or user_id in db_sudos
 
 
-# ─── 📋 SUDO HELP ──────────────────────────────────────────────────────────────
+# ─── SAFE TARGET RESOLVER ─────────────────────────────────────────────────────
+async def get_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    result = await resolve_target(update, context)
+    if not result or not isinstance(result, (list, tuple)):
+        return None
+    return result[0]
+
+
+# ─── SUDO PANEL ───────────────────────────────────────────────────────────────
 async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id):
         return
@@ -34,8 +42,8 @@ async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         f"🔐 {nezuko('sudo panel')}\n\n"
         f"💰 <b>{nezuko('economy')}</b>\n"
-        f"• {nezuko('/addcoins amount')}\n"
-        f"• {nezuko('/rmcoins amount')}\n"
+        f"• {nezuko('/addcoins amt')}\n"
+        f"• {nezuko('/rmcoins amt')}\n"
         f"• {nezuko('/freerevive')}\n"
         f"• {nezuko('/unprotect')}\n\n"
         f"👑 <b>{nezuko('sudo management')}</b>\n"
@@ -45,12 +53,12 @@ async def sudo_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 
-# ─── 👑 SUDO LIST ──────────────────────────────────────────────────────────────
+# ─── SUDO LIST ────────────────────────────────────────────────────────────────
 async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id):
         return
 
-    sudos = list(sudoers_collection.find({}, {"_id": 0, "user_id": 1}))
+    sudos = list(sudoers_collection.find())
     msg = f"🛡️ {nezuko('sudoers list')}\n\n👑 OWNER: <code>{OWNER_ID}</code>\n"
 
     for s in sudos:
@@ -60,16 +68,15 @@ async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
 
-# ─── 👑 ADD / REMOVE SUDO ──────────────────────────────────────────────────────
+# ─── ADD / REMOVE SUDO ────────────────────────────────────────────────────────
 async def addsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id):
         return
 
-    target = (await resolve_target(update, context))
+    target = await get_target(update, context)
     if not target:
-        return await update.message.reply_text("User not found.")
-
-    target = target[0]
+        await update.message.reply_text("User not found.")
+        return
 
     sudoers_collection.update_one(
         {"user_id": target["user_id"]},
@@ -78,7 +85,7 @@ async def addsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await update.message.reply_text(
-        nezuko(f"✅ {target['name']} added as sudo"),
+        nezuko(f"{target['name']} added as sudo"),
         parse_mode=ParseMode.HTML
     )
 
@@ -87,34 +94,33 @@ async def rmsudo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id):
         return
 
-    target = (await resolve_target(update, context))
+    target = await get_target(update, context)
     if not target:
-        return await update.message.reply_text("User not found.")
-
-    target = target[0]
+        await update.message.reply_text("User not found.")
+        return
 
     sudoers_collection.delete_one({"user_id": target["user_id"]})
 
     await update.message.reply_text(
-        nezuko(f"❌ {target['name']} removed from sudo"),
+        nezuko(f"{target['name']} removed from sudo"),
         parse_mode=ParseMode.HTML
     )
 
 
-# ─── 💰 ADD / REMOVE COINS ─────────────────────────────────────────────────────
+# ─── ADD / REMOVE COINS ───────────────────────────────────────────────────────
 async def addcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id):
         return
+    if not context.args:
+        await update.message.reply_text("Usage: /addcoins 1000")
+        return
 
-    if not context.args or not context.args[0].isdigit():
-        return await update.message.reply_text(nezuko("usage: /addcoins 1000"))
+    target = await get_target(update, context)
+    if not target:
+        await update.message.reply_text("User not found.")
+        return
 
     amount = int(context.args[0])
-    target = (await resolve_target(update, context))
-    if not target:
-        return await update.message.reply_text("User not found.")
-
-    target = target[0]
 
     users_collection.update_one(
         {"user_id": target["user_id"]},
@@ -123,7 +129,7 @@ async def addcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await update.message.reply_text(
-        nezuko(f"✅ added {format_money(amount)} to {target['name']}"),
+        nezuko(f"added {format_money(amount)} to {target['name']}"),
         parse_mode=ParseMode.HTML
     )
 
@@ -131,16 +137,15 @@ async def addcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def rmcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id):
         return
+    if not context.args:
+        return
 
-    if not context.args or not context.args[0].isdigit():
-        return await update.message.reply_text(nezuko("usage: /rmcoins 1000"))
+    target = await get_target(update, context)
+    if not target:
+        await update.message.reply_text("User not found.")
+        return
 
     amount = int(context.args[0])
-    target = (await resolve_target(update, context))
-    if not target:
-        return await update.message.reply_text("User not found.")
-
-    target = target[0]
 
     users_collection.update_one(
         {"user_id": target["user_id"]},
@@ -148,56 +153,47 @@ async def rmcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await update.message.reply_text(
-        nezuko(f"❌ removed {format_money(amount)} from {target['name']}"),
+        nezuko(f"removed {format_money(amount)} from {target['name']}"),
         parse_mode=ParseMode.HTML
     )
 
 
-# ─── 🛡️ UNPROTECT ─────────────────────────────────────────────────────────────
+# ─── UNPROTECT / REVIVE ───────────────────────────────────────────────────────
 async def unprotect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id):
         return
 
-    target = (await resolve_target(update, context))
+    target = await get_target(update, context)
     if not target:
-        return await update.message.reply_text("User not found.")
-
-    target = target[0]
+        await update.message.reply_text("User not found.")
+        return
 
     users_collection.update_one(
         {"user_id": target["user_id"]},
         {"$set": {"protection_expiry": None}}
     )
 
-    await update.message.reply_text(
-        nezuko("🛡️ protection removed"),
-        parse_mode=ParseMode.HTML
-    )
+    await update.message.reply_text(nezuko("protection removed"), parse_mode=ParseMode.HTML)
 
 
-# ─── 💖 FREE REVIVE ────────────────────────────────────────────────────────────
 async def freerevive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update.effective_user.id):
         return
 
-    target = (await resolve_target(update, context))
+    target = await get_target(update, context)
     if not target:
-        return await update.message.reply_text("User not found.")
-
-    target = target[0]
+        await update.message.reply_text("User not found.")
+        return
 
     users_collection.update_one(
         {"user_id": target["user_id"]},
         {"$set": {"status": "alive"}}
     )
 
-    await update.message.reply_text(
-        nezuko("💖 user revived"),
-        parse_mode=ParseMode.HTML
-    )
+    await update.message.reply_text(nezuko("user revived"), parse_mode=ParseMode.HTML)
 
 
-# ─── 💥 CLEAN DB (OWNER ONLY) ──────────────────────────────────────────────────
+# ─── CLEAN DB (OWNER ONLY) ────────────────────────────────────────────────────
 async def cleandb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
         return
@@ -206,6 +202,6 @@ async def cleandb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     groups_collection.delete_many({})
 
     await update.message.reply_text(
-        nezuko("💥 database wiped"),
+        nezuko("database wiped"),
         parse_mode=ParseMode.HTML
     )
