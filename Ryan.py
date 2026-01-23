@@ -1,11 +1,10 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - BAKA BOT (STABLE)
+# FINAL MASTER RYAN.PY - BAKA BOT (STABLE, NO CONFIRM HANDLER)
 
 import logging
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
-    CallbackQueryHandler,
     MessageHandler,
     ChatMemberHandler,
     filters,
@@ -72,7 +71,7 @@ if __name__ == "__main__":
     # 0. START (TOP PRIORITY)
     app.add_handler(CommandHandler("start", start.start))
 
-    # 1. ADMIN / SUDO
+    # 1. ADMIN / SUDO (NO CONFIRM HANDLER)
     app.add_handler(CommandHandler("sudo", admin.sudo_help))
     app.add_handler(CommandHandler("addcoins", admin.addcoins))
     app.add_handler(CommandHandler("rmcoins", admin.rmcoins))
@@ -83,9 +82,6 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("sudolist", admin.sudolist))
     app.add_handler(CommandHandler("cleandb", admin.cleandb))
     app.add_handler(CommandHandler("broadcast", broadcast.broadcast))
-    app.add_handler(
-        CallbackQueryHandler(admin.confirm_handler, pattern=r"^cnf\|")
-    )
 
     # 2. ECONOMY & GAME
     app.add_handler(CommandHandler("bal", economy.balance))
@@ -139,5 +135,5 @@ if __name__ == "__main__":
         MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member)
     )
 
-    print(f"🚀 {BOT_NAME} MASTER ENGINE ONLINE")
+    print(f"🚀 {BOT_NAME} MASTER ENGINE ONLINE (NO CONFIRM HANDLER)")
     app.run_polling(drop_pending_updates=True)
