@@ -1,84 +1,86 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# Final Fun, Gambling & Info Plugin - HTML Format
+# FINAL FUN, GAMBLING & POWER PLUGIN - BAKA EDITION
 
 import random
 import html
 import asyncio
+import httpx
 from telegram import Update
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 from baka.utils import ensure_user_exists, format_money
 from baka.database import users_collection
 
+# --- 🎨 SIMPLE FONT HELPER (NO MONOSPACE) ---
+def nezuko_style(text):
+    """Converts text to Small Caps ONLY (Simple Font)."""
+    mapping = str.maketrans("abcdefghijklmnopqrstuvwxyz", "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ")
+    return str(text).lower().translate(mapping)
+
 # --- 🆔 INFO COMMAND (/id) ---
 async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Shows IDs of the replied user and the current group."""
     chat_id = update.effective_chat.id
-    
     if update.message.reply_to_message:
-        target_user = update.message.reply_to_message.from_user
-        # Exact format from your screenshot
-        msg = (
-            f"👤 <b>Replied User ID:</b> <code>{target_user.id}</code>\n"
-            f"👥 <b>Group ID:</b> <code>{chat_id}</code>"
-        )
+        target_id = update.message.reply_to_message.from_user.id
+        msg = f"👤 {nezuko_style('replied user id')}: {target_id}\n👥 {nezuko_style('group id')}: {chat_id}"
     else:
-        msg = f"👥 <b>Group ID:</b> <code>{chat_id}</code>"
-        
-    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+        msg = f"👥 {nezuko_style('group id')}: {chat_id}"
+    await update.message.reply_text(msg)
 
-# --- 🧠 BRAIN/IQ COMMAND (0-100 Range) ---
+# --- 🧠 BRAIN/IQ COMMAND ---
 async def brain(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Calculates IQ level of a replied user."""
     if not update.message.reply_to_message:
-        return await update.message.reply_text("<b>Reply to someone ! 🤖</b>", parse_mode=ParseMode.HTML)
-
-    target_user = update.message.reply_to_message.from_user
-    iq_level = random.randint(0, 100)
+        return await update.message.reply_text(nezuko_style("ʀᴇᴘʟʏ ᴛᴏ sᴏᴍᴇᴏɴᴇ !"))
     
-    emoji = "😎" if iq_level >= 75 else "🤔" if iq_level >= 50 else "😐" if iq_level >= 25 else "🤡"
-    response = f"<b>IQ level of {target_user.first_name.upper()} is {iq_level}% {emoji}</b>"
-    
-    await update.message.reply_text(response, parse_mode=ParseMode.HTML)
+    target = update.message.reply_to_message.from_user.first_name
+    iq = random.randint(0, 100)
+    emoji = "😎" if iq >= 75 else "🤔" if iq >= 50 else "😐" if iq >= 25 else "🤡"
+    await update.message.reply_text(nezuko_style(f"ɪǫ ʟᴇᴠᴇʟ ᴏғ {target} ɪs {iq}% {emoji}"))
 
-# --- 🎬 GIF DATABASE ---
-ACTION_GIFS = {
-    "slap": ["https://giphy.com/gifs/yhuW8n4EkcFroBPyEA"],
-    "punch": ["https://giphy.com/gifs/dsUtTbPhnJYHYTB5z8"],
-    "hug": ["https://files.catbox.moe/zknne5.mp4"],
-    "kiss": ["https://files.catbox.moe/rp395w.mp4"]
-}
-
-# --- ⚙️ ACTION HANDLER ---
-async def perform_action(update: Update, context: ContextTypes.DEFAULT_TYPE, action_name: str, emoji: str):
-    sender = update.effective_user
-    if not update.message.reply_to_message:
-        return await update.message.reply_text(f"<b>Usage: Reply to someone to {action_name.lower()} them!</b>", parse_mode=ParseMode.HTML)
-    
-    target = update.message.reply_to_message.from_user
-    gif_url = random.choice(ACTION_GIFS.get(action_name.lower(), []))
-    caption = f"<b>{emoji} {sender.first_name.upper()} {action_name.upper()}ED {target.first_name.upper()}!</b>"
-
+# --- 🎭 1. ANIME REACTIONS (PAT, SLAP, HUG, ETC.) ---
+async def anime_react(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Sends anime GIFs for pat, slap, hug, kiss, bite."""
+    cmd = update.message.text.split()[0][1:].lower()
+    api_url = f"https://nekos.best/api/v2/{cmd}"
     try:
-        await update.message.reply_animation(animation=gif_url, caption=caption, parse_mode=ParseMode.HTML)
-    except:
-        await update.message.reply_text(caption, parse_mode=ParseMode.HTML)
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(api_url)
+            if resp.status_code == 200:
+                url = resp.json()['results'][0]['url']
+                await update.message.reply_animation(url)
+    except: pass
 
-# Fun Action Commands
-async def slap(update: Update, context: ContextTypes.DEFAULT_TYPE): await perform_action(update, context, "Slap", "🖐️")
-async def punch(update: Update, context: ContextTypes.DEFAULT_TYPE): await perform_action(update, context, "Punch", "👊")
-async def hug(update: Update, context: ContextTypes.DEFAULT_TYPE): await perform_action(update, context, "Hug", "🫂")
-async def kiss(update: Update, context: ContextTypes.DEFAULT_TYPE): await perform_action(update, context, "Kiss", "💋")
+# --- 🛡️ 2. ROAST MODE ---
+ROASTS = [
+    "ᴛᴜᴍʜᴀʀɪ sʜᴀᴋᴀʟ ᴅᴇᴋʜ ᴋᴇ ᴛᴏʜ ɢᴏᴏɢʟᴇ ʙʜɪ ᴋᴇʜᴛᴀ ʜᴀɪ 'ᴅɪᴅ ʏᴏᴜ ᴍᴇᴀɴ sᴏᴍᴇᴛʜɪɴɢ ʙᴇᴛᴛᴇʀ?'",
+    "ᴛᴜᴍʜᴀʀɪ ʙᴜᴅᴅʜɪ ᴜᴛɴɪ ʜɪ ᴛᴇᴢ ʜᴀɪ ᴊɪᴛɴɪ 2005 ᴋɪ ɪɴᴛᴇʀɴᴇᴛ sᴘᴇᴇᴅ.",
+    "ʙʜᴀɪ ᴛᴜᴍʜᴀʀᴇ ᴘᴀss ᴅɪᴍᴀɢ ʜᴀɪ, ʙᴀs ᴄʜᴀʟᴛᴀ ɴᴀʜɪ ʜᴀɪ."
+]
 
-# --- 🎲 GAMBLING: DICE & SLOTS ---
+async def roast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Roasts the target user."""
+    target = update.message.reply_to_message.from_user.first_name if update.message.reply_to_message else "ʙʜᴀɪ"
+    await update.message.reply_text(nezuko_style(f"{target}, {random.choice(ROASTS)}"))
+
+# --- ✍️ 3. RANDOM SHAYARI ---
+SHAYARIS = [
+    "ᴋᴜᴄʜ ʜᴏsʜ ɴᴀʜɪ, ᴋᴜᴄʜ ᴋʜᴀʙᴀʀ ɴᴀʜɪ... ʙᴀᴋᴀ ᴋᴇ ʙɪɴᴀ ᴋᴏɪ ᴅᴀɢᴀʀ ɴᴀʜɪ! ✨",
+    "ᴍᴜʜᴀʙʙᴀᴛ ᴋᴀ ɪᴍᴛᴇʜᴀᴀɴ ʙᴀʜᴜᴛ sᴀᴋʜᴛ ʜᴀɪ, ᴘᴀʀ ʙᴀᴋᴀ ᴋᴀ ᴘʏᴀᴀʀ ʜᴀʀ ᴡᴀǫᴛ ᴍᴀsᴛ ʜᴀɪ! 💖"
+]
+
+async def shayari(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Sends a random BAKA style shayari."""
+    await update.message.reply_text(nezuko_style(random.choice(SHAYARIS)))
+
+# --- 🎲 GAMBLING: DICE & SLOTS (RESTORED LOGIC) ---
 async def dice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = ensure_user_exists(update.effective_user)
-    if not context.args: return await update.message.reply_text("<b>Usage: /dice [amount]</b>", parse_mode=ParseMode.HTML)
+    if not context.args: return await update.message.reply_text(nezuko_style("ᴜsᴀɢᴇ: /dice 100"))
     
     try: bet = int(context.args[0])
-    except: return await update.message.reply_text("<b>⚠️ Invalid bet amount.</b>", parse_mode=ParseMode.HTML)
+    except: return await update.message.reply_text(nezuko_style("⚠️ ɪɴᴠᴀʟɪᴅ ᴀᴍᴏᴜɴᴛ"))
     
-    if user['balance'] < bet: return await update.message.reply_text("<b>📉 Insufficient balance.</b>", parse_mode=ParseMode.HTML)
+    if user['balance'] < bet: return await update.message.reply_text(nezuko_style("📉 ɪɴsᴜғғɪᴄɪᴇɴᴛ ʙᴀʟᴀɴᴄᴇ"))
     
     msg = await context.bot.send_dice(update.effective_chat.id, emoji='🎲')
     result = msg.dice.value 
@@ -86,16 +88,15 @@ async def dice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if result > 3:
         users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": bet}})
-        text = f"<b>🎲 Result: {result}\n🎉 You Won! +{format_money(bet)}</b>"
+        text = nezuko_style(f"🎲 ʀᴇsᴜʟᴛ: {result}\n🎉 ʏᴏᴜ ᴡᴏɴ! +{format_money(bet)}")
     else:
         users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": -bet}})
-        text = f"<b>🎲 Result: {result}\n💀 You Lost! -{format_money(bet)}</b>"
-    
-    await update.message.reply_text(text, reply_to_message_id=msg.message_id, parse_mode=ParseMode.HTML)
+        text = nezuko_style(f"🎲 ʀᴇsᴜʟᴛ: {result}\n💀 ʏᴏᴜ ʟᴏsᴛ! -{format_money(bet)}")
+    await update.message.reply_text(text, reply_to_message_id=msg.message_id)
 
 async def slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = ensure_user_exists(update.effective_user)
-    if user['balance'] < 100: return await update.message.reply_text("<b>📉 Need $100 to spin.</b>", parse_mode=ParseMode.HTML)
+    if user['balance'] < 100: return await update.message.reply_text(nezuko_style("📉 ɴᴇᴇᴅ $100 ᴛᴏ sᴘɪɴ"))
     
     users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": -100}})
     msg = await context.bot.send_dice(update.effective_chat.id, emoji='🎰')
@@ -103,8 +104,7 @@ async def slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if msg.dice.value == 64:
         users_collection.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": 1000}})
-        text = "<b>🎰 JACKPOT! (777)\n🎉 You won $1,000!</b>"
+        text = nezuko_style("🎰 ᴊᴀᴄᴋᴘᴏᴛ! (777)\n🎉 ʏᴏᴜ ᴡᴏɴ $1,000!")
     else:
-        text = "<b>🎰 Lost! Better luck next time.</b>"
-    
-    await update.message.reply_text(text, reply_to_message_id=msg.message_id, parse_mode=ParseMode.HTML)
+        text = nezuko_style("🎰 ʟᴏsᴛ! ʙᴇᴛᴛᴇʀ ʟᴜᴄᴋ ɴᴇxᴛ ᴛɪᴍᴇ")
+    await update.message.reply_text(text, reply_to_message_id=msg.message_id)
