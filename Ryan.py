@@ -109,7 +109,8 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("kiss", fun.kiss))
     app.add_handler(CommandHandler("roast", fun.roast))
     app.add_handler(CommandHandler("shayari", fun.shayari))
-    app.add_handler(CommandHandler(["pat", "bite"], fun.anime_react))
+    app.add_handler(CommandHandler("pat", fun.anime_react))
+    app.add_handler(CommandHandler("bite", fun.anime_react))
     app.add_handler(CommandHandler("ask", chatbot.ask_ai))
 
     # SYSTEM / EVENTS
