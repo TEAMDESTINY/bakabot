@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY — BAKA BOT (STABLE, NO CONFIRM HANDLER)
+# FINAL MASTER RYAN.PY — BAKA BOT (STABLE, SYNCED MENU)
 
 import logging
 from telegram.ext import (
@@ -35,21 +35,24 @@ except ImportError as e:
     print(f"CRITICAL IMPORT ERROR: {e}")
     raise SystemExit(1)
 
-# ─── BOT COMMAND MENU ──────────────────────────────────────────────────────────
+# ─── BOT COMMAND MENU (SYNCED WITH HANDLERS) ──────────────────────────────────
 async def post_init(application):
     commands = [
-        ("start", "sᴛᴀʀᴛ ʙᴀᴋᴀ sʏsᴛᴇᴍ"),
-        ("bal", "ᴡᴀʟʟᴇᴛ ʙᴀʟᴀɴᴄᴇ"),
-        ("kill", "ᴋɪʟʟ sᴏᴍᴇᴏɴᴇ"),
-        ("rob", "sᴛᴇᴀʟ ᴍᴏɴᴇʏ"),
-        ("brain", "ᴄʜᴇᴄᴋ ɪǫ"),
-        ("id", "ɢᴇᴛ ɪᴅs"),
-        ("ask", "ᴀsᴋ ʙᴀᴋᴀ ᴀɪ"),
-        ("claim", "ᴄʟᴀɪᴍ ɢʀᴏᴜᴘ ʀᴇᴡᴀʀᴅ"),
-        ("sudo", "sᴜᴅᴏ ᴘᴀɴᴇʟ"),
+        ("start", "sᴛᴀʀᴛ ʙᴀᴋᴀ sʏsᴛᴇᴍ 🌹"),
+        ("bal", "ᴡᴀʟʟᴇᴛ ʙᴀʟᴀɴᴄᴇ 💰"),
+        ("kill", "ᴋɪʟʟ sᴏᴍᴇᴏɴᴇ ⚔️"),
+        ("rob", "sᴛᴇᴀʟ ᴍᴏɴᴇʏ 💸"),
+        ("daily", "ᴄʟᴀɪᴍ ᴅᴀɪʟʏ ʙᴏɴᴜs 🎁"),
+        ("toprich", "ʀɪᴄʜᴇsᴛ ᴘʟᴀʏᴇʀs 🏆"),
+        ("brain", "ᴄʜᴇᴄᴋ ɪǫ ʟᴇᴠᴇʟ 🧠"),
+        ("id", "ɢᴇᴛ ᴜsᴇʀ/ɢʀᴏᴜᴘ ɪᴅs 🆔"),
+        ("ask", "ᴀsᴋ ʙᴀᴋᴀ ᴀɪ 🤖"),
+        ("claim", "ᴄʟᴀɪᴍ ɢʀᴏᴜᴘ ʀᴇᴡᴀʀᴅ 💎"),
+        ("sudo", "sᴜᴅᴏ ᴘᴀɴᴇʟ 🔐"),
+        ("ping", "ᴄʜᴇᴄᴋ ʙᴏᴛ sᴘᴇᴇᴅ ⚡")
     ]
     await application.bot.set_my_commands(commands)
-    print(f"{BOT_NAME} menu synced")
+    print(f"✅ {BOT_NAME} ᴍᴇɴᴜ sʏɴᴄʜʀᴏɴɪᴢᴇᴅ!")
 
 # ─── MAIN ENGINE ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
@@ -71,7 +74,7 @@ if __name__ == "__main__":
     # START
     app.add_handler(CommandHandler("start", start.start))
 
-    # ADMIN / SUDO (DIRECT ACTIONS)
+    # ADMIN / SUDO (DIRECT ACTIONS - NO CONFIRMATION)
     app.add_handler(CommandHandler("sudo", admin.sudo_help))
     app.add_handler(CommandHandler("addcoins", admin.addcoins))
     app.add_handler(CommandHandler("rmcoins", admin.rmcoins))
@@ -95,7 +98,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("revive", game.revive))
     app.add_handler(CommandHandler("protect", game.protect))
 
-    # FUN & AI
+    # FUN, GAMBLING & AI
     app.add_handler(CommandHandler("brain", fun.brain))
     app.add_handler(CommandHandler("id", fun.get_id))
     app.add_handler(CommandHandler("dice", fun.dice))
@@ -104,6 +107,9 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("punch", fun.punch))
     app.add_handler(CommandHandler("hug", fun.hug))
     app.add_handler(CommandHandler("kiss", fun.kiss))
+    app.add_handler(CommandHandler("roast", fun.roast))
+    app.add_handler(CommandHandler("shayari", fun.shayari))
+    app.add_handler(CommandHandler(["pat", "bite"], fun.anime_react))
     app.add_handler(CommandHandler("ask", chatbot.ask_ai))
 
     # SYSTEM / EVENTS
@@ -112,28 +118,14 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("close", events.close_economy))
     app.add_handler(CommandHandler("claim", events.claim_group))
 
-    # MESSAGE HANDLERS
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot.ai_message_handler)
-    )
-    app.add_handler(
-        MessageHandler(filters.Sticker.ALL, chatbot.ai_message_handler)
-    )
+    # MESSAGE HANDLERS (AI & STICKERS)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot.ai_message_handler))
+    app.add_handler(MessageHandler(filters.Sticker.ALL, chatbot.ai_message_handler))
 
-    # GROUP TRACKERS
-    app.add_handler(
-        MessageHandler(filters.ChatType.GROUPS, events.group_tracker),
-        group=3,
-    )
-    app.add_handler(
-        ChatMemberHandler(
-            events.chat_member_update,
-            ChatMemberHandler.MY_CHAT_MEMBER,
-        )
-    )
-    app.add_handler(
-        MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member)
-    )
+    # GROUP TRACKERS & WELCOME
+    app.add_handler(MessageHandler(filters.ChatType.GROUPS, events.group_tracker), group=3)
+    app.add_handler(ChatMemberHandler(events.chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member))
 
-    print(f"{BOT_NAME} MASTER ENGINE ONLINE (NO CONFIRM HANDLER)")
+    print(f"🚀 {BOT_NAME} ᴍᴀsᴛᴇʀ ᴇɴɢɪɴᴇ ᴏɴʟɪɴᴇ (ᴠᴘs ᴍᴏᴅᴇ)")
     app.run_polling(drop_pending_updates=True)
