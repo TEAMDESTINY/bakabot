@@ -144,4 +144,4 @@ async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     expiry = datetime.utcnow() + timedelta(days=days)
     users_collection.update_one({"user_id": user.id}, {"$set": {"protection_expiry": expiry}, "$inc": {"balance": -cost}})
-    await update.message.reply_text("<b>✅ Protection shield activated.</b>", parse_mode=ParseMode.HTML)
+    await update.message.reply_text("<b>🛡️ You are now protected for 1d. </b>", parse_mode=ParseMode.HTML)
