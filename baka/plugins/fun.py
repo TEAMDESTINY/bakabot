@@ -1,131 +1,57 @@
-# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL FUN.PY – STABLE (ROAST FIXED)
-
-import random
-import asyncio
-import httpx
 from telegram import Update
 from telegram.ext import ContextTypes
-from baka.utils import ensure_user_exists, format_money
-from baka.database import users_collection
+import random
 
-# --- FONT ---
-def nezuko_style(text):
-    mapping = str.maketrans(
-        "abcdefghijklmnopqrstuvwxyz",
-        "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ"
-    )
-    return str(text).lower().translate(mapping)
+# ---------------- BASIC ---------------- #
 
-# --- ROAST DATA ---
-ROASTS = [
-    "ᴛᴜᴍʜᴀʀɪ ʙᴜᴅᴅʜɪ ʀᴇᴀᴄᴛ ᴋᴀʀᴛɪ ʜᴀɪ ʟᴇᴋɪɴ ᴄʜᴀʟᴛɪ ɴᴀʜɪ",
-    "ᴛᴜᴍ ᴡᴏ ᴇʀʀᴏʀ ʜᴏ ᴊɪsᴇ ʟᴏɢ ɪɢɴᴏʀᴇ ᴋᴀʀᴅᴇᴛᴇ ʜᴀɪɴ",
-    "ᴛᴜᴍʜᴀʀᴀ ɪǫ ʙᴜғғᴇʀɪɴɢ ᴍᴇɪɴ ʜᴀɪ",
-    "ɢᴏᴏɢʟᴇ ʙʜɪ ᴛᴜᴍʜᴇ sᴇᴀʀᴄʜ ɴᴀʜɪ ᴋᴀʀᴛᴀ"
-]
-
-# --- ROAST ---
-async def roast(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.reply_to_message:
-        name = update.message.reply_to_message.from_user.first_name
-    else:
-        name = update.effective_user.first_name
-
-    await update.message.reply_text(
-        nezuko_style(f"{name}, {random.choice(ROASTS)}")
-    )
-
-# --- ID ---
-async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    if update.message.reply_to_message:
-        uid = update.message.reply_to_message.from_user.id
-        await update.message.reply_text(
-            f"👤 {nezuko_style('user id')}: {uid}\n👥 {nezuko_style('chat id')}: {chat_id}"
-        )
-    else:
-        await update.message.reply_text(f"👥 {nezuko_style('chat id')}: {chat_id}")
-
-# --- BRAIN ---
 async def brain(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.reply_to_message:
-        return await update.message.reply_text(nezuko_style("ʀᴇᴘʟʏ ᴛᴏ sᴏᴍᴇᴏɴᴇ"))
-    name = update.message.reply_to_message.from_user.first_name
-    iq = random.randint(0, 100)
-    await update.message.reply_text(
-        nezuko_style(f"ɪǫ ʟᴇᴠᴇʟ ᴏғ {name} ɪs {iq}%")
-    )
+    await update.message.reply_text("🧠 Brain activated.")
 
-# --- ANIME BASE ---
-async def anime_base(update: Update, action: str):
-    try:
-        async with httpx.AsyncClient() as client:
-            r = await client.get(f"https://nekos.best/api/v2/{action}")
-            if r.status_code == 200:
-                url = r.json()["results"][0]["url"]
-                await update.message.reply_animation(url)
-    except:
-        pass
+async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    await update.message.reply_text(f"👤 Your ID: `{user.id}`", parse_mode="Markdown")
+
+# ---------------- GAMES ---------------- #
+
+async def dice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_dice()
+
+async def slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_dice(emoji="🎰")
+
+# ---------------- ACTIONS ---------------- #
 
 async def slap(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await anime_base(update, "slap")
+    await update.message.reply_text("🤚 Slap!")
 
 async def punch(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await anime_base(update, "punch")
+    await update.message.reply_text("👊 Punch!")
 
 async def hug(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await anime_base(update, "hug")
+    await update.message.reply_text("🤗 Hug!")
 
 async def kiss(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await anime_base(update, "kiss")
+    await update.message.reply_text("😘 Kiss!")
 
-async def pat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await anime_base(update, "pat")
+# ---------------- FUN ---------------- #
 
-async def bite(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await anime_base(update, "bite")
+async def roast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    roasts = [
+        "Tu smart hota agar dimaag optional hota.",
+        "Tu background character bhi nahi lagta.",
+        "Confidence strong hai, talent missing."
+    ]
+    await update.message.reply_text(random.choice(roasts))
 
-# --- DICE ---
-async def dice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = ensure_user_exists(update.effective_user)
-    if not context.args:
-        return await update.message.reply_text(nezuko_style("ᴜsᴀɢᴇ: /dice 100"))
+async def shayari(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    shayari_list = [
+        "Dil se padho to baat samajh aati hai ❤️",
+        "Zindagi ek exam hai, pass hona zaruri hai ✨",
+        "Waqt badalta hai, bas rukna mat ⏳"
+    ]
+    await update.message.reply_text(random.choice(shayari_list))
 
-    bet = int(context.args[0])
-    if user["balance"] < bet:
-        return await update.message.reply_text(nezuko_style("ɴᴏᴛ ᴇɴᴏᴜɢʜ ʙᴀʟᴀɴᴄᴇ"))
+# ---------------- ANIME REACTIONS ---------------- #
 
-    msg = await context.bot.send_dice(update.effective_chat.id, emoji="🎲")
-    await asyncio.sleep(3)
-
-    if msg.dice.value > 3:
-        users_collection.update_one(
-            {"user_id": user["user_id"]}, {"$inc": {"balance": bet}}
-        )
-        await update.message.reply_text(nezuko_style(f"ʏᴏᴜ ᴡᴏɴ +{format_money(bet)}"))
-    else:
-        users_collection.update_one(
-            {"user_id": user["user_id"]}, {"$inc": {"balance": -bet}}
-        )
-        await update.message.reply_text(nezuko_style(f"ʏᴏᴜ ʟᴏsᴛ -{format_money(bet)}"))
-
-# --- SLOTS ---
-async def slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = ensure_user_exists(update.effective_user)
-    if user["balance"] < 100:
-        return await update.message.reply_text(nezuko_style("ɴᴇᴇᴅ 100"))
-
-    users_collection.update_one(
-        {"user_id": user["user_id"]}, {"$inc": {"balance": -100}}
-    )
-    msg = await context.bot.send_dice(update.effective_chat.id, emoji="🎰")
-    await asyncio.sleep(2)
-
-    if msg.dice.value == 64:
-        users_collection.update_one(
-            {"user_id": user["user_id"]}, {"$inc": {"balance": 1000}}
-        )
-        await update.message.reply_text(nezuko_style("ᴊᴀᴄᴋᴘᴏᴛ +1000"))
-    else:
-        await update.message.reply_text(nezuko_style("ʟᴏsᴛ"))
+async def anime_react(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("✨ Anime reaction!")
