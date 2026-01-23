@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL FUN.PY – STABLE (NO anime_react ERROR)
+# FINAL FUN.PY – STABLE (ROAST FIXED)
 
 import random
 import asyncio
@@ -16,6 +16,25 @@ def nezuko_style(text):
         "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ"
     )
     return str(text).lower().translate(mapping)
+
+# --- ROAST DATA ---
+ROASTS = [
+    "ᴛᴜᴍʜᴀʀɪ ʙᴜᴅᴅʜɪ ʀᴇᴀᴄᴛ ᴋᴀʀᴛɪ ʜᴀɪ ʟᴇᴋɪɴ ᴄʜᴀʟᴛɪ ɴᴀʜɪ",
+    "ᴛᴜᴍ ᴡᴏ ᴇʀʀᴏʀ ʜᴏ ᴊɪsᴇ ʟᴏɢ ɪɢɴᴏʀᴇ ᴋᴀʀᴅᴇᴛᴇ ʜᴀɪɴ",
+    "ᴛᴜᴍʜᴀʀᴀ ɪǫ ʙᴜғғᴇʀɪɴɢ ᴍᴇɪɴ ʜᴀɪ",
+    "ɢᴏᴏɢʟᴇ ʙʜɪ ᴛᴜᴍʜᴇ sᴇᴀʀᴄʜ ɴᴀʜɪ ᴋᴀʀᴛᴀ"
+]
+
+# --- ROAST ---
+async def roast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.reply_to_message:
+        name = update.message.reply_to_message.from_user.first_name
+    else:
+        name = update.effective_user.first_name
+
+    await update.message.reply_text(
+        nezuko_style(f"{name}, {random.choice(ROASTS)}")
+    )
 
 # --- ID ---
 async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -49,23 +68,22 @@ async def anime_base(update: Update, action: str):
     except:
         pass
 
-# --- ANIME COMMANDS ---
-async def slap(update: Update, context: ContextTypes.DEFAULT_TYPE): 
+async def slap(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await anime_base(update, "slap")
 
-async def punch(update: Update, context: ContextTypes.DEFAULT_TYPE): 
+async def punch(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await anime_base(update, "punch")
 
-async def hug(update: Update, context: ContextTypes.DEFAULT_TYPE): 
+async def hug(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await anime_base(update, "hug")
 
-async def kiss(update: Update, context: ContextTypes.DEFAULT_TYPE): 
+async def kiss(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await anime_base(update, "kiss")
 
-async def pat(update: Update, context: ContextTypes.DEFAULT_TYPE): 
+async def pat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await anime_base(update, "pat")
 
-async def bite(update: Update, context: ContextTypes.DEFAULT_TYPE): 
+async def bite(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await anime_base(update, "bite")
 
 # --- DICE ---
