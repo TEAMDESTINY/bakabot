@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER RYAN.PY - BAKA BOT (STABLE, NO CONFIRM HANDLER)
+# FINAL MASTER RYAN.PY — BAKA BOT (STABLE, NO CONFIRM HANDLER)
 
 import logging
 from telegram.ext import (
@@ -11,14 +11,14 @@ from telegram.ext import (
 )
 from telegram.request import HTTPXRequest
 
-# --- LOGGING ---
+# ─── LOGGING ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 
-# --- INTERNAL IMPORTS ---
+# ─── INTERNAL IMPORTS ──────────────────────────────────────────────────────────
 try:
     from baka.config import TOKEN, BOT_NAME
     import baka.plugins.start as start
@@ -32,26 +32,26 @@ try:
     import baka.plugins.welcome as welcome
     import baka.plugins.chatbot as chatbot
 except ImportError as e:
-    print(f"❌ CRITICAL IMPORT ERROR: {e}")
+    print(f"CRITICAL IMPORT ERROR: {e}")
     raise SystemExit(1)
 
-# --- BOT COMMAND MENU ---
+# ─── BOT COMMAND MENU ──────────────────────────────────────────────────────────
 async def post_init(application):
     commands = [
-        ("start", "sᴛᴀʀᴛ ʙᴀᴋᴀ sʏsᴛᴇᴍ 🌹"),
-        ("bal", "ᴡᴀʟʟᴇᴛ ʙᴀʟᴀɴᴄᴇ 💰"),
-        ("kill", "ᴋɪʟʟ sᴏᴍᴇᴏɴᴇ ⚔️"),
-        ("rob", "sᴛᴇᴀʟ ᴍᴏɴᴇʏ 💸"),
-        ("brain", "ᴄʜᴇᴄᴋ ɪǫ ʟᴇᴠᴇʟ 🧠"),
-        ("id", "ɢᴇᴛ ɪᴅs 🆔"),
-        ("ask", "ᴀsᴋ ʙᴀᴋᴀ ᴀɪ 🤖"),
-        ("claim", "ᴄʟᴀɪᴍ ɢʀᴏᴜᴘ ʀᴇᴡᴀʀᴅ 🎁"),
-        ("sudo", "sᴜᴅᴏ ᴘᴀɴᴇʟ 🔐"),
+        ("start", "sᴛᴀʀᴛ ʙᴀᴋᴀ sʏsᴛᴇᴍ"),
+        ("bal", "ᴡᴀʟʟᴇᴛ ʙᴀʟᴀɴᴄᴇ"),
+        ("kill", "ᴋɪʟʟ sᴏᴍᴇᴏɴᴇ"),
+        ("rob", "sᴛᴇᴀʟ ᴍᴏɴᴇʏ"),
+        ("brain", "ᴄʜᴇᴄᴋ ɪǫ"),
+        ("id", "ɢᴇᴛ ɪᴅs"),
+        ("ask", "ᴀsᴋ ʙᴀᴋᴀ ᴀɪ"),
+        ("claim", "ᴄʟᴀɪᴍ ɢʀᴏᴜᴘ ʀᴇᴡᴀʀᴅ"),
+        ("sudo", "sᴜᴅᴏ ᴘᴀɴᴇʟ"),
     ]
     await application.bot.set_my_commands(commands)
-    print(f"✅ {BOT_NAME} menu synced")
+    print(f"{BOT_NAME} menu synced")
 
-# --- MAIN ENGINE ---
+# ─── MAIN ENGINE ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     if not TOKEN:
         raise RuntimeError("TOKEN missing in config")
@@ -68,10 +68,10 @@ if __name__ == "__main__":
 
     # ================= HANDLERS =================
 
-    # 0. START (TOP PRIORITY)
+    # START
     app.add_handler(CommandHandler("start", start.start))
 
-    # 1. ADMIN / SUDO (NO CONFIRM HANDLER)
+    # ADMIN / SUDO (DIRECT ACTIONS)
     app.add_handler(CommandHandler("sudo", admin.sudo_help))
     app.add_handler(CommandHandler("addcoins", admin.addcoins))
     app.add_handler(CommandHandler("rmcoins", admin.rmcoins))
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("cleandb", admin.cleandb))
     app.add_handler(CommandHandler("broadcast", broadcast.broadcast))
 
-    # 2. ECONOMY & GAME
+    # ECONOMY & GAME
     app.add_handler(CommandHandler("bal", economy.balance))
     app.add_handler(CommandHandler("daily", economy.daily_bonus))
     app.add_handler(CommandHandler("toprich", economy.toprich))
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("revive", game.revive))
     app.add_handler(CommandHandler("protect", game.protect))
 
-    # 3. FUN & AI
+    # FUN & AI
     app.add_handler(CommandHandler("brain", fun.brain))
     app.add_handler(CommandHandler("id", fun.get_id))
     app.add_handler(CommandHandler("dice", fun.dice))
@@ -106,13 +106,13 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("kiss", fun.kiss))
     app.add_handler(CommandHandler("ask", chatbot.ask_ai))
 
-    # 4. SYSTEM / EVENTS
+    # SYSTEM / EVENTS
     app.add_handler(CommandHandler("ping", ping.ping))
     app.add_handler(CommandHandler("open", events.open_economy))
     app.add_handler(CommandHandler("close", events.close_economy))
     app.add_handler(CommandHandler("claim", events.claim_group))
 
-    # 5. MESSAGE HANDLERS
+    # MESSAGE HANDLERS
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, chatbot.ai_message_handler)
     )
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         MessageHandler(filters.Sticker.ALL, chatbot.ai_message_handler)
     )
 
-    # 6. GROUP TRACKERS
+    # GROUP TRACKERS
     app.add_handler(
         MessageHandler(filters.ChatType.GROUPS, events.group_tracker),
         group=3,
@@ -135,5 +135,5 @@ if __name__ == "__main__":
         MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome.new_member)
     )
 
-    print(f"🚀 {BOT_NAME} MASTER ENGINE ONLINE (NO CONFIRM HANDLER)")
+    print(f"{BOT_NAME} MASTER ENGINE ONLINE (NO CONFIRM HANDLER)")
     app.run_polling(drop_pending_updates=True)
