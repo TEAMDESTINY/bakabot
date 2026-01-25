@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER GAME PLUGIN - STABLE & SYNCED
+# FINAL MASTER GAME PLUGIN - STABLE, SYNCED & NO BYPASS
 
 import random
 import asyncio
@@ -23,6 +23,7 @@ def nezuko_style(text):
 
 # --- 🛠️ HELPER: ECONOMY STATUS CHECK (RESTORED) ---
 async def check_economy(update: Update):
+    """Checks if economy is enabled in the current group."""
     if update.effective_chat.type == "private":
         return True
     group_conf = groups_collection.find_one({"chat_id": update.effective_chat.id})
@@ -45,18 +46,18 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not victim:
         return await update.message.reply_text(nezuko_style("❌ ʀᴇᴘʟʏ ᴛᴏ ᴛʜᴇ ᴠɪᴄᴛɪᴍ !"))
 
-    # --- 🛡️ STRICT PROTECTION CHECK (FIXED) ---
+    # --- 🛡️ STRICT PROTECTION CHECK (FIXED BYPASS) ---
     now = datetime.utcnow()
     expiry = victim.get('protection_expiry')
     
-    # If protection is active, stop the kill immediately
+    # Check if protection is active and attacker is not the owner
     if expiry and expiry > now and update.effective_user.id != OWNER_ID:
         return await update.message.reply_text(f"🛡️ {nezuko_style('victim is protected right now!')}")
 
     if victim.get('status') == 'dead':
         return await update.message.reply_text(nezuko_style(f"💀 {victim['name']} ɪs ᴀʟʀᴇᴀᴅʏ ᴅᴇᴀᴅ!"))
 
-    # Kill Execution logic
+    # Kill Execution
     reward = random.randint(100, 200)
     users_collection.update_one({"user_id": victim['user_id']}, {"$set": {"status": "dead", "death_time": now}})
     users_collection.update_one({"user_id": attacker['user_id']}, {"$inc": {"balance": reward, "kills": 1}})
@@ -90,15 +91,13 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text(nezuko_style("❌ ᴇɴᴛᴇʀ ᴀ ᴠᴀʟɪᴅ ɴᴜᴍᴇʀɪᴄ ᴀᴍᴏᴜɴᴛ."))
 
-# --- ❤️ 3. REVIVE COMMAND (STRICT BALANCE & STATUS FIX) ---
+# --- ❤️ 3. REVIVE COMMAND (STRICT BALANCE & EXACT FORMAT) ---
 async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_economy(update): return
     
-    # Ensure current user exists and get fresh data
     user = ensure_user_exists(update.effective_user)
     user_id = update.effective_user.id
     
-    # Check if target is replied user or self
     if update.message.reply_to_message:
         target_user = update.message.reply_to_message.from_user
         target_db = ensure_user_exists(target_user)
@@ -106,34 +105,27 @@ async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
         target_user = update.effective_user
         target_db = user
 
-    # 1. Check if already alive
+    # 1. EXACT ALREADY ALIVE FORMAT
     if target_db.get('status') == 'alive':
         user_display = f"˹ {target_db['name']} ☞♪ ᴀssɪsᴛᴀɴᴛ ˼™ 🌸"
         return await update.message.reply_text(f"✅ {user_display} is already alive!")
 
-    # 2. Check balance strictly using REVIVE_COST from config (200)
+    # 2. Check balance (Config 200/900 check fix)
     current_balance = user.get('balance', 0)
     if current_balance < REVIVE_COST:
         msg = f"📉 {nezuko_style('insufficient balance!')}\n💰 {nezuko_style('revive cost')}: {format_money(REVIVE_COST)}\n💳 {nezuko_style('your balance')}: {format_money(current_balance)}"
         return await update.message.reply_text(msg)
 
-    # 3. Deduct balance and update status
-    # Hum $inc use kar rahe hain taaki balance correctly minus ho
-    users_collection.update_one(
-        {"user_id": target_db['user_id']}, 
-        {"$set": {"status": "alive", "death_time": None}}
-    )
-    users_collection.update_one(
-        {"user_id": user_id}, 
-        {"$inc": {"balance": -REVIVE_COST}}
-    )
+    # 3. Process Revive
+    users_collection.update_one({"user_id": target_db['user_id']}, {"$set": {"status": "alive", "death_time": None}})
+    users_collection.update_one({"user_id": user_id}, {"$inc": {"balance": -REVIVE_COST}})
     
-    # Success Message
     await update.message.reply_text(
         f"💖 <b>{target_db['name']}</b> {nezuko_style('has been revived!')}\n"
         f"💸 {nezuko_style('fee paid')}: {format_money(REVIVE_COST)}",
         parse_mode=ParseMode.HTML
     )
+
 # --- 🛡️ 4. PROTECT COMMAND (RESTORED LOGIC) ---
 async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_economy(update): return
