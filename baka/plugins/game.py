@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
-# FINAL MASTER GAME PLUGIN - 100% STABLE & COMPLETE
+# FINAL MASTER GAME PLUGIN - NO BYPASS & DOUBLE PROTECTION CHECK
 
 import random
 import asyncio
@@ -15,15 +15,11 @@ from baka.config import (
 from baka.utils import ensure_user_exists, resolve_target, format_money
 from baka.database import users_collection, groups_collection
 
-# --- 🎨 SIMPLE FONT HELPER (NO CLICK-TO-COPY) ---
 def nezuko_style(text):
-    """Simple Small Caps font without <code> tags."""
     mapping = str.maketrans("abcdefghijklmnopqrstuvwxyz", "ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ")
     return str(text).lower().translate(mapping)
 
-# --- 🛠️ HELPER: ECONOMY STATUS CHECK ---
 async def check_economy(update: Update):
-    """Checks if economy is enabled in the current group."""
     if update.effective_chat.type == "private":
         return True
     group_conf = groups_collection.find_one({"chat_id": update.effective_chat.id})
@@ -32,7 +28,7 @@ async def check_economy(update: Update):
         return False
     return True
 
-# --- 🔪 1. KILL COMMAND (STRICT PROTECTION BYPASS FIX) ---
+# --- 🔪 1. KILL COMMAND (STRICT RETURN ON PROTECTION) ---
 async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_economy(update): return
     attacker = ensure_user_exists(update.effective_user)
@@ -42,22 +38,19 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     res = await resolve_target(update, context)
     victim = res[0] if isinstance(res, (tuple, list)) else res
-    
     if not victim:
         return await update.message.reply_text(nezuko_style("❌ ʀᴇᴘʟʏ ᴛᴏ ᴛʜᴇ ᴠɪᴄᴛɪᴍ !"))
 
-    # --- 🛡️ STRICT PROTECTION CHECK (FIXED BYPASS) ---
+    # --- 🛡️ PROTECTION CHECK (STOP KILL) ---
     now = datetime.utcnow()
     expiry = victim.get('protection_expiry')
-    
-    # If protection is active, stop the kill immediately
     if expiry and expiry > now and update.effective_user.id != OWNER_ID:
+        # RETURN lagana zaroori hai taaki niche ka kill code na chale
         return await update.message.reply_text(f"🛡️ {nezuko_style('victim is protected right now!')}")
 
     if victim.get('status') == 'dead':
         return await update.message.reply_text(nezuko_style(f"💀 {victim['name']} ɪs ᴀʟʀᴇᴀᴅʏ ᴅᴇᴀᴅ!"))
 
-    # Kill Execution logic
     reward = random.randint(100, 200)
     users_collection.update_one({"user_id": victim['user_id']}, {"$set": {"status": "dead", "death_time": now}})
     users_collection.update_one({"user_id": attacker['user_id']}, {"$inc": {"balance": reward, "kills": 1}})
@@ -71,13 +64,12 @@ async def kill(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- 💰 2. ROB COMMAND (WITH PROTECTION CHECK) ---
 async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_economy(update): return
-    user = update.effective_user
+    user = ensure_user_exists(update.effective_user)
     if not update.message.reply_to_message or not context.args:
         return await update.message.reply_text(nezuko_style("❗ usage: reply with /rob <amount>"))
 
     try:
         amount = int(context.args[0])
-        robber = ensure_user_exists(user)
         res = await resolve_target(update, context)
         target_db = res[0] if isinstance(res, (tuple, list)) else res
 
@@ -90,52 +82,38 @@ async def rob(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return await update.message.reply_text(f"<b>📉 {nezuko_style('target doesnt have enough money!')}</b>", parse_mode=ParseMode.HTML)
 
         users_collection.update_one({"user_id": target_db['user_id']}, {"$inc": {"balance": -amount}})
-        users_collection.update_one({"user_id": robber['user_id']}, {"$inc": {"balance": amount}})
+        users_collection.update_one({"user_id": user['user_id']}, {"$inc": {"balance": amount}})
+        await update.message.reply_text(f"<b>💰 {user['name']} robbed {target_db['name']}!</b>\n<b>Looted: {format_money(amount)}</b>", parse_mode=ParseMode.HTML)
+    except: pass
 
-        await update.message.reply_text(f"<b>💰 {user.first_name} robbed {target_db['name']}!</b>\n<b>Looted: {format_money(amount)}</b>", parse_mode=ParseMode.HTML)
-    except:
-        await update.message.reply_text(nezuko_style("❌ ᴇɴᴛᴇʀ ᴀ ᴠᴀʟɪᴅ ɴᴜᴍᴇʀɪᴄ ᴀᴍᴏᴜɴᴛ."))
-
-# --- ❤️ 3. REVIVE COMMAND (STRICT BALANCE & EXACT FORMAT) ---
+# --- ❤️ 3. REVIVE COMMAND (EXACT FORMAT) ---
 async def revive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_economy(update): return
-    
     user = ensure_user_exists(update.effective_user)
-    user_id = update.effective_user.id
-    
-    if update.message.reply_to_message:
-        target_user = update.message.reply_to_message.from_user
-        target_db = ensure_user_exists(target_user)
-    else:
-        target_user = update.effective_user
-        target_db = user
+    res = await resolve_target(update, context) if update.message.reply_to_message else user
+    target_db = res[0] if isinstance(res, (tuple, list)) else res
 
-    # 1. EXACT ALREADY ALIVE FORMAT
     if target_db.get('status') == 'alive':
         user_display = f"˹ {target_db['name']} ☞♪ ᴀssɪsᴛᴀɴᴛ ˼™ 🌸"
         return await update.message.reply_text(f"✅ {user_display} is already alive!")
 
-    # 2. Check balance strictly using REVIVE_COST from config
-    current_balance = user.get('balance', 0)
-    if current_balance < REVIVE_COST:
-        msg = f"📉 {nezuko_style('insufficient balance!')}\n💰 {nezuko_style('revive cost')}: {format_money(REVIVE_COST)}\n💳 {nezuko_style('your balance')}: {format_money(current_balance)}"
-        return await update.message.reply_text(msg)
+    if user.get('balance', 0) < REVIVE_COST:
+        return await update.message.reply_text(f"<b>❌ Revive costs: {format_money(REVIVE_COST)}</b>", parse_mode=ParseMode.HTML)
 
-    # 3. Process Revive deduction
     users_collection.update_one({"user_id": target_db['user_id']}, {"$set": {"status": "alive", "death_time": None}})
-    users_collection.update_one({"user_id": user_id}, {"$inc": {"balance": -REVIVE_COST}})
-    
-    await update.message.reply_text(
-        f"💖 <b>{target_db['name']}</b> {nezuko_style('has been revived!')}\n"
-        f"💸 {nezuko_style('fee paid')}: {format_money(REVIVE_COST)}",
-        parse_mode=ParseMode.HTML
-    )
+    users_collection.update_one({"user_id": user['user_id']}, {"$inc": {"balance": -REVIVE_COST}})
+    await update.message.reply_text(nezuko_style(f"💖 {target_db['name']} ʜᴀs ʙᴇᴇɴ ʀᴇᴠɪᴠᴇᴅ!"))
 
-# --- 🛡️ 4. PROTECT COMMAND ---
+# --- 🛡️ 4. PROTECT COMMAND (ALREADY PROTECTED CHECK) ---
 async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_economy(update): return
     user_db = ensure_user_exists(update.effective_user)
     
+    # Check if already protected
+    now = datetime.utcnow()
+    if user_db.get('protection_expiry') and user_db['protection_expiry'] > now:
+        return await update.message.reply_text(f"🛡️ {nezuko_style('you are already protected!')}")
+
     if not context.args:
         return await update.message.reply_text(nezuko_style("⚠️ ᴜsᴀɢᴇ: /protect 1ᴅ"))
 
@@ -145,6 +123,6 @@ async def protect(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_db.get('balance', 0) < cost: 
         return await update.message.reply_text(f"<b>❌ You need {format_money(cost)} for protection.</b>", parse_mode=ParseMode.HTML)
     
-    expiry = datetime.utcnow() + timedelta(days=days)
+    expiry = now + timedelta(days=days)
     users_collection.update_one({"user_id": user_db['user_id']}, {"$set": {"protection_expiry": expiry}, "$inc": {"balance": -cost}})
     await update.message.reply_text(f"🛡️ {nezuko_style(f'you are now protected for {choice}.')}")
