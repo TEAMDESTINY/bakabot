@@ -1,6 +1,5 @@
-# Copyright (c) 2026
-# Telegram: @WTF_Phantom <DevixOP>
-# FINAL STABLE CONFIG
+# Copyright (c) 2026 Telegram:- @WTF_Phantom <DevixOP>
+# FINAL MASTER CONFIG - FULLY SYNCED WITH GAME & ADMIN PLUGINS
 
 import os
 import time
@@ -12,16 +11,14 @@ TOKEN = os.getenv("BOT_TOKEN")
 if not TOKEN:
     raise RuntimeError(
         "❌ BOT_TOKEN is missing.\n"
-        "Set it using:\n"
-        "export BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN"
+        "Set it using: export BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN"
     )
 
 MONGO_URI = os.getenv("MONGO_URI")
 if not MONGO_URI:
     raise RuntimeError(
         "❌ MONGO_URI is missing.\n"
-        "Set it using:\n"
-        "export MONGO_URI=your_mongodb_uri"
+        "Set it using: export MONGO_URI=your_mongodb_uri"
     )
 
 PORT = int(os.getenv("PORT", 5000))
@@ -36,18 +33,9 @@ UPSTREAM_REPO = os.getenv("UPSTREAM_REPO", "")
 GIT_TOKEN = os.getenv("GIT_TOKEN", "")
 
 # ───────────────────── ASSETS ─────────────────────
-START_IMG_URL = os.getenv(
-    "START_IMG_URL",
-    "https://files.catbox.moe/5u4z5p.jpg"
-)
-HELP_IMG_URL = os.getenv(
-    "HELP_IMG_URL",
-    "https://files.catbox.moe/5u4z5p.jpg"
-)
-WELCOME_IMG_URL = os.getenv(
-    "WELCOME_IMG_URL",
-    "https://files.catbox.moe/5u4z5p.jpg"
-)
+START_IMG_URL = os.getenv("START_IMG_URL", "https://files.catbox.moe/5u4z5p.jpg")
+HELP_IMG_URL = os.getenv("HELP_IMG_URL", "https://files.catbox.moe/5u4z5p.jpg")
+WELCOME_IMG_URL = os.getenv("WELCOME_IMG_URL", "https://files.catbox.moe/5u4z5p.jpg")
 
 SUPPORT_GROUP = os.getenv("SUPPORT_GROUP", "")
 SUPPORT_CHANNEL = os.getenv("SUPPORT_CHANNEL", "")
@@ -64,21 +52,18 @@ LOGGER_ID = get_env_id("LOGGER_ID")
 SUDO_IDS = []
 sudo_raw = os.getenv("SUDO_IDS", "")
 if sudo_raw:
-    SUDO_IDS = [
-        int(x) for x in sudo_raw.split(",")
-        if x.strip().lstrip("-").isdigit()
-    ]
+    SUDO_IDS = [int(x) for x in sudo_raw.split(",") if x.strip().lstrip("-").isdigit()]
 
 if OWNER_ID and OWNER_ID not in SUDO_IDS:
     SUDO_IDS.append(OWNER_ID)
 
 # ───────────────────── ECONOMY ─────────────────────
 BOT_NAME = "𝐁ᴀᴋᴀ 💗"
-
 REGISTER_BONUS = 50
 DAILY_BONUS = 1000
 BONUS_COOLDOWN = 12  # hours
 
+# Synced Costs for Game Plugin
 REVIVE_COST = 200
 DIVORCE_COST = 2000
 WAIFU_PROPOSE_COST = 5000
@@ -89,7 +74,7 @@ ROB_LIMIT_DAILY = 200
 ROB_MAX_AMOUNT = 500_000
 KILL_SPAM_COOLDOWN = 3  # seconds
 
-# ───────────────────── PROTECTION ─────────────────────
+# ───────────────────── PROTECTION (SYNCED WITH GAME.PY) ─────────────────────
 PROTECT_1D_COST = 100
 PROTECT_2D_COST = 500
 AUTO_REVIVE_HOURS = 5
@@ -100,7 +85,7 @@ MIN_CLAIM_MEMBERS = 100
 RIDDLE_REWARD = 1000
 CLAIM_BONUS = 2000
 
-# ───────────────────── SHOP ─────────────────────
+# ───────────────────── SHOP ITEMS (RESTORED) ─────────────────────
 SHOP_ITEMS = [
     {"id": "stick", "name": "🪵 Stick", "price": 500, "type": "weapon", "buff": 0.01},
     {"id": "knife", "name": "🔪 Knife", "price": 3500, "type": "weapon", "buff": 0.05},
